@@ -2,15 +2,14 @@ import argparse
 from pathlib import Path
 from spike_sorting import pre_treat_oe
 import logging
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 
 
-def main(directory, bhv_filepath, spike_dir):
+def main(directory, bhv_filepath, spike_dir, save_dir, info):
     "Spike sorting"
-    result = pre_treat_oe.pre_treat_oe(
-        directory, bhv_filepath, spike_dir, start_code=9, end_code=18
-    )
+    pre_treat_oe.pre_treat_oe(directory, bhv_filepath, spike_dir, save_dir, info)
 
 
 if __name__ == "__main__":
@@ -20,7 +19,8 @@ if __name__ == "__main__":
     spike_dir = (
         "Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
     )
-
+    save_dir = "C:/Users/camil/Documents/int/inVibe/results/"
+    info = {"subject": "M", "area": "LIP", "date": "16-11-2022-12-11"}
     # Parse arguments
     # parser = argparse.ArgumentParser(
     #     formatter_class=argparse.RawDescriptionHelpFormatter
@@ -28,5 +28,5 @@ if __name__ == "__main__":
     # parser.add_argument("file", help="Path to the file", type=Path)
     # args = parser.parse_args()
 
-    main(directory, bhv_filepath, spike_dir)
+    main(directory, bhv_filepath, spike_dir, save_dir, info)
     # main(args.file)

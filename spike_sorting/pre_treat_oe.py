@@ -9,7 +9,7 @@ from spike_sorting import utils_oe
 from spike_sorting import data_structure
 
 
-def pre_treat_oe(directory, bhv_filepath, spike_dir, start_code=9, end_code=18):
+def pre_treat_oe(directory, bhv_filepath, spike_dir, save_dir, info):
 
     # Load behavioral data
     bhv = h5py.File(directory + bhv_filepath, "r")["ML"]
@@ -76,12 +76,12 @@ def pre_treat_oe(directory, bhv_filepath, spike_dir, start_code=9, end_code=18):
 
     # codes of the events
 
-    n_trials = np.sum(full_word == start_code)
+    n_trials = np.sum(full_word == config.START_CODE)
     real_strobes = events.timestamp[idx_real_strobes].values
     start_trials = real_strobes[
-        full_word == start_code
+        full_word == config.START_CODE
     ]  # timestamps where trials starts
-    end_trials = real_strobes[full_word == end_code]
+    end_trials = real_strobes[full_word == config.END_CODE]
     spiketimes = continuous.timestamps[idx_spiketimes]  # timestamps of all the spikes
     valid_clusters = cluster_info[
         cluster_info["group"] != "noise"
@@ -94,7 +94,9 @@ def pre_treat_oe(directory, bhv_filepath, spike_dir, start_code=9, end_code=18):
         eyes_sample,
         lfp_sample,
         timestamps,
+        block,
     ) = data_structure.sort_data_trial(
+        bhv=bhv,
         clusters=valid_clusters,
         spiketimes=spiketimes,
         start_trials=start_trials,
@@ -115,6 +117,10 @@ def pre_treat_oe(directory, bhv_filepath, spike_dir, start_code=9, end_code=18):
         eyes_sample=eyes_sample,
         lfp_sample=lfp_sample,
         timestamps=timestamps,
+        block=block,
+        save_dir=save_dir,
+        info=info,
     )
 
     print("pre_treat_oe successfully run")
+    return data

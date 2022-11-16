@@ -10,3 +10,6 @@ ORDER = 6  # filter order [1]
 
 DOWNSAMPLE = 30  # [1]
 T_EVENT = 10  # time before the start of the first event [s]
+
+START_CODE = 9
+END_CODE = 18
