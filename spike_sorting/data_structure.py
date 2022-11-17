@@ -1,9 +1,9 @@
 import numpy as np
 import os
+import logging
 
 
 def sort_data_trial(
-    bhv,
     clusters,
     spiketimes,
     start_trials,
@@ -16,10 +16,8 @@ def sort_data_trial(
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    trial_keys = list(bhv.keys())[1:-1]
-    n_trials = len(trial_keys)
+    n_trials = len(start_trials)
 
-    block = np.zeros(n_trials)
     times = []  #  n_trials x n_neurons x n_times
     code_numbers = []
     code_times = []
@@ -31,7 +29,7 @@ def sort_data_trial(
 
         # define trial masks
         sp_mask = np.logical_and(
-            spiketimes >= start_trials[trial_i], spiketimes < end_trial[trial_i]
+            spiketimes >= start_trials[trial_i], spiketimes <= end_trial[trial_i]
         )
         events_mask = np.logical_and(
             real_strobes >= start_trials[trial_i], real_strobes <= end_trial[trial_i]
@@ -40,30 +38,27 @@ def sort_data_trial(
             filtered_timestamps >= start_trials[trial_i],
             filtered_timestamps <= end_trial[trial_i],
         )
-        # split spikes
+        # select spikes
         sp_trial = spiketimes[sp_mask]
         id_clusters = spiketimes_clusters_id[
             sp_mask
         ]  # to which neuron correspond each spike
 
-        # split code numbers
+        # select code numbers
         code_numbers.append(
             full_word[events_mask]
         )  # all trials have to start & end with the same codes
-        # split code times
+        # select code times
         code_times.append(real_strobes[events_mask])
-        # split lfp
+        # select lfp
         lfp_sample.append(LFP_ds[:, lfp_mask].tolist())
-        # timestamps
+        # select timestamps
         timestamps.append(filtered_timestamps[lfp_mask])
-        # eyes
-        eyes_sample.append(eyes_ds[lfp_mask].tolist())
-        # blocks
-        block[trial_i] = bhv[trial_keys[trial_i]]["Block"][0][0]
+        # select eyes
+        eyes_sample.append(eyes_ds[:, lfp_mask].tolist())
 
         spiketimes_trial = []  # n_neurons x n_times
         for i_cluster in clusters_id:  # iterate over clusters
-
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
             spiketimes_trial.append(sp_trial[idx_cluster])
@@ -77,29 +72,28 @@ def sort_data_trial(
         np.array(eyes_sample, dtype=object),
         np.array(lfp_sample, dtype=object),
         np.array(timestamps, dtype=object),
-        block.astype(int),
     )
 
 
-def save_data(data, save_dir, info):
-    n_block = data["block"][0]
-
+def save_data(data, save_dir, subject, date_time, area):
+    n_block = data["block"]
     path = (
-        save_dir
-        + info["subject"]
+        str(save_dir)
         + "/"
-        + info["area"]
+        + subject
         + "/"
-        + info["date"]
+        + area
+        + "/"
+        + date_time
         + "/"
         + str(n_block)
-        + "/"
-        + "res"
     )
+    file_name = "/" + subject + "_" + area + "_" + date_time + "_" + str(n_block)
     if not os.path.exists(path):
         os.makedirs(path)
 
-    np.save(path, data)
+    np.save(path + file_name, data)
+    logging.info("Data successfully saved")
 
 
 def build_data_structure(
@@ -111,27 +105,19 @@ def build_data_structure(
     lfp_sample,
     timestamps,
     block,
-    save_dir,
-    info,
 ):
-    # Do a for loop where it creates and saves a data structure for each block
-    n_blocks = np.unique(block)
-
-    for n, i_bk in enumerate(n_blocks):
-        trials_bk = np.where(block == i_bk)[0].tolist()
-
-        data = {
-            "times": times[trials_bk],
-            "block": block[trials_bk],
-            "clusters_id": clusters["cluster_id"].values,
-            "clustersch": clusters["ch"].values,
-            "clustersgroup": clusters["group"].values,
-            "clusterdepth": clusters["depth"].values,
-            "clusterdepth": clusters["depth"].values,
-            "code_numbers": code_numbers[trials_bk],
-            "code_times": code_times[trials_bk],
-            "eyes_sample": eyes_sample[trials_bk],
-            "lfp_sample": lfp_sample[trials_bk],
-            "timestamps": timestamps[trials_bk],
-        }
-        save_data(data, save_dir, info)
+    data = {
+        "times": times,
+        "block": int(block),
+        "clusters_id": clusters["cluster_id"].values,
+        "clustersch": clusters["ch"].values,
+        "clustersgroup": clusters["group"].values,
+        "clusterdepth": clusters["depth"].values,
+        "clusterdepth": clusters["depth"].values,
+        "code_numbers": code_numbers,
+        "code_times": code_times,
+        "eyes_sample": eyes_sample,
+        "lfp_sample": lfp_sample,
+        "timestamps": timestamps,
+    }
+    return data

@@ -1,26 +1,55 @@
 import argparse
 from pathlib import Path
 from spike_sorting import pre_treat_oe
+from spike_sorting import utils_oe
+import os
 import logging
-import numpy as np
+import re
 
 logging.basicConfig(level=logging.INFO)
 
 
-def main(directory, bhv_filepath, spike_dir, save_dir, info):
-    "Spike sorting"
-    pre_treat_oe.pre_treat_oe(directory, bhv_filepath, spike_dir, save_dir, info)
+def main(bhv_path, spike_path, save_dir, config_file):
+
+    # load data
+    (
+        bhv,
+        continuous,
+        events,
+        idx_spiketimes,
+        spiketimes_clusters_id,
+        cluster_info,
+        config_data,
+    ) = utils_oe.load_data(bhv_path, spike_path, config_file)
+
+    split_path = os.path.normpath(bhv_path).split(os.sep)
+    subject = re.split(r"[_;.]", split_path[-1])[-2]
+    date_time = split_path[-5]
+
+    pre_treat_oe.pre_treat_oe(
+        continuous,
+        events,
+        bhv,
+        idx_spiketimes,
+        config_data,
+        cluster_info,
+        save_dir,
+        spiketimes_clusters_id,
+        subject,
+        date_time,
+    )
 
 
 if __name__ == "__main__":
 
-    directory = "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/"
-    bhv_filepath = "/Record Node 102/experiment1/recording1/220609_TSCM_grid_Riesling.h5"  # I obtain this file using the function convert_format() in matlab
-    spike_dir = (
-        "Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
+    bhv_path = Path(
+        "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/220609_TSCM_grid_Riesling.h5"
+    )  # I obtain this file using the function convert_format() in matlab
+    spike_path = Path(
+        "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
     )
-    save_dir = "C:/Users/camil/Documents/int/inVibe/results/"
-    info = {"subject": "M", "area": "LIP", "date": "16-11-2022-12-11"}
+    save_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
+    config_file = Path("C:/Users/camil/Documents/int/inVibe/spike_sorting/config.json")
     # Parse arguments
     # parser = argparse.ArgumentParser(
     #     formatter_class=argparse.RawDescriptionHelpFormatter
@@ -28,5 +57,5 @@ if __name__ == "__main__":
     # parser.add_argument("file", help="Path to the file", type=Path)
     # args = parser.parse_args()
 
-    main(directory, bhv_filepath, spike_dir, save_dir, info)
+    main(bhv_path, spike_path, save_dir, config_file)
     # main(args.file)

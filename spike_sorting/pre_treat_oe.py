@@ -1,126 +1,110 @@
-import numpy as np
-import pandas as pd
-import h5py
-import pandas as pd
 import logging
-
-from spike_sorting import config
-from spike_sorting import utils_oe
 from spike_sorting import data_structure
+from spike_sorting import utils_oe
+from spike_sorting import config
 
 
-def pre_treat_oe(directory, bhv_filepath, spike_dir, save_dir, info):
+def pre_treat_oe(
+    continuous,
+    events,
+    bhv,
+    idx_spiketimes,
+    config_data,
+    cluster_info,
+    save_dir,
+    spiketimes_clusters_id,
+    subject,
+    date_time,
+):
 
-    # Load behavioral data
-    bhv = h5py.File(directory + bhv_filepath, "r")["ML"]
-
-    # Load OpenEphis data
-    logging.info("Loading OE data")
-    session, recordnode, continuous, events = utils_oe.load_op_data(
-        directory, config.N_NODE, config.RECORDING_NUM
-    )
-
-    # Select the timestamps of continuous data from 10 ms before the first event
-    # This is done to reduce the data
+    # Select the timestamps of continuous data
     logging.info("Selecting OE timestamps")
-    filtered_timestamps, start_time = utils_oe.select_timestamps(
-        continuous.timestamps, events.timestamp, config.FS
-    )
-
-    # Compute LFP
-    logging.info("Computing LFPs")
-    selected_channels = np.arange(0, 33)
-    n_channels = len(selected_channels)
-    LFP_ds = utils_oe.butter_lowpass_filter(
-        continuous.samples[start_time:, : n_channels - 2],
-        fc=config.FC,
+    filtered_timestamps, start_time, spiketimes = utils_oe.select_timestamps(
+        c_timestamps=continuous.timestamps,
+        e_timestamps=events.timestamp,
+        idx_spiketimes=idx_spiketimes,
         fs=config.FS,
-        order=config.ORDER,
+        t_before_event=config.T_EVENT,
         downsample=config.DOWNSAMPLE,
     )
-    eyes_ds = utils_oe.signal_downsample(
-        continuous.samples[start_time:, n_channels - 2 :],
-        config.DOWNSAMPLE,
-        idx_start=0,
-        axis=0,
-    )
 
-    # Reconstruct 8 bit words
-    logging.info("Reconstructing 8 bit words")
-    idx_real_strobes = np.where(
-        np.logical_and(
-            np.logical_and(events.channel == 8, events.state == 1), events.timestamp > 0
-        )
-    )[
-        0
-    ]  # state 1: ON, state 0: OFF
-    full_word = utils_oe.reconstruct_8bits_words(
-        idx_real_strobes, e_channel=events.channel, e_state=events.state
-    )
-
-    # Check if strobe and codes number match
-    utils_oe.check_strobes(bhv, full_word, idx_real_strobes)
-
-    # Load data
-    print("getting spikes...")
-
-    idx_spiketimes = np.load(directory + spike_dir + "/spike_times.npy", "r").reshape(
-        -1
-    )
-    spiketimes_clusters_id = np.load(
-        directory + spike_dir + "/spike_clusters.npy", "r"
-    )  # to which neuron the spike times belongs to
-    cluster_info = pd.read_csv(
-        directory + spike_dir + "/cluster_info.tsv", sep="\t"
-    )  # info of each cluster
-
-    # codes of the events
-
-    n_trials = np.sum(full_word == config.START_CODE)
-    real_strobes = events.timestamp[idx_real_strobes].values
-    start_trials = real_strobes[
-        full_word == config.START_CODE
-    ]  # timestamps where trials starts
-    end_trials = real_strobes[full_word == config.END_CODE]
-    spiketimes = continuous.timestamps[idx_spiketimes]  # timestamps of all the spikes
-    valid_clusters = cluster_info[
-        cluster_info["group"] != "noise"
-    ]  # we only keep good and mua groups
-
+    # reconstruct 8 bit words
     (
-        times,
-        code_numbers,
-        code_times,
-        eyes_sample,
-        lfp_sample,
-        timestamps,
-        block,
-    ) = data_structure.sort_data_trial(
-        bhv=bhv,
-        clusters=valid_clusters,
-        spiketimes=spiketimes,
-        start_trials=start_trials,
-        end_trial=end_trials,
-        real_strobes=real_strobes,
-        filtered_timestamps=filtered_timestamps,
-        spiketimes_clusters_id=spiketimes_clusters_id,
-        full_word=full_word,
-        LFP_ds=LFP_ds,
-        eyes_ds=eyes_ds,
-    )
+        full_word,
+        real_strobes,
+        bl_start_trials,
+        bl_end_trials,
+        n_blocks,
+    ) = utils_oe.find_events_codes(events, bhv)
 
-    data = data_structure.build_data_structure(
-        clusters=cluster_info,
-        times=times,
-        code_numbers=code_numbers,
-        code_times=code_times,
-        eyes_sample=eyes_sample,
-        lfp_sample=lfp_sample,
-        timestamps=timestamps,
-        block=block,
-        save_dir=save_dir,
-        info=info,
-    )
+    # split data in areas
+    for area in config_data["areas"]:
+        logging.info("Area: %s" % (area))
 
-    print("pre_treat_oe successfully run")
-    return data
+        n_ch = config_data["areas"][area]["channels"]
+        first_ch = config_data["areas"][area]["firstCh"]
+
+        area_cluster_info = cluster_info[
+            (cluster_info["ch"] >= first_ch)
+            & (cluster_info["ch"] <= n_ch)
+            & (cluster_info["group"] != "noise")
+        ]
+
+        # check if recordings in the area
+        if area_cluster_info.shape[0] != 0:
+
+            # Select the channels that correspond to the area
+            c_samples = continuous.samples[
+                :, first_ch - 1 : first_ch - 1 + n_ch + 2
+            ]  # +2 is for the eye channels
+
+            logging.info("Computing LFPs")
+            LFP_ds, eyes_ds = utils_oe.compute_lfp(c_samples, start_time)
+
+            # split in blocks
+            for start_trials, end_trials, i_block in zip(
+                bl_start_trials, bl_end_trials, n_blocks
+            ):
+                logging.info("Area: %s, Block: %d" % (area, i_block))
+
+                (
+                    times,
+                    code_numbers,
+                    code_times,
+                    eyes_sample,
+                    lfp_sample,
+                    timestamps,
+                ) = data_structure.sort_data_trial(
+                    clusters=area_cluster_info,
+                    spiketimes=spiketimes,
+                    start_trials=start_trials,
+                    end_trial=end_trials,
+                    real_strobes=real_strobes,
+                    filtered_timestamps=filtered_timestamps,
+                    spiketimes_clusters_id=spiketimes_clusters_id,
+                    full_word=full_word,
+                    LFP_ds=LFP_ds,
+                    eyes_ds=eyes_ds,
+                )
+
+                data = data_structure.build_data_structure(
+                    clusters=area_cluster_info,
+                    times=times,
+                    code_numbers=code_numbers,
+                    code_times=code_times,
+                    eyes_sample=eyes_sample,
+                    lfp_sample=lfp_sample,
+                    timestamps=timestamps,
+                    block=i_block,
+                )
+                data_structure.save_data(
+                    data,
+                    save_dir=save_dir,
+                    subject=subject,
+                    date_time=date_time,
+                    area=area,
+                )
+        else:
+            logging.info("No recordings")
+
+    logging.info("pre_treat_oe successfully run")
