@@ -121,3 +121,12 @@ def build_data_structure(
         "timestamps": timestamps,
     }
     return data
+
+
+def build_bhv_structure(
+    block,
+):
+    data = {
+        "block": int(block),
+    }
+    return data
