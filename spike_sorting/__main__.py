@@ -9,7 +9,7 @@ import re
 logging.basicConfig(level=logging.INFO)
 
 
-def main(bhv_path, spike_path, save_dir, config_file):
+def main(bhv_path, spike_path, output_dir, config_file):
 
     # load data
     (
@@ -33,7 +33,7 @@ def main(bhv_path, spike_path, save_dir, config_file):
         idx_spiketimes,
         config_data,
         cluster_info,
-        save_dir,
+        output_dir,
         spiketimes_clusters_id,
         subject,
         date_time,
@@ -48,14 +48,21 @@ if __name__ == "__main__":
     spike_path = Path(
         "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
     )
-    save_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
+    output_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
     config_file = Path("C:/Users/camil/Documents/int/inVibe/spike_sorting/config.json")
     # Parse arguments
-    # parser = argparse.ArgumentParser(
-    #     formatter_class=argparse.RawDescriptionHelpFormatter
-    # )
-    # parser.add_argument("file", help="Path to the file", type=Path)
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("bhv_path", help="Path to the file", type=Path)
+    parser.add_argument("spike_path", help="Path to the file", type=Path)
+    parser.add_argument(
+        "--config_file", "-o", default=config_file, help="Contiguration file", type=Path
+    )
+    parser.add_argument(
+        "--output_dir", "-o", default=output_dir, help="Output directory", type=Path
+    )  # "./output"
+    args = parser.parse_args()
 
-    main(bhv_path, spike_path, save_dir, config_file)
+    main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
     # main(args.file)
