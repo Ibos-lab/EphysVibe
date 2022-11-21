@@ -1,5 +1,6 @@
 # Tools for pre-processing OpenEphis data
 from open_ephys.analysis import Session
+
 from spike_sorting import config
 import json
 import numpy as np
@@ -7,6 +8,7 @@ import pandas as pd
 import h5py
 from scipy.signal import butter, lfilter
 import logging
+from spike_sorting import data_structure
 
 
 def load_op_data(directory, n_node, recording_num):
@@ -163,7 +165,6 @@ def find_events_codes(events, bhv):
     start_trials = real_strobes[
         full_word == config.START_CODE
     ]  # timestamps where trials starts
-    end_trials = real_strobes[full_word == config.END_CODE]
 
     # search number of blocks
     trial_keys = list(bhv.keys())[1:-1]
@@ -173,21 +174,24 @@ def find_events_codes(events, bhv):
     for trial_i in range(n_trials):
         blocks.append(bhv[trial_keys[trial_i]]["Block"][0][0])
 
+    # change bhv structure
+    bhv = np.array(data_structure.bhv_to_dictionary(bhv))
+
     bl_start_trials = []
-    bl_end_trials = []
+    bhv_trials = []
 
     for block in np.unique(blocks):
         idx_block = np.where(blocks == block)[0]
 
         bl_start_trials.append(start_trials[idx_block])
-        bl_end_trials.append(end_trials[idx_block])
+        bhv_trials.append(bhv[idx_block])
 
     return (
         full_word,
         real_strobes,
         bl_start_trials,
-        bl_end_trials,
         np.unique(blocks),
+        bhv_trials,
     )
 
 

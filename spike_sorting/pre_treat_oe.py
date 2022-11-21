@@ -33,8 +33,8 @@ def pre_treat_oe(
         full_word,
         real_strobes,
         bl_start_trials,
-        bl_end_trials,
         n_blocks,
+        bhv_trials,
     ) = utils_oe.find_events_codes(events, bhv)
 
     # split data in areas
@@ -62,9 +62,7 @@ def pre_treat_oe(
             LFP_ds, eyes_ds = utils_oe.compute_lfp(c_samples, start_time)
 
             # split in blocks
-            for start_trials, end_trials, i_block in zip(
-                bl_start_trials, bl_end_trials, n_blocks
-            ):
+            for n, (start_trials, i_block) in enumerate(zip(bl_start_trials, n_blocks)):
                 logging.info("Area: %s, Block: %d" % (area, i_block))
 
                 (
@@ -95,6 +93,7 @@ def pre_treat_oe(
                     lfp_sample=lfp_sample,
                     timestamps=timestamps,
                     block=i_block,
+                    bhv_trial=bhv_trials[n],
                 )
                 data_structure.save_data(
                     data,

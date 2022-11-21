@@ -1,6 +1,38 @@
 import numpy as np
 import os
 import logging
+import re
+import h5py
+
+
+def bhv_to_dictionary(bhv):
+    def visitor_func(name, node):
+        if isinstance(node, h5py.Dataset):
+            # split node name
+            split_name = re.split(r"[/]", node.name)
+            if split_name[2] != "MLConfig" and split_name[2] != "TrialRecord":
+                n_trial = int(re.split(r"[Trial]", split_name[2])[-1])
+                node_name = split_name[-1]
+                node_data = np.array(node)
+                if len(split_name) > 4 and split_name[4] == "Attribute":
+                    node_name = split_name[4] + split_name[5] + split_name[6]
+                    if node_name == "Attribute11" or node_name == "Attribute21":
+                        # cases where data is saved in utf-8
+                        node_data = np.array(node).item().decode("utf-8")
+                if len(split_name) > 4 and split_name[4] == "Position":
+                    node_name = split_name[4] + split_name[5]
+
+                bhv_res[n_trial - 1][node_name] = node_data
+
+    trials_keys = list(bhv.keys())[1:-1]
+    # create a list of dicts, where each dict is a trial
+    bhv_res = []
+    for trial in trials_keys:
+        bhv_res.append({"trial": re.split(r"[Trial]", trial)[-1]})
+
+    bhv.visititems(visitor_func)
+
+    return bhv_res
 
 
 def sort_data_trial(
@@ -77,7 +109,7 @@ def sort_data_trial(
 
 
 def save_data(data, save_dir, subject, date_time, area):
-    n_block = data["block"]
+    n_block = data[0]["block"]
     path = (
         str(save_dir)
         + "/"
@@ -106,8 +138,9 @@ def build_data_structure(
     lfp_sample,
     timestamps,
     block,
+    bhv_trial,
 ):
-    data = {
+    sp_data = {
         "times": times,
         "block": int(block),
         "clusters_id": clusters["cluster_id"].values,
@@ -121,7 +154,9 @@ def build_data_structure(
         "lfp_sample": lfp_sample,
         "timestamps": timestamps,
     }
-    return data
+
+    bhv_trial = bhv_trial
+    return [sp_data, bhv_trial]
 
 
 def build_bhv_structure(
