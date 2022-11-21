@@ -51,18 +51,18 @@ if __name__ == "__main__":
     output_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
     config_file = Path("C:/Users/camil/Documents/int/inVibe/spike_sorting/config.json")
     # Parse arguments
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    parser.add_argument("bhv_path", help="Path to the file", type=Path)
-    parser.add_argument("spike_path", help="Path to the file", type=Path)
-    parser.add_argument(
-        "--config_file", "-o", default=config_file, help="Contiguration file", type=Path
-    )
-    parser.add_argument(
-        "--output_dir", "-o", default=output_dir, help="Output directory", type=Path
-    )  # "./output"
-    args = parser.parse_args()
-
-    main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
+    # parser = argparse.ArgumentParser(
+    #     formatter_class=argparse.RawDescriptionHelpFormatter
+    # )
+    # parser.add_argument("bhv_path", help="Path to the file", type=Path)
+    # parser.add_argument("spike_path", help="Path to the file", type=Path)
+    # parser.add_argument(
+    #     "--config_file", "-o", default=config_file, help="Contiguration file", type=Path
+    # )
+    # parser.add_argument(
+    #     "--output_dir", "-o", default=output_dir, help="Output directory", type=Path
+    # )  # "./output"
+    # args = parser.parse_args()
+    main(bhv_path, spike_path, output_dir, config_file)
+    # main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
     # main(args.file)

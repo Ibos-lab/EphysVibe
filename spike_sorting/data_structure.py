@@ -7,7 +7,6 @@ def sort_data_trial(
     clusters,
     spiketimes,
     start_trials,
-    end_trial,
     real_strobes,
     filtered_timestamps,
     spiketimes_clusters_id,
@@ -16,7 +15,8 @@ def sort_data_trial(
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    n_trials = len(start_trials)
+    start_trials = np.append(start_trials, [filtered_timestamps[-1]])
+    n_trials = len(start_trials) - 1
 
     times = []  #  n_trials x n_neurons x n_times
     code_numbers = []
@@ -29,14 +29,15 @@ def sort_data_trial(
 
         # define trial masks
         sp_mask = np.logical_and(
-            spiketimes >= start_trials[trial_i], spiketimes <= end_trial[trial_i]
+            spiketimes >= start_trials[trial_i], spiketimes < start_trials[trial_i + 1]
         )
         events_mask = np.logical_and(
-            real_strobes >= start_trials[trial_i], real_strobes <= end_trial[trial_i]
+            real_strobes >= start_trials[trial_i],
+            real_strobes < start_trials[trial_i + 1],
         )
         lfp_mask = np.logical_and(
             filtered_timestamps >= start_trials[trial_i],
-            filtered_timestamps <= end_trial[trial_i],
+            filtered_timestamps < start_trials[trial_i + 1],
         )
         # select spikes
         sp_trial = spiketimes[sp_mask]

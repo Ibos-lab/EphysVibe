@@ -48,7 +48,7 @@ def load_data(bhv_path, spike_path, config_file):
         bhv,
         continuous,
         events,
-        idx_spiketimes,
+        idx_spiketimes - 1,
         spiketimes_clusters_id,
         cluster_info,
         config_data,
