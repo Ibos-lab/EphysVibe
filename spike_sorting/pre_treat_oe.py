@@ -78,7 +78,6 @@ def pre_treat_oe(
                     clusters=area_cluster_info,
                     spiketimes=spiketimes,
                     start_trials=start_trials,
-                    end_trial=end_trials,
                     real_strobes=real_strobes,
                     filtered_timestamps=filtered_timestamps,
                     spiketimes_clusters_id=spiketimes_clusters_id,
