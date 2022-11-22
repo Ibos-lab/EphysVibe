@@ -42,14 +42,6 @@ def main(bhv_path, spike_path, output_dir, config_file):
 
 
 if __name__ == "__main__":
-    # bhv_path = Path(
-    #     "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/220609_TSCM_grid_Riesling.h5"
-    # )  # I obtain this file using the function convert_format() in matlab
-    # spike_path = Path(
-    #     "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
-    # )
-    output_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
-    config_file = Path("C:/Users/camil/Documents/int/inVibe/spike_sorting/config.json")
 
     # Parse arguments
     parser = argparse.ArgumentParser(
