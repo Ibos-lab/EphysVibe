@@ -1,7 +1,7 @@
 import logging
-from spike_sorting import data_structure
-from spike_sorting import utils_oe
-from spike_sorting import config
+import data_structure
+import utils_oe
+import config
 
 
 def pre_treat_oe(
