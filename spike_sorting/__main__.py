@@ -1,10 +1,11 @@
 import argparse
 from pathlib import Path
-from spike_sorting import pre_treat_oe
-from spike_sorting import utils_oe
 import os
 import logging
 import re
+import pre_treat_oe
+import utils_oe
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,27 +43,15 @@ def main(bhv_path, spike_path, output_dir, config_file):
 
 if __name__ == "__main__":
 
-    bhv_path = Path(
-        "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/220609_TSCM_grid_Riesling.h5"
-    )  # I obtain this file using the function convert_format() in matlab
-    spike_path = Path(
-        "C:/Users/camil/Documents/int/data/openephys/2022-06-09_10-40-34/Record Node 102/experiment1/recording1/continuous/Rhythm_FPGA-100.0/kilosort3"
-    )
-    output_dir = Path("C:/Users/camil/Documents/int/inVibe/results/")
-    config_file = Path("C:/Users/camil/Documents/int/inVibe/spike_sorting/config.json")
     # Parse arguments
-    # parser = argparse.ArgumentParser(
-    #     formatter_class=argparse.RawDescriptionHelpFormatter
-    # )
-    # parser.add_argument("bhv_path", help="Path to the file", type=Path)
-    # parser.add_argument("spike_path", help="Path to the file", type=Path)
-    # parser.add_argument(
-    #     "--config_file", "-o", default=config_file, help="Contiguration file", type=Path
-    # )
-    # parser.add_argument(
-    #     "--output_dir", "-o", default=output_dir, help="Output directory", type=Path
-    # )  # "./output"
-    # args = parser.parse_args()
-    main(bhv_path, spike_path, output_dir, config_file)
-    # main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
-    # main(args.file)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("bhv_path", help="Path to the file", type=Path)
+    parser.add_argument("spike_path", help="Path to the file", type=Path)
+    parser.add_argument("config_file", help="Contiguration file", type=Path)
+    parser.add_argument(
+        "--output_dir", "-o", default="./output", help="Output directory", type=Path
+    )
+    args = parser.parse_args()
+    main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
