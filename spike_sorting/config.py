@@ -13,3 +13,5 @@ T_EVENT = 10  # time before the start of the first event [s]
 
 START_CODE = 9
 END_CODE = 18
+
+KILOSORT_PATH = "/continuous/Rhythm_FPGA-100.0/kilosort"

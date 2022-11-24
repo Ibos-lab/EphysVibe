@@ -1,28 +1,45 @@
 # Tools for pre-processing OpenEphis data
-
-import json
+import os
+import glob
 import h5py
 import logging
 from open_ephys.analysis import Session
 import numpy as np
 import pandas as pd
+import re
 from scipy.signal import butter, lfilter
-import data_structure
-import config
+import data_structure, config
 
 
-def load_op_data(directory, n_node, recording_num):
-    """Load OpenEphis data"""
+def load_oe_data(directory):
+    """Load OpenEphis data
+
+    Args:
+        directory (Path): path to the directory
+
+    Returns:
+        session (Session): session object
+        subject (str): name of the subject
+        date_time (str): date and time of the recording
+        areas (list): name of the recorded areas
+    """
+    logging.info("Loading OE data")
+    # directory = bhv_path.parents[3]
     session = Session(directory)
-    recordnode = session.recordnodes[n_node]
-    # Load continuous data
-    continuous = recordnode.recordings[recording_num].continuous[0]
-    # Load events
-    events = recordnode.recordings[recording_num].events
-    return session, recordnode, continuous, events
+    split_dir = os.path.normpath(directory).split(os.sep)
+    date_time = split_dir[-1]
+    subject = split_dir[-2]
+    # check nodes
+    areas = []
+    for node in session.recordnodes:
+        node_path = node.directory
+        n_area = re.split(r"[ ]", node_path.split(os.sep)[-1])[-1]
+        areas.append(n_area)
+
+    return session, subject, date_time, areas
 
 
-def load_data(bhv_path, spike_path, config_file):
+def load_bhv_data(directory, subject):
     """Load continuous and behavioral data.
 
     Args:
@@ -31,45 +48,39 @@ def load_data(bhv_path, spike_path, config_file):
         config_file (Path): path to the .json file containing the recorded areas
 
     Returns:
-        bhv ():
-        continuous ():
-        events ():
-        idx_spiketimes ():
-        spiketimes_clusters_id ():
-        cluster_info (): pandas df containing info about the clusters
-        config_data ():
+        bhv (group): bhv file
     """
     # Load behavioral data
+    bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".h5")
+    bhv_path = glob.glob(bhv_path, recursive=True)
+    if len(bhv_path) == 0:
+        logging.info("Bhv file not found")
+    bhv_path = bhv_path[0]
     logging.info("Loading bhv data")
     bhv = h5py.File(bhv_path, "r")["ML"]
-    # Load OpenEphis data
-    logging.info("Loading OE data")
-    directory = bhv_path.parents[3]
-    _, _, continuous, events = load_op_data(
-        directory, config.N_NODE, config.RECORDING_NUM
-    )
-    # Load spikes data
-    logging.info("Loading spikes data")
-    idx_spiketimes = np.load(str(spike_path) + "/spike_times.npy", "r").reshape(-1) - 1
-    spiketimes_clusters_id = np.load(
-        str(spike_path) + "/spike_clusters.npy", "r"
-    )  # to which neuron the spike times belongs to
-    cluster_info = pd.read_csv(
-        str(spike_path) + "/cluster_info.tsv", sep="\t"
-    )  # info of each cluster
 
-    f = open(config_file)
-    config_data = json.load(f)
-    f.close()
-    return (
-        bhv,
-        continuous,
-        events,
-        idx_spiketimes,
-        spiketimes_clusters_id,
-        cluster_info,
-        config_data,
-    )
+    return bhv
+
+
+def load_spike_data(spike_path):
+    """Load spikes data
+
+    Args:
+        spike_path (str): path to the kilosort folder
+
+    Returns:
+        idx_spiketimes (np.array): array containing the spike times
+        spiketimes_clusters_id (memmap): array containing to which neuron the spike times belongs to
+        cluster_info (pd.Dataframe): info about the clusters
+    """
+    # search kilosort folder
+    logging.info("Loading spikes data")
+    idx_spiketimes = np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
+    spiketimes_clusters_id = np.load(spike_path + "/spike_clusters.npy", "r")  #
+    cluster_info = pd.read_csv(
+        spike_path + "/cluster_info.tsv", sep="\t"
+    )  # info of each cluster
+    return idx_spiketimes, spiketimes_clusters_id, cluster_info
 
 
 def signal_downsample(x, downsample, idx_start=0, axis=0):

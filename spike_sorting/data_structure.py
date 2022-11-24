@@ -108,10 +108,10 @@ def sort_data_trial(
     )
 
 
-def save_data(data, save_dir, subject, date_time, area):
-    n_block = data[0]["block"]
+def save_data(data, output_dir, subject, date_time, area):
+    n_block = data["sp_data"]["block"]
     path = (
-        str(save_dir)
+        str(output_dir)
         + "/"
         + subject
         + "/"
@@ -154,15 +154,15 @@ def build_data_structure(
         "lfp_sample": lfp_sample,
         "timestamps": timestamps,
     }
+    data = {"sp_data": sp_data, "bhv": bhv_trial}
 
-    bhv_trial = bhv_trial
-    return [sp_data, bhv_trial]
-
-
-def build_bhv_structure(
-    block,
-):
-    data = {
-        "block": int(block),
-    }
     return data
+
+
+# def build_bhv_structure(
+#     block,
+# ):
+#     data = {
+#         "block": int(block),
+#     }
+#     return data

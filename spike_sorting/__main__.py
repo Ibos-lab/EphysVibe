@@ -1,44 +1,58 @@
 import argparse
 from pathlib import Path
-import os
 import logging
-import re
-import pre_treat_oe
-import utils_oe
+import pre_treat_oe, utils_oe, config, data_structure
 
 
 logging.basicConfig(level=logging.INFO)
 
 
-def main(bhv_path, spike_path, output_dir, config_file):
+def main(directory, output_dir):
 
+    # load OE data
+    session, subject, date_time, areas = utils_oe.load_oe_data(directory)
     # load data
-    (
-        bhv,
-        continuous,
-        events,
-        idx_spiketimes,
-        spiketimes_clusters_id,
-        cluster_info,
-        config_data,
-    ) = utils_oe.load_data(bhv_path, spike_path, config_file)
+    bhv = utils_oe.load_bhv_data(directory, subject)
 
-    split_path = os.path.normpath(bhv_path).split(os.sep)
-    subject = re.split(r"[_;.]", split_path[-1])[-2]
-    date_time = split_path[-5]
+    # Iterate by nodes/areas
+    for n, n_node in enumerate(session.recordnodes):
 
-    pre_treat_oe.pre_treat_oe(
-        continuous,
-        events,
-        bhv,
-        idx_spiketimes,
-        config_data,
-        cluster_info,
-        output_dir,
-        spiketimes_clusters_id,
-        subject,
-        date_time,
-    )
+        # load spike data
+        spike_path = (
+            n_node.recordings[config.RECORDING_NUM].directory + config.KILOSORT_PATH
+        )
+        idx_spiketimes, spiketimes_clusters_id, cluster_info = utils_oe.load_spike_data(
+            spike_path
+        )
+        area_cluster_info = cluster_info[cluster_info["group"] != "noise"]
+
+        if area_cluster_info.shape[0] != 0:
+
+            # Load continuous data and events
+            continuous = n_node.recordings[config.RECORDING_NUM].continuous[0]
+            events = n_node.recordings[config.RECORDING_NUM].events
+
+            area = areas[n]
+
+            logging.info("Area: %s" % (area))
+
+            data = pre_treat_oe.pre_treat_oe(
+                continuous,
+                events,
+                bhv,
+                idx_spiketimes,
+                area_cluster_info,
+                spiketimes_clusters_id,
+            )
+            data_structure.save_data(
+                data,
+                output_dir=output_dir,
+                subject=subject,
+                date_time=date_time,
+                area=area,
+            )
+        else:
+            logging.info("No recordings")
 
 
 if __name__ == "__main__":
@@ -47,11 +61,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("bhv_path", help="Path to the file", type=Path)
-    parser.add_argument("spike_path", help="Path to the file", type=Path)
-    parser.add_argument("config_file", help="Contiguration file", type=Path)
+    parser.add_argument("directory", help="Path to the directory", type=Path)
+
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     args = parser.parse_args()
-    main(args.bhv_path, args.spike_path, args.output_dir, args.config_file)
+    main(args.directory, args.output_dir)
