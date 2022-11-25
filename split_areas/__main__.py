@@ -11,6 +11,25 @@ import shutil
 logging.basicConfig(level=logging.INFO)
 
 
+def copy_files(source_folder, destination_folder, l):
+
+    for (root, _, files) in os.walk(source_folder, topdown=True):
+
+        for file_name in files:
+
+            if file_name != "continuous.dat":
+
+                split_root = os.path.normpath(root).split(os.sep)[l:]
+
+                source = root + "/" + file_name
+                destination = destination_folder + "/" + "/".join(split_root)
+                # copy only files
+
+                if not os.path.exists(destination):
+                    os.makedirs(destination)
+                shutil.copy(source, destination + "/" + file_name)
+
+
 def main(continuous_path, output_dir):
 
     split_path = os.path.normpath(continuous_path).split(os.sep)
@@ -23,10 +42,13 @@ def main(continuous_path, output_dir):
 
     areas = ["lip", "v4", "pfc"]
     n_channels = [32, 64, 64]
+    eye_n_ch = 3
     n_total = 0
-    channels_info = {"shape_0": shape_0, "areas": {}}
+    channels_info = {"shape_0": shape_0, "areas": {}, "eyes_ch": eye_n_ch}
+
     for n_area, n_ch in zip(areas, n_channels):
 
+        logging.info("Split: %s" % (n_area))
         save_path = (
             str(output_dir)
             + "/"
@@ -41,11 +63,11 @@ def main(continuous_path, output_dir):
             area_dat = np.concatenate(
                 [
                     continuous.samples[:, n_total : n_total + n_ch],
-                    continuous.samples[:, -3:],
+                    continuous.samples[:, -eye_n_ch:],
                 ],
                 axis=1,
             )
-            shape_1 = n_ch + 3
+            shape_1 = n_ch + eye_n_ch
         else:
             area_dat = continuous.samples[:, n_total : n_total + n_ch]
             shape_1 = n_ch
@@ -65,24 +87,7 @@ def main(continuous_path, output_dir):
             + "Record Node "
             + n_area
         )
-
-        # fetch all files
-        for (root, _, files) in os.walk(source_folder, topdown=True):
-
-            # construct full file path
-            for file_name in files:
-
-                if file_name != "continuous.dat":
-
-                    split_root = os.path.normpath(root).split(os.sep)[l:]
-
-                    source = root + "/" + file_name
-                    destination = destination_folder + "/" + "/".join(split_root)
-                    # copy only files
-
-                    if not os.path.exists(destination):
-                        os.makedirs(destination)
-                    shutil.copy(source, destination + "/" + file_name)
+        copy_files(source_folder, destination_folder, l)
 
         memmap_file = np.memmap(
             save_path + "/" + split_path[-1],
@@ -97,6 +102,7 @@ def main(continuous_path, output_dir):
     )
     with open(json_path, "w") as outfile:
         json.dump(channels_info, outfile)
+    logging.info("Successfully run")
 
 
 if __name__ == "__main__":
