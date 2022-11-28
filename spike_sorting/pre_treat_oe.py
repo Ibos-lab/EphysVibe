@@ -11,6 +11,7 @@ def pre_treat_oe(
     idx_spiketimes,
     area_cluster_info,
     spiketimes_clusters_id,
+    eyes=False,
 ):
 
     # Select the timestamps of continuous data
@@ -33,7 +34,7 @@ def pre_treat_oe(
     ) = utils_oe.find_events_codes(events, bhv)
 
     logging.info("Computing LFPs")
-    LFP_ds, eyes_ds = utils_oe.compute_lfp(continuous.samples, start_time)
+    LFP_ds, eyes_ds = utils_oe.compute_lfp(continuous.samples, start_time, eyes=eyes)
 
     # split in blocks
     for n, (start_trials, i_block) in enumerate(zip(bl_start_trials, n_blocks)):

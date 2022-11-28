@@ -33,6 +33,10 @@ def main(directory, output_dir):
             events = n_node.recordings[config.RECORDING_NUM].events
 
             area = areas[n]
+            if areas == "lip":
+                eyes = True
+            else:
+                eyes = False
 
             logging.info("Area: %s" % (area))
 
@@ -43,6 +47,7 @@ def main(directory, output_dir):
                 idx_spiketimes,
                 area_cluster_info,
                 spiketimes_clusters_id,
+                eyes=eyes,
             )
             data_structure.save_data(
                 data,

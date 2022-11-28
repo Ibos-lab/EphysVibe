@@ -221,20 +221,26 @@ def find_events_codes(events, bhv):
     )
 
 
-def compute_lfp(c_samples, start_time):
+def compute_lfp(c_samples, start_time, eyes=False):
     # Compute LFP
-
+    if eyes == True:
+        eyes_ds = signal_downsample(
+            c_samples[start_time:, -config.N_EYES_CH :].reshape(2, -1),
+            config.DOWNSAMPLE,
+            idx_start=0,
+            axis=1,
+        )
+        samples = c_samples[start_time:, : -config.N_EYES_CH]
+    else:
+        samples = c_samples[
+            start_time:,
+        ]
     LFP_ds = butter_lowpass_filter(
-        c_samples[start_time:, :-2],
+        samples,
         fc=config.FC,
         fs=config.FS,
         order=config.ORDER,
         downsample=config.DOWNSAMPLE,
     )
-    eyes_ds = signal_downsample(
-        c_samples[start_time:, -2:].reshape(2, -1),
-        config.DOWNSAMPLE,
-        idx_start=0,
-        axis=1,
-    )
+
     return LFP_ds, eyes_ds

@@ -3,6 +3,7 @@ N_NODE = 0
 RECORDING_NUM = 0
 N_RECORDINGS = 1
 DEPTH = 10
+N_EYES_CH = 3
 
 FC = 250  # cutoff freq [Hz]
 FS = 30000  # sample freq [Hz]
