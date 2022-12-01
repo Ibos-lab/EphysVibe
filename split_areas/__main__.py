@@ -32,7 +32,7 @@ def main(continuous_path):
     # Define dict to save info about channels
     channels_info = {"shape_0": shape_0, "areas": {}}
 
-    save_path = "/".join(s_path[:-3])
+    save_path = "/".join(s_path[:-1])
     for n_area, n_ch in zip(areas, n_channels):
         logging.info("Split: %s" % (n_area))
         # Select the channels that correspond to the area

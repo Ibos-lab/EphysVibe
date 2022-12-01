@@ -39,6 +39,20 @@ def load_oe_data(directory):
     return session, subject, date_time, areas
 
 
+def load_dat_file(dat_path, shape_0, shape_1):
+    dat_file = np.memmap(dat_path, mode="r", dtype="int16", shape=(shape_0, shape_1)).T
+    return dat_file
+
+
+def load_event_files(event_path):
+    timestamp = np.load(glob.glob("/".join([event_path] + ["timestamps.npy"]))[0])
+    channel = np.load(glob.glob("/".join([event_path] + ["channels.npy"]))[0])
+    state = np.load(glob.glob("/".join([event_path] + ["channel_states.npy"]))[0])
+    state = np.where(state > 0, 1, 0)
+    events = {"timestamp": timestamp, "channel": channel, "state": state}
+    return events
+
+
 def load_bhv_data(directory, subject):
     """Load continuous and behavioral data.
 
@@ -55,11 +69,23 @@ def load_bhv_data(directory, subject):
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
-    bhv_path = bhv_path[0]
     logging.info("Loading bhv data")
-    bhv = h5py.File(bhv_path, "r")["ML"]
+    bhv = h5py.File(bhv_path[0], "r")["ML"]
 
     return bhv
+
+
+def load_eyes(s_path, shape_0, shape_1, start_time=0):
+
+    # load eyes data
+    eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
+    continuous = load_dat_file(eyes_path, shape_0=shape_0, shape_1=shape_1)
+    # downsample signal
+    eyes_ds = signal_downsample(
+        continuous[:, start_time:], config.DOWNSAMPLE, idx_start=0, axis=1
+    )
+
+    return eyes_ds
 
 
 def load_spike_data(spike_path):
@@ -80,32 +106,30 @@ def load_spike_data(spike_path):
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
+    # ignore noisy groups
+    cluster_info = cluster_info[cluster_info["group"] != "noise"]
     return idx_spiketimes, spiketimes_clusters_id, cluster_info
 
 
-def signal_downsample(x, downsample, idx_start=0, axis=0):
-
+def signal_downsample(x, downsample, idx_start=0, axis=1):
     idx_ds = np.arange(idx_start, x.shape[axis], downsample)
-    if axis == 0:
-        return x[idx_ds]
-
-    return x[:, idx_ds]
+    if axis == 1:
+        return x[:, idx_ds]
+    return x[idx_ds]
 
 
 def butter_lowpass_filter(data, fc, fs, order=5, downsample=30):
 
     b, a = butter(N=order, Wn=fc, fs=fs, btype="low", analog=False)
-    y = np.zeros((data.shape[1], int(np.floor(data.shape[0] / downsample)) + 1))
+    y = np.zeros((data.shape[0], int(np.floor(data.shape[1] / downsample)) + 1))
 
-    for i_data in range(data.shape[1]):
-        y_f = lfilter(b, a, data[:, i_data])
+    for i_data in range(data.shape[0]):
+        y_f = lfilter(b, a, data[i_data])
         y[i_data] = signal_downsample(y_f, downsample, idx_start=0, axis=0)
     return y
 
 
-def select_timestamps(
-    c_timestamps, e_timestamps, idx_spiketimes, fs, t_before_event=10, downsample=30
-):
+def select_timestamps(c_timestamps, e_timestamps, fs, t_before_event=10, downsample=30):
     # Select the timestamps of continuous data from t sec before the first event occurs
     # This is done to reduce the data
     start_time = np.where(c_timestamps == e_timestamps[0])[0]
@@ -116,11 +140,11 @@ def select_timestamps(
         start_time - fs * t_before_event if start_time - fs * t_before_event > 0 else 0
     )  # check if start_time - fs*t >0, else we select all data
     # select timestamps from start_time and donwsample
-    filtered_timestamps = signal_downsample(c_timestamps, downsample, start_time)
+    ds_timestamps = signal_downsample(
+        c_timestamps, downsample, idx_start=start_time, axis=0
+    )
 
-    spiketimes = c_timestamps[idx_spiketimes]  # timestamps of all the spikes
-
-    return filtered_timestamps, start_time, spiketimes
+    return ds_timestamps, start_time
 
 
 def reconstruct_8bits_words(real_strobes, e_channel, e_state):
@@ -176,18 +200,19 @@ def find_events_codes(events, bhv):
     logging.info("Reconstructing 8 bit words")
     idx_real_strobes = np.where(
         np.logical_and(
-            np.logical_and(events.channel == 8, events.state == 1), events.timestamp > 0
+            np.logical_and(events["channel"] == 8, events["state"] == 1),
+            events["timestamp"] > 0,
         )
     )[
         0
     ]  # state 1: ON, state 0: OFF
     full_word = reconstruct_8bits_words(
-        idx_real_strobes, e_channel=events.channel, e_state=events.state
+        idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
     check_strobes(bhv, full_word, idx_real_strobes)
 
-    real_strobes = events.timestamp[idx_real_strobes].values
+    real_strobes = events["timestamp"][idx_real_strobes]
     start_trials = real_strobes[
         full_word == config.START_CODE
     ]  # timestamps where trials starts
@@ -203,44 +228,18 @@ def find_events_codes(events, bhv):
     # change bhv structure
     bhv = np.array(data_structure.bhv_to_dictionary(bhv))
 
-    bl_start_trials = []
-    bhv_trials = []
-
-    for block in np.unique(blocks):
-        idx_block = np.where(blocks == block)[0]
-
-        bl_start_trials.append(start_trials[idx_block])
-        bhv_trials.append(bhv[idx_block])
-
-    return (
-        full_word,
-        real_strobes,
-        bl_start_trials,
-        np.unique(blocks),
-        bhv_trials,
-    )
+    return (full_word, real_strobes, start_trials, blocks, bhv)
 
 
-def compute_lfp(c_samples, start_time, eyes=False):
+def compute_lfp(c_samples):
     # Compute LFP
-    if eyes == True:
-        eyes_ds = signal_downsample(
-            c_samples[start_time:, -config.N_EYES_CH :].reshape(2, -1),
-            config.DOWNSAMPLE,
-            idx_start=0,
-            axis=1,
-        )
-        samples = c_samples[start_time:, : -config.N_EYES_CH]
-    else:
-        samples = c_samples[
-            start_time:,
-        ]
+
     LFP_ds = butter_lowpass_filter(
-        samples,
+        c_samples,
         fc=config.FC,
         fs=config.FS,
         order=config.ORDER,
         downsample=config.DOWNSAMPLE,
     )
 
-    return LFP_ds, eyes_ds
+    return LFP_ds

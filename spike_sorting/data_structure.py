@@ -56,7 +56,7 @@ def sort_data_trial(
     lfp_sample = []
     timestamps = []
     eyes_sample = []
-
+    logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
 
         # define trial masks
@@ -108,24 +108,14 @@ def sort_data_trial(
     )
 
 
-def save_data(data, output_dir, subject, date_time, area):
-    n_block = data["sp_data"]["block"]
-    path = (
-        str(output_dir)
-        + "/"
-        + subject
-        + "/"
-        + area
-        + "/"
-        + date_time
-        + "/"
-        + str(n_block)
-    )
-    file_name = "/" + subject + "_" + area + "_" + date_time + "_" + str(n_block)
+def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
+    output_dir = os.path.normpath(output_dir)
+    path = "/".join([output_dir] + ["session_struct"] + [subject] + [area])
+    file_name = date_time + "_" + subject + "_" + area + "_e" + n_exp + "_r" + n_record
     if not os.path.exists(path):
         os.makedirs(path)
-
-    np.save(path + file_name, data)
+    logging.info("Saving data")
+    np.save("/".join([path] + [file_name]), data)
     logging.info("Data successfully saved")
 
 
@@ -137,12 +127,12 @@ def build_data_structure(
     eyes_sample,
     lfp_sample,
     timestamps,
-    block,
+    blocks,
     bhv_trial,
 ):
     sp_data = {
         "times": times,
-        "block": int(block),
+        "block": np.array(blocks, dtype=int),
         "clusters_id": clusters["cluster_id"].values,
         "clustersch": clusters["ch"].values,
         "clustersgroup": clusters["group"].values,
@@ -159,10 +149,49 @@ def build_data_structure(
     return data
 
 
-# def build_bhv_structure(
-#     block,
-# ):
-#     data = {
-#         "block": int(block),
-#     }
-#     return data
+def restructure(
+    start_trials,
+    blocks,
+    cluster_info,
+    spiketimes,
+    real_strobes,
+    filtered_timestamps,
+    spiketimes_clusters_id,
+    full_word,
+    LFP_ds,
+    eyes_ds,
+    dict_bhv,
+):
+
+    (
+        times,
+        code_numbers,
+        code_times,
+        eyes_sample,
+        lfp_sample,
+        timestamps,
+    ) = sort_data_trial(
+        clusters=cluster_info,
+        spiketimes=spiketimes,
+        start_trials=start_trials,
+        real_strobes=real_strobes,
+        filtered_timestamps=filtered_timestamps,
+        spiketimes_clusters_id=spiketimes_clusters_id,
+        full_word=full_word,
+        LFP_ds=LFP_ds,
+        eyes_ds=eyes_ds,
+    )
+
+    data = build_data_structure(
+        clusters=cluster_info,
+        times=times,
+        code_numbers=code_numbers,
+        code_times=code_times,
+        eyes_sample=eyes_sample,
+        lfp_sample=lfp_sample,
+        timestamps=timestamps,
+        blocks=blocks,
+        bhv_trial=dict_bhv,
+    )
+    logging.info(" ")
+    return data
