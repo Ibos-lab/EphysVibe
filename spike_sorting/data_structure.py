@@ -84,11 +84,11 @@ def sort_data_trial(
         # select code times
         code_times.append(real_strobes[events_mask])
         # select lfp
-        lfp_sample.append(LFP_ds[:, lfp_mask].tolist())
+        lfp_sample.append(LFP_ds[:, lfp_mask])
         # select timestamps
         timestamps.append(filtered_timestamps[lfp_mask])
         # select eyes
-        eyes_sample.append(eyes_ds[:, lfp_mask].tolist())
+        eyes_sample.append(eyes_ds[:, lfp_mask])
 
         spiketimes_trial = []  # n_neurons x n_times
         for i_cluster in clusters_id:  # iterate over clusters
@@ -102,8 +102,8 @@ def sort_data_trial(
         np.array(times, dtype=object),
         np.array(code_numbers, dtype=object),
         np.array(code_times, dtype=object),
-        np.array(eyes_sample, dtype=object),
-        np.array(lfp_sample, dtype=object),
+        eyes_sample,
+        lfp_sample,
         np.array(timestamps, dtype=object),
     )
 

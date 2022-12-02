@@ -4,17 +4,19 @@ import logging
 import os
 import json
 import numpy as np
-import utils_oe, config, data_structure, pre_treat_oe
-
+from spike_sorting import utils_oe, config, data_structure, pre_treat_oe
+import glob
 logging.basicConfig(level=logging.INFO)
 
 
 def define_paths(continuous_path):
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
+    #s_path[-5] = s_path[-5].split(' ')[0] + '\ ' + s_path[-5].split(' ')[1] + '\ ' + s_path[-5].split(' ')[2]
+
     directory = "/".join(s_path[:-3])
-    time_path = "/".join(s_path[:-1] + ["timestamps.npy"])
-    event_path = "/".join(s_path[:-3] + ["events"] + ["Rhythm_FPGA-100.0"] + ["TTL_1"])
+    time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
+    event_path = "/".join(s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"])
     areas_path = "/".join(s_path[:-1] + ["channels_info.json"])
 
     return (
@@ -71,9 +73,12 @@ def main(continuous_path, output_dir):
     for area in areas:
         # define dat and spikes paths
         dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        spike_path = "/".join(
-            s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
-        )
+        # spike_path = "/".join(
+        #     s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
+        # )
+        spike_path=glob.glob("/".join(
+            s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]))[0]
+    
         # load continuous data
         logging.info("Loading %s", area)
         continuous = utils_oe.load_dat_file(
