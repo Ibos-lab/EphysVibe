@@ -1,5 +1,5 @@
 import logging
-import utils_oe, config
+from spike_sorting import utils_oe, config
 
 
 def pre_treat_oe(events, bhv, c_timestamps, areas_data, s_path, shape_0):

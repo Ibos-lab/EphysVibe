@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import re
 from scipy.signal import butter, lfilter
-import data_structure, config
+from spike_sorting import data_structure, config
 
 
 def load_oe_data(directory):
@@ -45,10 +45,11 @@ def load_dat_file(dat_path, shape_0, shape_1):
 
 
 def load_event_files(event_path):
-    timestamp = np.load(glob.glob("/".join([event_path] + ["timestamps.npy"]))[0])
-    channel = np.load(glob.glob("/".join([event_path] + ["channels.npy"]))[0])
-    state = np.load(glob.glob("/".join([event_path] + ["channel_states.npy"]))[0])
-    state = np.where(state > 0, 1, 0)
+    timestamp = np.load(glob.glob("/".join([event_path] + ["sample_numbers.npy"]))[0])
+    #channel = np.load(glob.glob("/".join([event_path] + ["channels.npy"]))[0])
+    channel = np.load(glob.glob("/".join([event_path] + ["states.npy"]))[0])
+    state = np.where(channel > 0, 1, 0)
+    channel = abs(channel)
     events = {"timestamp": timestamp, "channel": channel, "state": state}
     return events
 
@@ -67,6 +68,7 @@ def load_bhv_data(directory, subject):
     # Load behavioral data
     bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".h5")
     bhv_path = glob.glob(bhv_path, recursive=True)
+    logging.info(directory)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
     logging.info("Loading bhv data")

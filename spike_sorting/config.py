@@ -11,4 +11,4 @@ T_EVENT = 10  # time before the start of the first event [s]
 
 START_CODE = 9
 END_CODE = 18
-KILOSORT_FOLDER_NAME = "Kilosort"
+KILOSORT_FOLDER_NAME = "kilosor*"
