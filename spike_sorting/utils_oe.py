@@ -45,12 +45,12 @@ def load_dat_file(dat_path, shape_0, shape_1):
 
 
 def load_event_files(event_path):
-    timestamp = np.load(glob.glob("/".join([event_path] + ["sample_numbers.npy"]))[0])
-    #channel = np.load(glob.glob("/".join([event_path] + ["channels.npy"]))[0])
+    samples = np.load(glob.glob("/".join([event_path] + ["sample_numbers.npy"]))[0])
+    # channel = np.load(glob.glob("/".join([event_path] + ["channels.npy"]))[0])
     channel = np.load(glob.glob("/".join([event_path] + ["states.npy"]))[0])
     state = np.where(channel > 0, 1, 0)
     channel = abs(channel)
-    events = {"timestamp": timestamp, "channel": channel, "state": state}
+    events = {"samples": samples, "channel": channel, "state": state}
     return events
 
 
@@ -103,14 +103,14 @@ def load_spike_data(spike_path):
     """
     # search kilosort folder
     logging.info("Loading spikes data")
-    idx_spiketimes = np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
-    spiketimes_clusters_id = np.load(spike_path + "/spike_clusters.npy", "r")  #
+    idx_sp_ksamples = np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
+    sp_ksamples_clusters_id = np.load(spike_path + "/spike_clusters.npy", "r")  #
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
     # ignore noisy groups
     cluster_info = cluster_info[cluster_info["group"] != "noise"]
-    return idx_spiketimes, spiketimes_clusters_id, cluster_info
+    return idx_sp_ksamples, sp_ksamples_clusters_id, cluster_info
 
 
 def signal_downsample(x, downsample, idx_start=0, axis=1):
@@ -131,22 +131,20 @@ def butter_lowpass_filter(data, fc, fs, order=5, downsample=30):
     return y
 
 
-def select_timestamps(c_timestamps, e_timestamps, fs, t_before_event=10, downsample=30):
-    # Select the timestamps of continuous data from t sec before the first event occurs
+def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
+    # Select the samples of continuous data from t sec before the first event occurs
     # This is done to reduce the data
-    start_time = np.where(c_timestamps == e_timestamps[0])[0]
+    start_time = np.where(c_samples == e_samples[0])[0]
     start_time = (
         start_time[0] if start_time.shape[0] > 0 else 0
     )  # check if not empty, else we select all data
     start_time = (
         start_time - fs * t_before_event if start_time - fs * t_before_event > 0 else 0
     )  # check if start_time - fs*t >0, else we select all data
-    # select timestamps from start_time and donwsample
-    ds_timestamps = signal_downsample(
-        c_timestamps, downsample, idx_start=start_time, axis=0
-    )
+    # select samples from start_time and donwsample
+    ds_samples = signal_downsample(c_samples, downsample, idx_start=start_time, axis=0)
 
-    return ds_timestamps, start_time
+    return ds_samples, start_time
 
 
 def reconstruct_8bits_words(real_strobes, e_channel, e_state):
@@ -203,7 +201,7 @@ def find_events_codes(events, bhv):
     idx_real_strobes = np.where(
         np.logical_and(
             np.logical_and(events["channel"] == 8, events["state"] == 1),
-            events["timestamp"] > 0,
+            events["samples"] > 0,
         )
     )[
         0
@@ -214,10 +212,10 @@ def find_events_codes(events, bhv):
     # Check if strobe and codes number match
     check_strobes(bhv, full_word, idx_real_strobes)
 
-    real_strobes = events["timestamp"][idx_real_strobes]
+    real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[
         full_word == config.START_CODE
-    ]  # timestamps where trials starts
+    ]  # samples where trials starts
 
     # search number of blocks
     trial_keys = list(bhv.keys())[1:-1]

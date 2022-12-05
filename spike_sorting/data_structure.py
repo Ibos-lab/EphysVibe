@@ -37,43 +37,44 @@ def bhv_to_dictionary(bhv):
 
 def sort_data_trial(
     clusters,
-    spiketimes,
+    spike_sample,
     start_trials,
     real_strobes,
-    filtered_timestamps,
-    spiketimes_clusters_id,
+    ds_samples,
+    sp_ksamples_clusters_id,
     full_word,
-    LFP_ds,
+    lfp_ds,
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    start_trials = np.append(start_trials, [filtered_timestamps[-1]])
+    start_trials = np.append(start_trials, [ds_samples[-1]])
     n_trials = len(start_trials) - 1
 
-    times = []  #  n_trials x n_neurons x n_times
+    sp_samples = []  #  n_trials x n_neurons x n_times
     code_numbers = []
-    code_times = []
-    lfp_sample = []
-    timestamps = []
-    eyes_sample = []
+    code_samples = []
+    lfp_values = []
+    samples = []
+    eyes_values = []
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
 
         # define trial masks
         sp_mask = np.logical_and(
-            spiketimes >= start_trials[trial_i], spiketimes < start_trials[trial_i + 1]
+            spike_sample >= start_trials[trial_i],
+            spike_sample < start_trials[trial_i + 1],
         )
         events_mask = np.logical_and(
             real_strobes >= start_trials[trial_i],
             real_strobes < start_trials[trial_i + 1],
         )
         lfp_mask = np.logical_and(
-            filtered_timestamps >= start_trials[trial_i],
-            filtered_timestamps < start_trials[trial_i + 1],
+            ds_samples >= start_trials[trial_i],
+            ds_samples < start_trials[trial_i + 1],
         )
         # select spikes
-        sp_trial = spiketimes[sp_mask]
-        id_clusters = spiketimes_clusters_id[
+        sp_trial = spike_sample[sp_mask]
+        id_clusters = sp_ksamples_clusters_id[
             sp_mask
         ]  # to which neuron correspond each spike
 
@@ -82,13 +83,13 @@ def sort_data_trial(
             full_word[events_mask]
         )  # all trials have to start & end with the same codes
         # select code times
-        code_times.append(real_strobes[events_mask])
+        code_samples.append(real_strobes[events_mask])
         # select lfp
-        lfp_sample.append(LFP_ds[:, lfp_mask])
+        lfp_values.append(lfp_ds[:, lfp_mask])
         # select timestamps
-        timestamps.append(filtered_timestamps[lfp_mask])
+        samples.append(ds_samples[lfp_mask])
         # select eyes
-        eyes_sample.append(eyes_ds[:, lfp_mask])
+        eyes_values.append(eyes_ds[:, lfp_mask])
 
         spiketimes_trial = []  # n_neurons x n_times
         for i_cluster in clusters_id:  # iterate over clusters
@@ -96,15 +97,15 @@ def sort_data_trial(
             idx_cluster = np.where(id_clusters == i_cluster)[0]
             spiketimes_trial.append(sp_trial[idx_cluster])
 
-        times.append(spiketimes_trial)
+        sp_samples.append(spiketimes_trial)
 
     return (
-        np.array(times, dtype=object),
+        np.array(sp_samples, dtype=object),
         np.array(code_numbers, dtype=object),
-        np.array(code_times, dtype=object),
-        eyes_sample,
-        lfp_sample,
-        np.array(timestamps, dtype=object),
+        np.array(code_samples, dtype=object),
+        eyes_values,
+        lfp_values,
+        np.array(samples, dtype=object),
     )
 
 
@@ -121,23 +122,23 @@ def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
 
 def build_data_structure(
     clusters,
-    sp_timestamps,
+    sp_samples,
     code_numbers,
-    code_timestamps,
-    eyes_samples,
-    lfp_samples,
-    timestamps,
+    code_samples,
+    eyes_values,
+    lfp_values,
+    samples,
     blocks,
     bhv_trial,
 ):
     sp_data = {
-        "sp_timestamps": sp_timestamps,
+        "sp_samples": sp_samples,
         "blocks": np.array(blocks, dtype=int),
         "code_numbers": code_numbers,
-        "code_timestamps": code_timestamps,
-        "eyes_samples": eyes_samples,
-        "lfp_samples": lfp_samples,
-        "timestamps": timestamps,
+        "code_samples": code_samples,
+        "eyes_values": eyes_values,
+        "lfp_values": lfp_values,
+        "samples": samples,
         "clusters_id": clusters["cluster_id"].values,
         "clusters_ch": clusters["ch"].values,
         "clustersgroup": clusters["group"].values,
@@ -152,43 +153,43 @@ def restructure(
     start_trials,
     blocks,
     cluster_info,
-    spiketimes,
+    spike_sample,
     real_strobes,
-    filtered_timestamps,
-    spiketimes_clusters_id,
+    ds_samples,
+    sp_ksamples_clusters_id,
     full_word,
-    LFP_ds,
+    lfp_ds,
     eyes_ds,
     dict_bhv,
 ):
 
     (
-        sp_timestamps,
+        sp_samples,
         code_numbers,
-        code_timestamps,
-        eyes_sample,
-        lfp_sample,
-        timestamps,
+        code_samples,
+        eyes_values,
+        lfp_values,
+        samples,
     ) = sort_data_trial(
         clusters=cluster_info,
-        spiketimes=spiketimes,
+        spiketimes=spike_sample,
         start_trials=start_trials,
         real_strobes=real_strobes,
-        filtered_timestamps=filtered_timestamps,
-        spiketimes_clusters_id=spiketimes_clusters_id,
+        ds_samples=ds_samples,
+        sp_ksamples_clusters_id=sp_ksamples_clusters_id,
         full_word=full_word,
-        LFP_ds=LFP_ds,
+        lfp_ds=lfp_ds,
         eyes_ds=eyes_ds,
     )
 
     data = build_data_structure(
         clusters=cluster_info,
-        sp_timestamps=sp_timestamps,
+        sp_samples=sp_samples,
         code_numbers=code_numbers,
-        code_timestamps=code_timestamps,
-        eyes_sample=eyes_sample,
-        lfp_sample=lfp_sample,
-        timestamps=timestamps,
+        code_samples=code_samples,
+        eyes_values=eyes_values,
+        lfp_values=lfp_values,
+        samples=samples,
         blocks=blocks,
         bhv_trial=dict_bhv,
     )
