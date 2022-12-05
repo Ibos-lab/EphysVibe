@@ -10,10 +10,21 @@ import glob
 logging.basicConfig(level=logging.INFO)
 
 
-def define_paths(continuous_path):
+def define_paths(continuous_path: Path):
+    """Define paths using the input path.
+
+    Args:
+        continuous_path (Path): path to the continuous file (.dat) from OE
+
+    Returns:
+        s_path (List): list containing the splited continuous path
+        directory (str): path to the directory (to the date/time of the session)
+        time_path (str): path to the sample_numbers file
+        event_path (str): path to the events folder
+        areas_path (str): path to the json file containing info about the channels in each area
+    """
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
-    # s_path[-5] = s_path[-5].split(' ')[0] + '\ ' + s_path[-5].split(' ')[1] + '\ ' + s_path[-5].split(' ')[2]
 
     directory = "/".join(s_path[:-3])
     time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
@@ -31,7 +42,13 @@ def define_paths(continuous_path):
     )
 
 
-def main(continuous_path, output_dir):
+def main(continuous_path: Path, output_dir: Path):
+    """Compute spike sorting.
+
+    Args:
+        continuous_path (Path):  path to the continuous file (.dat) from OE
+        output_dir (Path): output directory
+    """
     # define paths
     (
         s_path,
@@ -80,9 +97,6 @@ def main(continuous_path, output_dir):
     for area in areas:
         # define dat and spikes paths
         dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        # spike_path = "/".join(
-        #     s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
-        # )
         spike_path = glob.glob(
             "/".join(
                 s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
@@ -131,7 +145,7 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "continuous_path", help="Path to the continuous file", type=Path
+        "continuous_path", help="Path to the continuous file (.dat)", type=Path
     )
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
