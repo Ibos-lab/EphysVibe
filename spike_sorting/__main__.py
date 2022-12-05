@@ -3,6 +3,7 @@ from pathlib import Path
 import logging
 import os
 import json
+from typing import List, Tuple
 import numpy as np
 from spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
@@ -10,18 +11,19 @@ import glob
 logging.basicConfig(level=logging.INFO)
 
 
-def define_paths(continuous_path: Path):
+def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     """Define paths using the input path.
 
     Args:
         continuous_path (Path): path to the continuous file (.dat) from OE
 
     Returns:
-        s_path (List): list containing the splited continuous path
-        directory (str): path to the directory (to the date/time of the session)
-        time_path (str): path to the sample_numbers file
-        event_path (str): path to the events folder
-        areas_path (str): path to the json file containing info about the channels in each area
+        Tuple[List, str, str, str, str]:
+            - s_path (List): list containing the splited continuous path
+            - directory (str): path to the directory (to the date/time of the session)
+            - time_path (str): path to the sample_numbers file
+            - event_path (str): path to the events folder
+            - areas_path (str): path to the json file containing info about the channels in each area
     """
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
@@ -42,7 +44,7 @@ def define_paths(continuous_path: Path):
     )
 
 
-def main(continuous_path: Path, output_dir: Path):
+def main(continuous_path: Path, output_dir: Path) -> None:
     """Compute spike sorting.
 
     Args:
