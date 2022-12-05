@@ -121,28 +121,27 @@ def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
 
 def build_data_structure(
     clusters,
-    times,
+    sp_timestamps,
     code_numbers,
-    code_times,
-    eyes_sample,
-    lfp_sample,
+    code_timestamps,
+    eyes_samples,
+    lfp_samples,
     timestamps,
     blocks,
     bhv_trial,
 ):
     sp_data = {
-        "times": times,
-        "block": np.array(blocks, dtype=int),
+        "sp_timestamps": sp_timestamps,
+        "blocks": np.array(blocks, dtype=int),
+        "code_numbers": code_numbers,
+        "code_timestamps": code_timestamps,
+        "eyes_samples": eyes_samples,
+        "lfp_samples": lfp_samples,
+        "timestamps": timestamps,
         "clusters_id": clusters["cluster_id"].values,
-        "clustersch": clusters["ch"].values,
+        "clusters_ch": clusters["ch"].values,
         "clustersgroup": clusters["group"].values,
         "clusterdepth": clusters["depth"].values,
-        "clusterdepth": clusters["depth"].values,
-        "code_numbers": code_numbers,
-        "code_times": code_times,
-        "eyes_sample": eyes_sample,
-        "lfp_sample": lfp_sample,
-        "timestamps": timestamps,
     }
     data = {"sp_data": sp_data, "bhv": bhv_trial}
 
@@ -164,9 +163,9 @@ def restructure(
 ):
 
     (
-        times,
+        sp_timestamps,
         code_numbers,
-        code_times,
+        code_timestamps,
         eyes_sample,
         lfp_sample,
         timestamps,
@@ -184,9 +183,9 @@ def restructure(
 
     data = build_data_structure(
         clusters=cluster_info,
-        times=times,
+        sp_timestamps=sp_timestamps,
         code_numbers=code_numbers,
-        code_times=code_times,
+        code_timestamps=code_timestamps,
         eyes_sample=eyes_sample,
         lfp_sample=lfp_sample,
         timestamps=timestamps,
