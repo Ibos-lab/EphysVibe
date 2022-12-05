@@ -172,7 +172,7 @@ def restructure(
         samples,
     ) = sort_data_trial(
         clusters=cluster_info,
-        spiketimes=spike_sample,
+        spike_sample=spike_sample,
         start_trials=start_trials,
         real_strobes=real_strobes,
         ds_samples=ds_samples,
