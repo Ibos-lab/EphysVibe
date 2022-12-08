@@ -1,0 +1,56 @@
+HOW TO PRE-PROCESS DATA WITH KILOSORT AND PHY:
+
+I've installed kilosort3 in home/spikesorting/Documents/MATLAB/Kilosort_main.
+I've installed npy matlab in home/spikesorting/Documents/MATLAB/npy-matlab-master.
+
+If you install some other matlab codes, make sure to install them in a dedicated directory (don't mess with KS or the rest  please).
+
+This computer is not on INT's network and don't have a direct access to Niolon. In order to download a directory from Niolon, do it in ssh. In a terminal:
+scp -r YOUR.ID@niolon.int.univ-amu.fr:/envau/work/PATHTOYOURDATA /YOUR-directory-ON-THIS-COMPUTER
+
+WARNING: This is not a computer dedicated to storing data. Out of respect to Lionel Velly, let us not store data on it. Once You are done sorting and preprocessing your data, please remove them!
+
+
+
+1. copy data in a folder with fast ssd access. Mine are in home/spikesorting/Documents/data/IBOS
+2. USE KILOSORT TO SORT DATA:
+	2.1. Create a spatial model of your electrodes with createChannelMapFile.m.Place it in a dedicated directory
+	2.2. Copy main_kilosort3.m and StandardConfing_MOVEME.m in a dedicated directory (can be the one of the channelap). 
+	2.3. In main_kilosort3 you need to point to the path (i) rootZ: the data (binary data file)), (ii) rootH: for a temporary file which will be used by kilosort (make sure it is a fast SSD) (iii) pathToYourConfigFile (the copied filed mentionned in 2.1) (iv) the name of the channel map.
+
+	2.4. Adjust the different variables as desired, e.g.:
+		2.4.1. ops.fshigh for changing your high pass filter
+		2.4.2. ops.Th changes the threshold of deticting spikes. 1st value for  preprocessing, second value for later sorting. e.g. [15 5]
+	2.5. Do the same thing in StandardConfig_MOVEME.m
+		2.5.1. ops.chanMap path to your channelmap
+		2.5.2. ops.fs your sampling rate (OE 30 kHz)
+		2.5.3. ...
+	For a description of each parameter:https://github.com/MouseLand/Kilosort
+
+
+	2.6. run main_kilosort3.m (it will create a kilosort3 directory in the specified location, Make sure the output directory does not exist yet. adjust)
+	
+
+3. USE PHY to manually curate data. https://github.com/cortex-lab/phy I've installed Phy on a conda environment called Phy_env. Please don't change this environment. If you want to install some other programs like spikeinterface,create a different conda environment.
+	3.1. Open a terminal
+	3.2. conda activate Phy_env
+	3.3. cd to the path of the kilosort data : hoem/spikesorting/.../kilosort3/
+	3.4. phy extract-waveforms params.py (will extract waveforms and allow you to see PCs in Phy)
+	3.5. open your data in Phy: phy template-gui params.py
+	3.6 do your thing
+	3.7 save and quit
+
+4. Prepocess data to extract/align spikes, LFPs and task events. I've created a routine to preprocess open ephys data in matlab. Feel free to do one in Python if you want. For Open Ephys data visit:  https://github.com/open-ephys/analysis-tools; https://github.com/open-ephys/open-ephys-matlab-tools; 
+	4.1 It load continuous data, fitler them to remove spikes, downsample them to 1kHz
+	4.2 Gets spike timestamps, ids, and depth
+	4.3 Gets Monkeylogic behavior files
+	4.4 Recombine all that in a single cell structure
+	4.5 save it in a dedicated directory
+
+5. Transfer back your data to Niolon:
+	5.1  kilosort data: scp -r /path/to/data/folder INT.identifier@niolon.int.univ-amu.fr:/envau/work/Path/to/data
+	5.2 the created cell structure: scp /path/to/saved/cell/structure INT.identifier@niolon.int.univ-amu.fr:/envau/work/Path/to/cell/struct/data
+
+6. Remove data from this computer. Start over with new data.
+
+	

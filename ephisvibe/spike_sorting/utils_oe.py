@@ -169,7 +169,9 @@ def signal_downsample(
     return x[idx_ds]
 
 
-def butter_lowpass_filter(data, fc, fs, order=5, downsample=30):
+def butter_lowpass_filter(
+    data: np.array, fc: int, fs: int, order: int = 5, downsample: int = 30
+) -> np.array:
 
     b, a = butter(N=order, Wn=fc, fs=fs, btype="low", analog=False)
     y = np.zeros((data.shape[0], int(np.floor(data.shape[1] / downsample)) + 1))
@@ -280,15 +282,20 @@ def find_events_codes(events, bhv):
     return (full_word, real_strobes, start_trials, blocks, bhv)
 
 
-def compute_lfp(c_samples):
-    # Compute LFP
+def compute_lfp(c_values: np.array) -> np.array:
+    """Compute lfp and downsample.
 
+    Args:
+        c_values (np.array): signal from which compute lfps
+
+    Returns:
+        np.array: lfps
+    """
     LFP_ds = butter_lowpass_filter(
-        c_samples,
+        c_values,
         fc=config.FC,
         fs=config.FS,
         order=config.ORDER,
         downsample=config.DOWNSAMPLE,
     )
-
     return LFP_ds

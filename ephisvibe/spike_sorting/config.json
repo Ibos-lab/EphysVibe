@@ -1,0 +1,21 @@
+{
+    "nodes": {
+        "102": {
+            "area": "LIP",
+            "channels": 32,
+            "firstCh": 1
+        },
+        "V4": {
+            "area": "V4",
+            "channels": 64,
+            "firstCh": 64
+        },
+        "PFC": {
+            "area": "PFC",
+            "channels": 64,
+            "firstCh": 128
+        }
+    },
+    "subject": "Riesling",
+    "task": "DMST"
+}
