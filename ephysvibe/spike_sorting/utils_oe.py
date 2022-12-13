@@ -10,7 +10,7 @@ from open_ephys.analysis import Session
 import numpy as np
 import pandas as pd
 import re
-from scipy.signal import butter, lfilter
+from scipy.signal import butter, sosfilt
 from spike_sorting import data_structure, config
 
 
@@ -169,19 +169,6 @@ def signal_downsample(
     return x[idx_ds]
 
 
-def butter_lowpass_filter(
-    data: np.array, fc: int, fs: int, order: int = 5, downsample: int = 30
-) -> np.array:
-
-    b, a = butter(N=order, Wn=fc, fs=fs, btype="low", analog=False)
-    y = np.zeros((data.shape[0], int(np.floor(data.shape[1] / downsample)) + 1))
-
-    for i_data in range(data.shape[0]):
-        y_f = lfilter(b, a, data[i_data])
-        y[i_data] = signal_downsample(y_f, downsample, idx_start=0, axis=0)
-    return y
-
-
 def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
     # Select the samples of continuous data from t sec before the first event occurs
     # This is done to reduce the data
@@ -291,11 +278,16 @@ def compute_lfp(c_values: np.array) -> np.array:
     Returns:
         np.array: lfps
     """
-    LFP_ds = butter_lowpass_filter(
-        c_values,
-        fc=config.FC,
-        fs=config.FS,
-        order=config.ORDER,
-        downsample=config.DOWNSAMPLE,
+    # define lowpass and high pass butterworth filter
+    hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
+    lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
+    lfp_ds = np.zeros(
+        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE)) + 1)
     )
-    return LFP_ds
+    for i_data in range(c_values.shape[0]):
+        data_f = sosfilt(hp_sos, c_values[i_data])
+        data_f = sosfilt(lp_sos, data_f)
+        lfp_ds[i_data] = signal_downsample(
+            data_f, config.DOWNSAMPLE, idx_start=0, axis=0
+        )
+    return lfp_ds
