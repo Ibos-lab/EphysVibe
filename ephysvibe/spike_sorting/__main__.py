@@ -5,7 +5,7 @@ import os
 import json
 from typing import List, Tuple
 import numpy as np
-from spike_sorting import utils_oe, config, data_structure, pre_treat_oe
+import utils_oe, config, data_structure, pre_treat_oe
 import glob
 
 logging.basicConfig(level=logging.INFO)

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import re
 from scipy.signal import butter, sosfilt
-from spike_sorting import data_structure, config
+import data_structure, config
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -56,7 +56,7 @@ def load_dat_file(dat_path: Path, shape_0: int, shape_1: int) -> np.memmap:
     return dat_file
 
 
-def load_event_files(event_path: Path) -> Dict[np.array, np.array, np.array]:
+def load_event_files(event_path: Path) -> Dict:
     """Load files in the event folder from OE.
 
     Args:
