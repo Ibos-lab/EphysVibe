@@ -1,8 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import signal
-
-from spikes import firing_rate
+from ..trials.spikes import firing_rate
 
 py_filepath = "C:/Users/camil/Documents/int/data/openephys/test_results/LIP/2022-11-22_10-59-03_Riesling_lip_e1_r1.npy"
 

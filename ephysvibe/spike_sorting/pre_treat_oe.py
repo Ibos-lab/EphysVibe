@@ -1,5 +1,5 @@
 import logging
-import utils_oe, config
+from . import utils_oe, config
 
 
 def pre_treat_oe(events, bhv, c_samples, areas_data, s_path, shape_0):

@@ -1,7 +1,9 @@
+# fmt: off
 import os
 import os.path as op
 
 from setuptools import setup
+
 
 DISTNAME = "ephysvibe"
 DESCRIPTION = "."
@@ -15,13 +17,13 @@ VERSION = ""
 
 def parse_requirements_file(fname):
     requirements = list()
-    with open(fname, "r") as fid:
+    with open(fname, 'r') as fid:
         for line in fid:
             req = line.strip()
-            if req.startswith("#"):
+            if req.startswith('#'):
                 continue
             # strip end-of-line comments
-            req = req.split("#", maxsplit=1)[0].strip()
+            req = req.split('#', maxsplit=1)[0].strip()
             requirements.append(req)
     return requirements
 
@@ -30,21 +32,20 @@ def package_tree(pkgroot):
     """Get the submodule list."""
     path = op.dirname(__file__)
     subdirs = [
-        op.relpath(i[0], path).replace(op.sep, ".")
+        op.relpath(i[0], path).replace(op.sep, '.')
         for i in os.walk(op.join(path, pkgroot))
-        if "__init__.py" in i[2]
+        if '__init__.py' in i[2]
     ]
     return sorted(subdirs)
-
 
 def get_version(distname):
     version = None
     # get the version
-    # (don't import mecons here, so dependencies are not needed)
-    with open(op.join(distname, "_version.py"), "r") as fid:
+    # (don't import ephysvibe here, so dependencies are not needed)
+    with open(op.join(distname, '_version.py'), 'r') as fid:
         for line in (line.strip() for line in fid):
             if line.startswith("__version__"):
-                version = line.split("=")[1].strip().strip("'")
+                version = line.split('=')[1].strip().strip('\'')
                 break
     if version is None:
         raise RuntimeError("Could not determine the version.")
@@ -54,18 +55,19 @@ def get_version(distname):
 
 if __name__ == "__main__":
 
-    if op.exists("MANIFEST"):
-        os.remove("MANIFEST")
+    if op.exists('MANIFEST'):
+        os.remove('MANIFEST')
 
     try:
         VERSION = get_version(DISTNAME)
     except Exception as ex:
         raise ex
 
-    with open("README.md", "r") as fid:
+    with open('README.md', 'r') as fid:
         long_description = fid.read()
 
-    install_requires = parse_requirements_file("requirements.txt")
+    install_requires = parse_requirements_file('requirements.txt')
+   
     setup(
         name=DISTNAME,
         maintainer=MAINTAINER,

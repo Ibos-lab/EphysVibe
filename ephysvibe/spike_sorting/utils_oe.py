@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import re
 from scipy.signal import butter, sosfilt
-import data_structure, config
+from . import data_structure, config
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:

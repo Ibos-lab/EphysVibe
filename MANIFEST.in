@@ -1,0 +1,4 @@
+# fmt: off
+include LICENSE.txt
+include requirements.txt
+include ephysvibe/__init__.py
