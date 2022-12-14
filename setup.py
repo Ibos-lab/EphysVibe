@@ -95,7 +95,7 @@ if __name__ == "__main__":
             "Operating System :: MacOS",
             "Programming Language :: Python :: 3",
         ],
-        keywords="neuroscience",
+        keywords="electrophysiology neuroscience",
         project_urls={
             "Source": "https://github.com/camilosada/EphysVibe",
             "Tracker": "https://github.com/camilosada/EphysVibe/issues/",
