@@ -2,4 +2,4 @@
 # Authors: Camila Losada
 # License: BSD-3-Clause
 # fmt: off
-__version__ = '0.0.1'
+__version__ = '0.0.2'
