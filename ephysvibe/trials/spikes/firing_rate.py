@@ -2,15 +2,24 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def get_neuron_in_trials(code, trials_idx, sp_py, neuron, target_on):
-    # create list of neurons containing trials belonging to one target location
-    target_trials = trials_idx[code]["trials_idx"]  # select trials idx
-    code_trials = sp_py["sp_samples"][target_trials]  # select trials
+def select_events_timestamps(sp_py, trials_idx, events):
+    events_timestamps = []
+    for i_t in trials_idx:
+        e_timestamps = []
+        for _, event in events.items():
+            idx_event = np.where(sp_py["code_numbers"][i_t] == event)[0]
+            sample_event = sp_py["code_samples"][i_t][idx_event]
+            e_timestamps.append(sample_event)
+        events_timestamps.append(np.concatenate(e_timestamps))
+
+    return np.array(events_timestamps, dtype="object")
+
+
+def align_neuron_spikes(trials_idx, sp_py, neuron, event_timestamps):
+    # create list of neurons containing the spikes timestamps aligned with the event
     neuron_trials = []
-    for i_t, n_trial in zip(target_trials, code_trials):
-        idx_target_on = np.where(sp_py["code_numbers"][i_t] == target_on)[0]
-        sample_target_on = sp_py["code_samples"][i_t][idx_target_on]
-        neuron_trials.append(n_trial[neuron] - sample_target_on)
+    for i, i_t in enumerate(trials_idx):
+        neuron_trials.append(sp_py["sp_samples"][i_t][neuron] - event_timestamps[i])
     return np.array(neuron_trials, dtype="object")
 
 
