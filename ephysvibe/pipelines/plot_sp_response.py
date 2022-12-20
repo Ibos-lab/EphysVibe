@@ -72,6 +72,8 @@ def main(file_path, output_dir):
         "target_off": 38,
         "fix_spot_off": 36,
         "correct_response": 40,
+        "start_trial": 9,
+        "end_trial": 18,
     }
     # kernel parameters
     fs = 30000
@@ -121,7 +123,7 @@ def main(file_path, output_dir):
             )
             conv_visual = np.mean(conv[mean_idx_events[0] : mean_idx_events[1]])
             conv_delay = np.mean(conv[mean_idx_events[1] : mean_idx_events[2]])
-            conv_saccade = np.mean(conv[mean_idx_events[2] : mean_idx_events[-1]])
+            conv_saccade = np.mean(conv[mean_idx_events[2] : mean_idx_events[-3]])
             # add values to dict
             mean_fr["code"] += [code]
             mean_fr["conv_visual"] += [conv_visual]
@@ -140,6 +142,7 @@ def main(file_path, output_dir):
                 i,
                 x_lim_max,
                 x_lim_min,
+                events=mean_idx_events,
             )
         fig.legend(["Target ON"], fontsize=9)
         plt.savefig(

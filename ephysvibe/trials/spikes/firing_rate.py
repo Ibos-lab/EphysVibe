@@ -46,6 +46,7 @@ def plot_raster_fr(
     i,
     x_lim_max,
     x_lim_min,
+    events,
 ):
     num_trials = len(neuron_trials)
     ax2 = ax.twinx()
@@ -56,7 +57,10 @@ def plot_raster_fr(
     lineoffsets = np.arange(max_conv, num_trials + max_conv)
     ax2.eventplot(neuron_trials / fs, color=".2", lineoffsets=1, linewidths=0.8)
     # events
-    ax.vlines(0, 0, lineoffsets[-1], color="b", linestyles="dashed")
+    ax.vlines(events[-1] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed")
+    ax.vlines(events[-2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed")
+    ax.vlines(events[0], 0, lineoffsets[-1], color="b", linestyles="dashed")
+
     # figure setings
     ax.set(xlabel="Time (s)", ylabel="Average firing rate")
     ax2.set(xlabel="Time (s)", ylabel="trials")
