@@ -36,7 +36,7 @@ def trial_average_fr(neuron_trials):
 
 def plot_raster_fr(
     trial_average_sp,
-    sorted_sp_neuron,
+    sample_first_sp,
     conv,
     fs,
     neuron_trials,
@@ -51,15 +51,33 @@ def plot_raster_fr(
     num_trials = len(neuron_trials)
     ax2 = ax.twinx()
     # fr
-    ax.plot((np.arange(len(trial_average_sp)) + sorted_sp_neuron[0]) / fs, conv)
+    ax.plot((np.arange(len(trial_average_sp)) + sample_first_sp) / fs, conv)
     # raster
     max_conv = int(max(conv[: int(np.round(x_lim_max - x_lim_min, 0)) * fs]) + 2)
     lineoffsets = np.arange(max_conv, num_trials + max_conv)
     ax2.eventplot(neuron_trials / fs, color=".2", lineoffsets=1, linewidths=0.8)
     # events
-    ax.vlines(events[-1] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed")
-    ax.vlines(events[-2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed")
-    ax.vlines(events[0], 0, lineoffsets[-1], color="b", linestyles="dashed")
+    ax.vlines(
+        events[-1] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # start trial
+    ax.vlines(
+        events[-2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # end trial
+    ax.vlines(
+        events[3] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # fix_spot_off
+    ax.vlines(
+        events[4] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # response
+    ax.vlines(
+        events[0] / fs, 0, lineoffsets[-1], color="b", linestyles="dashed"
+    )  # target_on
+    ax.vlines(
+        events[1] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # target_off
+    ax.vlines(
+        events[2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+    )  # fix_spot_off
 
     # figure setings
     ax.set(xlabel="Time (s)", ylabel="Average firing rate")
