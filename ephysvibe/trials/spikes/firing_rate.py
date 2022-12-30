@@ -88,7 +88,7 @@ def compute_mean_fr(conv, event_timestamps, align_event):
                 np.concatenate((np.zeros(diff_before), i_conv, np.zeros(diff_after)))
             )
         events_shift.append(event_timestamps[i] + diff_before)
-    return np.mean(conv_shift, axis=0), max_shift, events_shift
+    return conv_shift, max_shift, events_shift
 
 
 def plot_raster_fr(
