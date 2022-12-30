@@ -37,9 +37,63 @@ def trial_average_fr(neuron_trials):
     return trial_average_sp, sorted_sp_neuron
 
 
+def compute_fr(neuron_trials, kernel, fs, downsample):
+    trials_conv = []
+    for i_trial in range(len(neuron_trials)):
+        if len(neuron_trials[i_trial]) != 0:
+            arr_timestamps = np.zeros(
+                neuron_trials[i_trial][-1] + 1
+            )  # array with n timestamps
+            for sp in neuron_trials[i_trial]:
+                arr_timestamps[sp] += 1
+            # Downsample to 1ms
+            arr_timestamps = np.sum(
+                np.concatenate(
+                    (
+                        arr_timestamps,
+                        np.zeros(downsample - len(arr_timestamps) % downsample),
+                    )
+                ).reshape(-1, downsample),
+                axis=1,
+            )
+
+            conv = np.convolve(arr_timestamps, kernel, mode="same") * fs
+        else:
+            conv = [0]
+        trials_conv.append(conv)
+    return trials_conv
+
+
+def fr_in_window(x, start, end):
+    fr = np.zeros(len(x))
+    for i, i_x in enumerate(x):
+        fr[i] = np.nan_to_num(np.mean(i_x[start[i] : end[i]]), nan=0)
+    return fr
+
+
+def compute_mean_fr(conv, event_timestamps, align_event):
+    max_shift = np.max(event_timestamps[:, align_event])
+    max_duration = np.max(event_timestamps[:, -1])
+    conv_shift = []
+    events_shift = []
+    for i, i_conv in enumerate(conv):
+        diff_before = max_shift - event_timestamps[i, align_event]
+        diff_after = max_duration - (diff_before + len(i_conv))
+        if diff_after < 0:  # (sp between trials)
+            conv_shift.append(
+                np.concatenate((np.zeros(diff_before), i_conv[:diff_after]))
+            )
+        else:
+            conv_shift.append(
+                np.concatenate((np.zeros(diff_before), i_conv, np.zeros(diff_after)))
+            )
+        events_shift.append(event_timestamps[i] + diff_before)
+    return np.mean(conv_shift, axis=0), max_shift, events_shift
+
+
 def plot_raster_fr(
-    sample_first_sp,
-    conv,
+    all_trials_fr,
+    max_shift,
     fs,
     neuron_trials,
     code,
@@ -48,32 +102,29 @@ def plot_raster_fr(
     i,
     x_lim_max,
     x_lim_min,
-    conv_max,
     events,
 ):
-    num_trials = len(neuron_trials)
     ax2 = ax.twinx()
-    conv_max = int(round(conv_max, 0)) + 2
     # fr
-    ax.plot((np.arange(len(conv)) + sample_first_sp) / fs, conv)
+    ax.plot((np.arange(len(all_trials_fr)) - max_shift) / fs, all_trials_fr)
     # raster
-    # max_conv = int(max(conv[: int(np.round(x_lim_max - x_lim_min, 0)) * fs]) + 2)
+    conv_max = int(np.floor(max(all_trials_fr)) + 2)
+    num_trials = len(neuron_trials)
     lineoffsets = np.arange(conv_max, num_trials + conv_max)
     ax2.eventplot(neuron_trials / fs, color=".2", lineoffsets=1, linewidths=0.8)
     # events
     ax.vlines(
-        events[0] / fs, 0, lineoffsets[-1], color="b", linestyles="dashed"
+        events[1] / fs, 0, lineoffsets[-1], color="b", linestyles="dashed"
     )  # target_on
     ax.vlines(
-        events[1] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+        events[2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
     )  # target_off
     ax.vlines(
-        events[2] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+        events[3] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
     )  # fix_spot_off
     ax.vlines(
-        events[3] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
+        events[4] / fs, 0, lineoffsets[-1], color="k", linestyles="dashed"
     )  # response
-
     # figure setings
     ax.set(xlabel="Time (s)", ylabel="Average firing rate")
     ax2.set(xlabel="Time (s)", ylabel="trials")
