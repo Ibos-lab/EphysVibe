@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy import signal
 
 
 def select_events_timestamps(sp_py, trials_idx, events):
@@ -37,6 +38,12 @@ def trial_average_fr(neuron_trials):
     return trial_average_sp, sorted_sp_neuron
 
 
+def define_kernel(w, w_size, fs):
+    kernel = signal.gaussian(M=w_size * fs, std=w * fs)
+    kernel = kernel / sum(kernel)  # area of the kernel must be one
+    return kernel
+
+
 def compute_fr(neuron_trials, kernel, fs, downsample):
     trials_conv = []
     for i_trial in range(len(neuron_trials)):
@@ -71,7 +78,7 @@ def fr_in_window(x, start, end):
     return fr
 
 
-def compute_mean_fr(conv, event_timestamps, align_event):
+def aligne_conv_fr(conv, event_timestamps, align_event):
     max_shift = np.max(event_timestamps[:, align_event])
     max_duration = np.max(event_timestamps[:, -1])
     conv_shift = []
@@ -88,7 +95,71 @@ def compute_mean_fr(conv, event_timestamps, align_event):
                 np.concatenate((np.zeros(diff_before), i_conv, np.zeros(diff_after)))
             )
         events_shift.append(event_timestamps[i] + diff_before)
-    return conv_shift, max_shift, events_shift
+    return np.array(conv_shift), max_shift, events_shift
+
+
+def fr_between_events(neuron_trials, kernel, fs, down_sample):
+    if len(neuron_trials[0]) != 0:
+        # Compute trial average fr
+        trial_average_sp, sorted_sp_neuron = trial_average_fr(neuron_trials)
+        # Downsample to 1ms
+        trial_average_sp = np.sum(
+            np.concatenate(
+                (
+                    trial_average_sp,
+                    np.zeros(down_sample - len(trial_average_sp) % down_sample),
+                )
+            ).reshape(-1, down_sample),
+            axis=1,
+        )
+    else:
+        trial_average_sp = [0]
+        sorted_sp_neuron = [0]
+    conv = np.convolve(trial_average_sp, kernel, mode="same") * fs
+    return conv, trial_average_sp, sorted_sp_neuron
+
+
+def sp_from_timestime_to_binary(neuron_trials, downsample):
+    trials_sp = []
+    for i_trial in range(len(neuron_trials)):
+        if len(neuron_trials[i_trial]) != 0:
+            arr_timestamps = np.zeros(
+                neuron_trials[i_trial][-1] + 1
+            )  # array with n timestamps
+            for sp in neuron_trials[i_trial]:
+                arr_timestamps[sp] += 1
+            # Downsample to 1ms
+            arr_timestamps = np.sum(
+                np.concatenate(
+                    (
+                        arr_timestamps,
+                        np.zeros(downsample - len(arr_timestamps) % downsample),
+                    )
+                ).reshape(-1, downsample),
+                axis=1,
+            )
+        else:
+            arr_timestamps = [0]
+        trials_sp.append(arr_timestamps)
+    return trials_sp
+
+
+def reshape_sp_list(trials_sp, event_timestamps, align_event):
+    max_shift = np.max(event_timestamps[:, align_event])
+    max_duration = np.max(event_timestamps[:, -1])
+    sp_shift = []
+    events_shift = []
+    for i, i_tr in enumerate(trials_sp):
+        diff_before = max_shift - event_timestamps[i, align_event]
+        diff_after = max_duration - (diff_before + len(i_tr))
+        if diff_after < 0:  # (sp between trials)
+            sp_shift.append(np.concatenate((np.zeros(diff_before), i_tr[:diff_after])))
+        else:
+            sp_shift.append(
+                np.concatenate((np.zeros(diff_before), i_tr, np.zeros(diff_after)))
+            )
+        events_shift.append(event_timestamps[i] + diff_before)
+    return np.array(sp_shift), max_shift, events_shift
 
 
 def plot_raster_fr(
