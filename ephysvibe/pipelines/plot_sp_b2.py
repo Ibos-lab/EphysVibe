@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import signal
 import pandas as pd
-from ..trials import firing_rate
+from ..trials.spikes import firing_rate
 from ..spike_sorting import config
 import warnings
 

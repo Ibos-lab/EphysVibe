@@ -102,7 +102,7 @@ def load_bhv_data(directory: Path, subject: str) -> Group:
 
 def load_eyes(
     s_path: List, shape_0: int, shape_1: int, start_time: int = 0
-) -> np.array:
+) -> np.ndarray:
     """Load eyes .dat file.
 
     Args:
@@ -125,7 +125,7 @@ def load_eyes(
     return eyes_ds
 
 
-def load_spike_data(spike_path: str) -> Tuple[np.array, np.memmap, pd.DataFrame]:
+def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFrame]:
     """Load spikes data.
 
     Args:
@@ -151,7 +151,7 @@ def load_spike_data(spike_path: str) -> Tuple[np.array, np.memmap, pd.DataFrame]
 
 def signal_downsample(
     x: np.array, downsample: int, idx_start: int = 0, axis: int = 1
-) -> np.array:
+) -> np.ndarray:
     """Downsample signal.
 
     Args:
@@ -233,7 +233,6 @@ def check_strobes(bhv, full_word, real_strobes):
 
 
 def find_events_codes(events, bhv):
-
     # Reconstruct 8 bit words
     logging.info("Reconstructing 8 bit words")
     idx_real_strobes = np.where(
@@ -269,7 +268,7 @@ def find_events_codes(events, bhv):
     return (full_word, real_strobes, start_trials, blocks, bhv)
 
 
-def compute_lfp(c_values: np.array) -> np.array:
+def compute_lfp(c_values: np.ndarray) -> np.ndarray:
     """Compute lfp and downsample.
 
     Args:
