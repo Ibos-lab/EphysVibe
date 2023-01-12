@@ -8,7 +8,7 @@ import numpy as np
 from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
@@ -51,6 +51,12 @@ def main(continuous_path: Path, output_dir: Path) -> None:
         continuous_path (Path):  path to the continuous file (.dat) from OE
         output_dir (Path): output directory
     """
+    logging.basicConfig(
+        filename="/".join([os.path.normpath(output_dir)] + [s_path + "sp_sorting.log"]),
+        format="%(asctime)s | %(message)s ",
+        datefmt="%d/%m/%Y %I:%M:%S %p",
+        level=logging.INFO,
+    )
     # define paths
     (
         s_path,
@@ -137,7 +143,7 @@ def main(continuous_path: Path, output_dir: Path) -> None:
                 data, output_dir, subject, date_time, area, n_exp, n_record
             )
         else:
-            logging.info("No recordings")
+            logging.warning("No recordings")
 
 
 if __name__ == "__main__":
