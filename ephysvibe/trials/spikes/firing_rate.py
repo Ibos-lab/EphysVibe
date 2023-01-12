@@ -320,8 +320,10 @@ def fr_by_sample_neuron(
         neuron_trials = align_neuron_spikes(
             target_trials_idx, sp, neuron, ev_ts[:, 0]
         )  # align sp with start trial
-        shift_ev_ts = np.floor(
-            ((ev_ts.T - ev_ts.T[0]).T) / downsample
+        shift_ev_ts = np.round(
+            (((ev_ts.T - ev_ts.T[0]).T) / downsample).astype(float)
+        ).astype(
+            int
         )  # aling events with start trial
         trials_sp = sp_from_timestamp_to_binary(neuron_trials, downsample)
         sp_shift, max_shift, events_shift = reshape_sp_list(
