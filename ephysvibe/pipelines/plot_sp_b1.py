@@ -35,7 +35,7 @@ def main(
     x_lim_min = -0.7
     s_path = os.path.normpath(filepath).split(os.sep)[-1][:-4]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path])
-    log_output = output_dir + "/" + s_path + "_plot_sp_b2.log"
+    log_output = output_dir + "/" + s_path + "_plot_sp_b1.log"
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)

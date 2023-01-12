@@ -8,25 +8,31 @@ from collections import defaultdict
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
-from ..trials.spikes import firing_rate
+from ..trials.spikes import firing_rate, sp_constants
 from ..spike_sorting import config
 import warnings
 
 warnings.filterwarnings("ignore")
 
 
-def main(file_path, output_dir, e_align):
-    s_path = os.path.normpath(file_path).split(os.sep)[-1][:-4]
-    log_output = "/".join([os.path.normpath(output_dir)] + [s_path + "_plot_sp_b2.log"])
+def main(filepath, output_dir, e_align):
+    s_path = os.path.normpath(filepath).split(os.sep)[-1][:-4]
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path])
+    log_output = output_dir + "/" + s_path + "_plot_sp_b1.log"
+    # check if output dir exist, create it if not
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     logging.basicConfig(
         handlers=[logging.FileHandler(log_output), logging.StreamHandler(sys.stdout)],
         format="%(asctime)s | %(message)s ",
         datefmt="%d/%m/%Y %I:%M:%S %p",
         level=logging.INFO,
     )
+    # check if filepath exist
+    if not os.path.exists(filepath):
+        raise FileExistsError
     logging.info("-- Start --")
-
-    file = np.load(file_path, allow_pickle=True).item(0)
+    file = np.load(filepath, allow_pickle=True).item(0)
     sp = file["sp_data"]
     bhv = file["bhv"]
 
@@ -79,9 +85,12 @@ def main(file_path, output_dir, e_align):
     }
     # kernel parameters
     fs_ds = config.FS / config.DOWNSAMPLE
-    w = 0.015  # seconds = 15 ms
-    w_size = 0.1  # seconds = 100ms
-    kernel = firing_rate.define_kernel(w, w_size, fs=fs_ds)
+    # w = 0.015  # seconds = 15 ms
+    # w_size = 0.1  # seconds = 100ms
+    # kernel = firing_rate.define_kernel(w, w_size, fs=fs_ds)
+    kernel = firing_rate.define_kernel(
+        sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
+    )
     # plots x lim
     x_lim_max = 2
     x_lim_min = -0.7
@@ -192,4 +201,7 @@ if __name__ == "__main__":
         "--e_align", "-e", default=1, help="Event to aligne the spikes", type=int
     )
     args = parser.parse_args()
-    main(args.file_path, args.output_dir, args.e_align)
+    try:
+        main(args.file_path, args.output_dir, args.e_align)
+    except FileExistsError:
+        logging.error("filepath does not exist")
