@@ -143,7 +143,7 @@ def main(continuous_path: Path, output_dir: Path) -> None:
                 data, output_dir, subject, date_time, area, n_exp, n_record
             )
         else:
-            logging.info("No recordings")
+            logging.warning("No recordings")
 
 
 if __name__ == "__main__":

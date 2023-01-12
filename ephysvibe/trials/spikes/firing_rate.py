@@ -1,36 +1,37 @@
 import os
 import logging
+from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import signal
 import pandas as pd
 from matplotlib import pyplot as plt
 from collections import defaultdict
-from typing import Dict
+from typing import List, Dict, Tuple
 from ...spike_sorting import config
 from ...task import task_constants
 
 
-def select_events_timestamps(sp_py, trials_idx, events):
+def select_events_timestamps(sp, trials_idx, events):
     events_timestamps = []
     for i_t in trials_idx:
         e_timestamps = []
         for _, event in events.items():
-            idx_event = np.where(sp_py["code_numbers"][i_t] == event)[0]
+            idx_event = np.where(sp["code_numbers"][i_t] == event)[0]
             if len(idx_event) == 0:
                 sample_event = [np.nan]
             else:
-                sample_event = sp_py["code_samples"][i_t][idx_event]
+                sample_event = sp["code_samples"][i_t][idx_event]
             e_timestamps.append(sample_event)
         events_timestamps.append(np.concatenate(e_timestamps))
     return np.array(events_timestamps, dtype="object")
 
 
-def align_neuron_spikes(trials_idx, sp_py, neuron, event_timestamps):
+def align_neuron_spikes(trials_idx, sp, neuron, event_timestamps):
     # create list of neurons containing the spikes timestamps aligned with the event
     neuron_trials = []
     for i, i_t in enumerate(trials_idx):
-        neuron_trials.append(sp_py["sp_samples"][i_t][neuron] - event_timestamps[i])
+        neuron_trials.append(sp["sp_samples"][i_t][neuron] - event_timestamps[i])
     return np.array(neuron_trials, dtype="object")
 
 
@@ -51,7 +52,7 @@ def define_kernel(w_size, w_std, fs):
     return kernel
 
 
-def compute_fr(neuron_trials, kernel, fs, downsample):
+def compute_conv_fr(neuron_trials, kernel, fs, downsample):
     trials_conv = []
     for i_trial in range(len(neuron_trials)):
         if len(neuron_trials[i_trial]) != 0:
@@ -70,7 +71,6 @@ def compute_fr(neuron_trials, kernel, fs, downsample):
                 ).reshape(-1, downsample),
                 axis=1,
             )
-
             conv = np.convolve(arr_timestamps, kernel, mode="same") * fs
         else:
             conv = [0]
@@ -105,28 +105,7 @@ def aligne_conv_fr(conv, event_timestamps, align_event):
     return np.array(conv_shift), max_shift, events_shift
 
 
-def fr_between_events(neuron_trials, kernel, fs, down_sample):
-    if len(neuron_trials[0]) != 0:
-        # Compute trial average fr
-        trial_average_sp, sorted_sp_neuron = trial_average_fr(neuron_trials)
-        # Downsample to 1ms
-        trial_average_sp = np.sum(
-            np.concatenate(
-                (
-                    trial_average_sp,
-                    np.zeros(down_sample - len(trial_average_sp) % down_sample),
-                )
-            ).reshape(-1, down_sample),
-            axis=1,
-        )
-    else:
-        trial_average_sp = [0]
-        sorted_sp_neuron = [0]
-    conv = np.convolve(trial_average_sp, kernel, mode="same") * fs
-    return conv, trial_average_sp, sorted_sp_neuron
-
-
-def sp_from_timestime_to_binary(neuron_trials, downsample):
+def sp_from_timestamp_to_binary(neuron_trials, downsample):
     trials_sp = []
     for i_trial in range(len(neuron_trials)):
         if len(neuron_trials[i_trial]) != 0:
@@ -151,7 +130,22 @@ def sp_from_timestime_to_binary(neuron_trials, downsample):
     return trials_sp
 
 
-def reshape_sp_list(trials_sp, event_timestamps, align_event):
+def reshape_sp_list(
+    trials_sp: list, event_timestamps: np.ndarray, align_event: int
+) -> Tuple[np.ndarray, int, np.ndarray]:
+    """Fill with zeros so all arrays have the same shape and align in align_event.
+
+    Args:
+        trials_sp (list): array of len n trials containing 1 if sp or 0 if no sp at each timestamp.
+        event_timestamps (np.ndarray): array containing the events timestamps for each trial.
+        align_event (int): event on which align the spikes.
+
+    Returns:
+        Tuple[np.ndarray, int, np.ndarray]:
+            - sp_shift (np.ndarray): array of shape (n trials, max trial duration) containig if spike 1, else 0.
+            - max_shift (int): max shift applied to the right.
+            - events_shift (np.ndarray): array of shape (n trials, n events) containig the shifted timestamps of events.
+    """
     max_shift = np.max(event_timestamps[:, align_event])
     max_duration = np.max(event_timestamps[:, -1])
     sp_shift = []
@@ -166,7 +160,7 @@ def reshape_sp_list(trials_sp, event_timestamps, align_event):
                 np.concatenate((np.zeros(diff_before), i_tr, np.zeros(diff_after)))
             )
         events_shift.append(event_timestamps[i] + diff_before)
-    return np.array(sp_shift), max_shift, events_shift
+    return np.array(sp_shift), max_shift, np.array(events_shift)
 
 
 def plot_raster_fr(
@@ -247,7 +241,7 @@ def plot_b1(
         np.concatenate(trials_sorted, axis=0),
         color=np.concatenate(color, axis=0),
         lineoffsets=np.arange(conv_max, (num_trials * line_len) + conv_max, line_len),
-        linewidths=0.5,
+        linewidths=0.8,
         linelengths=line_len,
     )
     # events
@@ -277,77 +271,98 @@ def plot_b1(
         verticalalignment="center",
     )
     fig.suptitle("Neuron %d" % (i_neuron + 1), x=0.10)
-    return fig, ax, ax2
+    return fig
 
 
 def fr_by_sample_neuron(
-    sp,
-    neurons,
-    task,
-    in_out,
-    kernel,
-    e_align,
-    plot=True,
-    output_dir=None,
-    filename="",
-    x_lim_max=1.5,
-    x_lim_min=-0.7,
-    fs_ds=1,
-):
-    samples = np.sort(task["sample_id"].unique())
+    sp: Dict,
+    neurons: np.ndarray,
+    task: pd.DataFrame,
+    in_out: int,
+    e_align: int,
+    plot: bool = True,
+    kernel: np.ndarray = None,
+    output_dir: Path = None,
+    filename: str = "",
+    x_lim_max: float = 1.5,
+    x_lim_min: float = -0.7,
+    fs: int = config.FS,
+    downsample: int = config.DOWNSAMPLE,
+) -> pd.DataFrame:
+    """Compute and plot the fr for each neuron, trial and sample.
+
+    Args:
+        sp (Dict): dictionary with the spike sorting data.
+        neurons (np.ndarray): number of the neurons.
+        task (pd.DataFrame): info of the task for each trial.
+        in_out (int): 1 for trials with stimuli in, -1 out.
+        e_align (int): event to which align the spikes.
+        plot (bool, optional): whether to plot. Defaults to True.
+        kernel (np.ndarray, optional): kernel to compute the mean fr. Defaults to None.
+        output_dir (Path, optional): output directory. Defaults to None.
+        filename (str, optional): Name for the output file. Defaults to "".
+        x_lim_max (float, optional): x max limit for the plot. Defaults to 1.5.
+        x_lim_min (float, optional): x min limit for the plot. Defaults to -0.7.
+        fs (int, optional): sampling frequency. Defaults to config.FS.
+        downsample (int, optional): int to downsample the frequecy. Defaults to config.DOWNSAMPLE.
+
+    Returns:
+        pd.DataFrame: contains the fr at each timestamp and the events timestamps.
+    """
     sample_id = task[(task["in_out"] == in_out)]["sample_id"].values
+    samples = np.sort(np.unique(sample_id))
     target_trials_idx = task[(task["in_out"] == in_out)]["idx_trial"].values
-    # neuron_max_shift = np.zeros(len(neurons))
+    fr_samples: Dict[str, list] = defaultdict(list)
     for i_neuron, neuron in enumerate(neurons):
-        # events
         ev_ts = select_events_timestamps(
             sp, target_trials_idx, task_constants.EVENTS_B1
         )  # select events timestamps for all trials
-        shift_ev_ts = np.floor(((ev_ts.T - ev_ts.T[0]).T) / config.DOWNSAMPLE)
-        # sp
         neuron_trials = align_neuron_spikes(
             target_trials_idx, sp, neuron, ev_ts[:, 0]
-        )  # set the 0 at the event start trial
-        trials_sp = sp_from_timestime_to_binary(neuron_trials, config.DOWNSAMPLE)
+        )  # align sp with start trial
+        shift_ev_ts = np.floor(
+            ((ev_ts.T - ev_ts.T[0]).T) / downsample
+        )  # aling events with start trial
+        trials_sp = sp_from_timestamp_to_binary(neuron_trials, downsample)
         sp_shift, max_shift, events_shift = reshape_sp_list(
             trials_sp, event_timestamps=shift_ev_ts, align_event=e_align
-        )
-        conv = compute_fr(
-            neuron_trials, kernel, config.FS / config.DOWNSAMPLE, config.DOWNSAMPLE
-        )
-        all_trials_fr, _, _ = aligne_conv_fr(
-            conv=conv, event_timestamps=shift_ev_ts, align_event=e_align
-        )
-        # neuron_max_shift[i_neuron] = int(max_shift)
-        fr_samples: Dict[str, list] = defaultdict(list)
-        trials_conv_fr = []
-        all_mask = []
+        )  # add zeros so each trial array has the same shape
+        if plot == True:
+            conv = compute_conv_fr(neuron_trials, kernel, (fs / downsample), downsample)
+            all_trials_fr, _, _ = aligne_conv_fr(
+                conv=conv, event_timestamps=shift_ev_ts, align_event=e_align
+            )
+        trials_conv_fr, all_mask = [], []
+        # Iterate by sample and save results in df
         for i_sample in samples:
             mask_sample = sample_id == i_sample
             all_mask.append(mask_sample)
             sp_sample = sp_shift[mask_sample, :]
-            conv_sample = all_trials_fr[mask_sample, :]
-            # ev_sample = shift_ev_ts[mask_sample]
-            # save in dict
             for t in np.arange(sp_sample.shape[1]):
                 fr_samples["t" + str(t)] += sp_sample[:, t].tolist()
             fr_samples["neuron"] += [i_neuron + 1] * len(sp_sample)
             fr_samples["sample"] += [i_sample] * len(sp_sample)
             fr_samples["trial_idx"] += target_trials_idx[mask_sample].tolist()
-            trials_conv_fr.append(np.mean(conv_sample, axis=0))
+            for n_ev, n_event in enumerate(list(task_constants.EVENTS_B1.keys())):
+                fr_samples[n_event] += events_shift[mask_sample][:, n_ev].tolist()
+            if plot == True:
+                trials_conv_fr.append(np.mean(all_trials_fr[mask_sample, :], axis=0))
+        # plot
         if plot == True:
             trials_conv_fr = np.array(trials_conv_fr)
-            trials_time = (np.arange(len(trials_conv_fr[0])) - max_shift) / fs_ds
-            events_shift = (np.mean(events_shift, axis=0) - max_shift) / fs_ds
-
+            trials_time = (np.arange(len(trials_conv_fr[0])) - max_shift) / (
+                fs / downsample
+            )
+            events_shift = (np.mean(events_shift, axis=0) - max_shift) / (
+                fs / downsample
+            )
             num_trials = len(neuron_trials)
-            neuron_trials_shift = align_neuron_spikes(
-                target_trials_idx, sp, neuron, ev_ts[:, 2]
-            ) / (
-                config.DOWNSAMPLE * fs_ds
+            neuron_trials_shift = (
+                align_neuron_spikes(target_trials_idx, sp, neuron, ev_ts[:, 2])
+                / config.FS
             )  # align sp with stim onset
-            fig, _, _ = plot_b1(
-                task["sample_id"].unique(),
+            fig = plot_b1(
+                samples,
                 trials_conv_fr,
                 trials_time,
                 neuron_trials_shift,
@@ -369,4 +384,4 @@ def fr_by_sample_neuron(
                     )
                 )
     fr_samples = pd.DataFrame(fr_samples)
-    return fr_samples, max_shift
+    return fr_samples

@@ -23,12 +23,11 @@ def test_stim(task, bhv_idx):
     for n in range(n_test + 1, 6):
         task["test_stimuli_" + str(n)] += [""]
         task["test_stimuli_" + str(n) + "d"] += [""]
-
     return task, n_test
 
 
 def create_task_frame(trial_idx, bhv, samples_cond):
-    task: Dict[str, list] = defaultdict(list)  # {}
+    task: Dict[str, list] = defaultdict(list)
     for idx in trial_idx:
         task["idx_trial"] += [idx]
         cond = int(bhv[idx]["Condition"][0][0])

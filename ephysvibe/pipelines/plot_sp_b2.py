@@ -7,7 +7,6 @@ from typing import Dict
 from collections import defaultdict
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import signal
 import pandas as pd
 from ..trials.spikes import firing_rate
 from ..spike_sorting import config
@@ -105,7 +104,7 @@ def main(file_path, output_dir, e_align):
             shift_ev_timestamps = np.floor(
                 ((ev_timestamps.T - ev_timestamps.T[0]).T) / config.DOWNSAMPLE
             )
-            conv = firing_rate.compute_fr(
+            conv = firing_rate.compute_conv_fr(
                 neuron_trials, kernel, config.FS / config.DOWNSAMPLE, config.DOWNSAMPLE
             )
             visual_mean_fr = firing_rate.fr_in_window(

@@ -20,6 +20,6 @@ PALETTE_B1 = {
     "o1_c1": "firebrick",
     "o1_c5": "teal",
     "o5_c1": "tomato",
-    "o5_c5": "turquoise",
+    "o5_c5": "lightseagreen",
     "o0_c0": "grey",
 }
