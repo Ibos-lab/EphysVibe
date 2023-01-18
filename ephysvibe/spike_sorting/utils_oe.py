@@ -205,6 +205,7 @@ def reconstruct_8bits_words(real_strobes, e_channel, e_state):
     return full_word
 
 
+
 def check_strobes(bhv, full_word, real_strobes):
     # Check if strobe and codes number match
     bhv_codes = []
@@ -212,24 +213,43 @@ def check_strobes(bhv, full_word, real_strobes):
     for i_trial in trials:
         bhv_codes.append(list(bhv[i_trial]["BehavioralCodes"]["CodeNumbers"])[0])
     bhv_codes = np.concatenate(bhv_codes)
-
+    trial_keys = list(bhv.keys())[1:-1]
     if full_word.shape[0] != real_strobes.shape[0]:
-        logging.info("Warning, Strobe and codes number do not match")
+        logging.warning("Strobe and codes number shapes do not match")
         logging.info("Strobes =", real_strobes.shape[0])
         logging.info("codes number =", full_word.shape[0])
     else:
-        logging.info("Strobe and codes number do match")
+        logging.info("Strobe and codes number shapes do match")
         logging.info("Strobes = %d", real_strobes.shape[0])
         logging.info("codes number = %d", full_word.shape[0])
 
     if full_word.shape[0] != bhv_codes.shape[0]:
-        logging.info("Warning, ML and OE code numbers do not match")
+        logging.warning("ML and OE shapes do not match")
+        logging.info("ML = %d", bhv_codes.shape[0])
+        logging.info("OE = %d", full_word.shape[0])
+        if full_word.shape[0] > bhv_codes.shape[0]:
+            logging.error('OE has %d more codes than ML', (full_word.shape[0] - bhv_codes.shape[0]))
+            raise IndexError
+        elif np.sum(full_word-bhv_codes[:full_word.shape[0]]) != 0:
+            logging.error("Strobe and codes number do not match")
+            raise IndexError
+        else: # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0  
+            bhv_codes = bhv_codes[:full_word.shape[0]]
+            # find the last 18 in bhv_codes (last complete trial)
+            idx = np.where(bhv_codes==18)[0]
+            bhv_codes = bhv_codes[:idx[-1]+1]
+            full_word = full_word[:idx[-1]+1]
+            real_strobes = real_strobes[:idx[-1]+1]
+            trial_keys = list(bhv.keys())[1:len(idx)]
+            logging.info('ML has %d more codes than OE', (bhv_codes.shape[0]-full_word.shape[0]))
     else:
         logging.info("ML and OE code numbers do match")
         if np.sum(bhv_codes - full_word) != 0:
             logging.info("Warning, ML and OE codes are different")
         else:
             logging.info("ML and OE codes are the same")
+
+    return  full_word, real_strobes,trial_keys
 
 
 def find_events_codes(events, bhv):
@@ -247,7 +267,7 @@ def find_events_codes(events, bhv):
         idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
-    check_strobes(bhv, full_word, idx_real_strobes)
+    full_word, idx_real_strobes,trial_keys = check_strobes(bhv, full_word, idx_real_strobes)
 
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[
@@ -255,7 +275,6 @@ def find_events_codes(events, bhv):
     ]  # samples where trials starts
 
     # search number of blocks
-    trial_keys = list(bhv.keys())[1:-1]
     n_trials = len(trial_keys)
     blocks = []
     # iterate over trials
@@ -264,8 +283,8 @@ def find_events_codes(events, bhv):
 
     # change bhv structure
     bhv = np.array(data_structure.bhv_to_dictionary(bhv))
-
-    return (full_word, real_strobes, start_trials, blocks, bhv)
+    bhv = bhv[:n_trials]
+    return (full_word, real_strobes, start_trials, blocks, bhv,trial_keys)
 
 
 def compute_lfp(c_values: np.ndarray) -> np.ndarray:
