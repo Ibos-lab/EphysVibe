@@ -25,8 +25,8 @@ def main(continuous_path):
     # Load continuous data
     continuous = recordnode.recordings[n_record].continuous[0]
     shape_0 = continuous.samples.shape[0]
-    areas = config.AREAS  # ["lip", "v4", "pfc", "eyes"]
-    n_channels = config.N_CHANNELS  # [32, 64, 64, 3]
+    areas = config.AREAS  
+    n_channels = config.N_CHANNELS  
     n_total = 0
     # Define dict to save info about channels
     channels_info = {"shape_0": shape_0, "areas": {}}
