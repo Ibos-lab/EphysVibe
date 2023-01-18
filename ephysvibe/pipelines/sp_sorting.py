@@ -8,6 +8,11 @@ import numpy as np
 from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 
+logging.basicConfig(
+    format="%(asctime)s | %(message)s ",
+    datefmt="%d/%m/%Y %I:%M:%S %p",
+    level=logging.INFO,
+)
 # logging.basicConfig(level=logging.INFO)
 
 
@@ -34,7 +39,15 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
         s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
     areas_path = "/".join(s_path[:-1] + ["channels_info.json"])
-
+    # check if paths exist
+    if not os.path.exists(directory):
+        raise FileExistsError
+    if not os.path.exists(time_path):
+        raise FileExistsError
+    if not os.path.exists(event_path):
+        raise FileExistsError
+    if not os.path.exists(areas_path):
+        raise FileExistsError
     return (
         s_path,
         directory,
@@ -51,12 +64,12 @@ def main(continuous_path: Path, output_dir: Path) -> None:
         continuous_path (Path):  path to the continuous file (.dat) from OE
         output_dir (Path): output directory
     """
-    logging.basicConfig(
-        filename="/".join([os.path.normpath(output_dir)] + [s_path + "sp_sorting.log"]),
-        format="%(asctime)s | %(message)s ",
-        datefmt="%d/%m/%Y %I:%M:%S %p",
-        level=logging.INFO,
-    )
+
+
+    if not os.path.exists(continuous_path):
+        raise FileExistsError
+    logging.info("-- Start --")
+
     # define paths
     (
         s_path,
@@ -65,6 +78,11 @@ def main(continuous_path: Path, output_dir: Path) -> None:
         event_path,
         areas_path,
     ) = define_paths(continuous_path)
+    
+    if len(s_path) < 8:
+        logging.error("continuous_path should contain at least 8 /")
+        raise NameError
+    # todo: check if the paths exist
     # Select info about the recording from the path
     n_exp = s_path[-5][-1]
     n_record = s_path[-4][-1]
@@ -159,4 +177,7 @@ if __name__ == "__main__":
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     args = parser.parse_args()
-    main(args.continuous_path, args.output_dir)
+    try:
+        main(args.continuous_path, args.output_dir)
+    except FileExistsError:
+        logging.error("continuous path does not exist")
