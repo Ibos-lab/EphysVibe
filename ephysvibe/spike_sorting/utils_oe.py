@@ -146,6 +146,8 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
     )  # info of each cluster
     # ignore noisy groups
     cluster_info = cluster_info[cluster_info["group"] != "noise"]
+    if cluster_info.shape[0]==0:
+        logging.warning("There isn't good or mua clusters")
     return idx_sp_ksamples, sp_ksamples_clusters_id, cluster_info
 
 
@@ -236,12 +238,13 @@ def check_strobes(bhv, full_word, real_strobes):
         else: # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0  
             bhv_codes = bhv_codes[:full_word.shape[0]]
             # find the last 18 in bhv_codes (last complete trial)
+            logging.info('ML has %d more codes than OE', (bhv_codes.shape[0]-full_word.shape[0]))
             idx = np.where(bhv_codes==18)[0]
             bhv_codes = bhv_codes[:idx[-1]+1]
             full_word = full_word[:idx[-1]+1]
             real_strobes = real_strobes[:idx[-1]+1]
             trial_keys = list(bhv.keys())[1:len(idx)]
-            logging.info('ML has %d more codes than OE', (bhv_codes.shape[0]-full_word.shape[0]))
+            
     else:
         logging.info("ML and OE code numbers do match")
         if np.sum(bhv_codes - full_word) != 0:
@@ -284,7 +287,7 @@ def find_events_codes(events, bhv):
     # change bhv structure
     bhv = np.array(data_structure.bhv_to_dictionary(bhv))
     bhv = bhv[:n_trials]
-    return (full_word, real_strobes, start_trials, blocks, bhv,trial_keys)
+    return (full_word, real_strobes, start_trials, blocks, bhv)
 
 
 def compute_lfp(c_values: np.ndarray) -> np.ndarray:

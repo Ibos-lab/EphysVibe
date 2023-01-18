@@ -193,5 +193,4 @@ def restructure(
         blocks=blocks,
         bhv_trial=dict_bhv,
     )
-    logging.info(" ")
     return data

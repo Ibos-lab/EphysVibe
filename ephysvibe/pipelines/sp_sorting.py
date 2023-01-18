@@ -57,7 +57,7 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     )
 
 
-def main(continuous_path: Path, output_dir: Path) -> None:
+def main(continuous_path: Path, output_dir: Path, areas:list) -> None:
     """Compute spike sorting.
 
     Args:
@@ -81,8 +81,7 @@ def main(continuous_path: Path, output_dir: Path) -> None:
     
     if len(s_path) < 8:
         logging.error("continuous_path should contain at least 8 /")
-        raise NameError
-    # todo: check if the paths exist
+        raise NotADirectoryError
     # Select info about the recording from the path
     n_exp = s_path[-5][-1]
     n_record = s_path[-4][-1]
@@ -92,7 +91,8 @@ def main(continuous_path: Path, output_dir: Path) -> None:
     f = open(areas_path)
     areas_data = json.load(f)
     f.close()
-    areas = areas_data["areas"].keys()
+    if areas == None:
+        areas = areas_data["areas"].keys()
     shape_0 = areas_data["shape_0"]
     # load bhv data
     bhv = utils_oe.load_bhv_data(directory, subject)
@@ -128,7 +128,11 @@ def main(continuous_path: Path, output_dir: Path) -> None:
                 s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
             )
         )[0]
-
+        # check if paths exist
+        if not os.path.exists(dat_path):
+            raise FileExistsError
+        if not os.path.exists(spike_path):
+            raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
         continuous = utils_oe.load_dat_file(
@@ -176,8 +180,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
+    parser.add_argument(
+        "--areas", "-a", nargs="*",default=None, help="area", type=str
+    )
     args = parser.parse_args()
     try:
-        main(args.continuous_path, args.output_dir)
+        main(args.continuous_path, args.output_dir, args.areas)
     except FileExistsError:
-        logging.error("continuous path does not exist")
+        logging.error("path does not exist")
