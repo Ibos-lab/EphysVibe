@@ -223,6 +223,7 @@ def plot_b1(
     trials_mask,
     e_align=0,
     line_len=0.5,
+    cgroup="good",
 ):
     conv_max = int(np.floor(np.max(trials_conv_fr))) + 1
     fig, ax = plt.subplots(figsize=(10, 6), sharex=True, sharey=True)
@@ -256,7 +257,8 @@ def plot_b1(
     ax.set(xlabel="Time (s)", ylabel="Average firing rate")
     ax2.set(xlabel="Time (s)", ylabel="trials")
     fig.legend(fontsize=9)
-    ax.set_title("in_out: %d" % (in_out))
+    condition = {-1: "out", 1: "in"}
+    ax.set_title(condition[in_out])
     ax.set_xlim(x_lim_min, x_lim_max)
     ax.set_ylim(0)
     ax2.set_ylim(0)
@@ -270,7 +272,7 @@ def plot_b1(
         horizontalalignment="center",
         verticalalignment="center",
     )
-    fig.suptitle("Neuron %d" % (i_neuron + 1), x=0.10)
+    fig.suptitle("Neuron (%s) %d" % (cgroup, i_neuron + 1), x=0.10)
     return fig
 
 

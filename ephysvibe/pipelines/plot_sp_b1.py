@@ -124,13 +124,24 @@ def main(
             i_neuron,
             all_mask,
             e_align=e_align,
+            cgroup=cgroup,
         )
         if output_dir:
+            condition = {-1: "out", 1: "in"}
             logging.info("Saving figure, neuron: %d" % (i_neuron + 1))
             fig.savefig(
                 "/".join(
                     [os.path.normpath(output_dir)]
-                    + [s_path + "_n" + str(i_neuron + 1) + "_b1.jpg"]
+                    + [
+                        s_path
+                        + "_n"
+                        + str(i_neuron + 1)
+                        + "_"
+                        + cgroup
+                        + "_"
+                        + condition[in_out]
+                        + "_b1.jpg"
+                    ]
                 )
             )
     fig_task.savefig(
