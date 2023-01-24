@@ -1,5 +1,3 @@
-import glob
-import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -7,12 +5,12 @@ import argparse
 from pathlib import Path
 from ephysvibe.trials.spikes import firing_rate
 from ephysvibe.trials import select_trials
-from ephysvibe.spike_sorting import config
+import sys
 from ephysvibe.task import def_task, task_constants
 from collections import defaultdict
 from typing import Dict
 import logging
-
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
@@ -22,6 +20,12 @@ from multiprocessing import Pool
 
 seed = 2023
 
+logging.basicConfig(
+    format="%(asctime)s | %(message)s ",
+    datefmt="%d/%m/%Y %I:%M:%S %p",
+    level=logging.INFO,
+)
+
 
 def get_fr_df(filepath, in_out, cgroup, e_align):
     py_f = np.load(filepath, allow_pickle=True).item(0)
@@ -30,7 +34,10 @@ def get_fr_df(filepath, in_out, cgroup, e_align):
     trial_idx = select_trials.select_trials_block(sp, n_block=1)
     trial_idx = select_trials.select_correct_trials(bhv, trial_idx)
     task = def_task.create_task_frame(trial_idx, bhv, task_constants.SAMPLES_COND)
-    neurons = np.where((sp["clustersgroup"] == cgroup))[0]
+    if cgroup == "all":
+        neurons = np.where((sp["clustersgroup"] != cgroup))[0]
+    else:
+        neurons = np.where((sp["clustersgroup"] == cgroup))[0]
     fr_samples = firing_rate.fr_by_sample_neuron(
         sp=sp,
         neurons=neurons,
@@ -119,13 +126,13 @@ def compute_window_matrix(all_df, n_win, max_n_trials):
     return pd.concat(all_samples).reset_index(drop=True), np.concatenate(y)
 
 
-def run_svm_decoder(model, fr_samples, windows, it_seed, n_it, le):
+def run_svm_decoder(model, fr_samples, windows, it_seed, n_it, le, max_n_trials):
     scores = np.zeros((windows))
-    all_df = sample_df(fr_samples, it_seed[n_it])
+    all_df = sample_df(fr_samples, it_seed[n_it], max_n_trials)
     all_df["sample"] = le.transform(all_df["sample"])
     for n_win in np.arange(0, windows):
         #  select trials randomly
-        X, y = compute_window_matrix(all_df, n_win)
+        X, y = compute_window_matrix(all_df, n_win, max_n_trials)
         # split in train and test
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, shuffle=True, random_state=it_seed[n_it], stratify=y
@@ -145,10 +152,10 @@ def main(
     fr_paths: Path,
     area: str,
     output_dir: Path,
-    cgroup: str,
     in_out: int,
+    cgroup: str,
 ):
-
+    logging.info("--- Start ---")
     file1 = open(fr_paths, "r")
     Lines = file1.readlines()
 
@@ -157,7 +164,6 @@ def main(
     for line in Lines:
         paths.append(line.strip())
 
-    e_align = 2
     win_size = 100
     step = 10
     fix_duration = 200
@@ -166,7 +172,7 @@ def main(
     max_n_trials = []
     num_neurons = 0
 
-    with Pool(5) as pool:
+    with Pool(3) as pool:
         async_fr = [
             pool.apply_async(
                 load_fr_samples,
@@ -183,7 +189,7 @@ def main(
             for n in np.arange(len(paths))
         ]
         fr_roll = [asc.get() for asc in async_fr]
-
+    logging.info("load_fr_samples finished")
     for rolling_df in fr_roll:
         # max number of trials that can be used
         max_n_trials.append(
@@ -216,10 +222,12 @@ def main(
     rng = np.random.default_rng(seed=seed)
     it_seed = rng.integers(low=1, high=2023, size=n_iterations, dtype=int)
     windows = 354  # 0
+    logging.info("Runing decoder")
     with Pool(10) as pool:
         async_scores = [
             pool.apply_async(
-                run_svm_decoder, args=(model, fr_samples, windows, it_seed, n, le)
+                run_svm_decoder,
+                args=(model, fr_samples, windows, it_seed, n, le, max_n_trials),
             )
             for n in np.arange(n_iterations)
         ]
@@ -229,8 +237,6 @@ def main(
     x = ((np.arange(0, len(scores2[0]))) - fix_duration / 10) / 100
     ax.plot(x, np.array(scores2).mean(axis=0), label="Accuracy")
     ss = np.sum(np.array(scores2) < 0.2, axis=0) / np.array(scores2).shape[0]
-    mask_inf = ss <= 0.05
-    mask_sup = ss > 0.05
     ax.fill_between(
         x,
         y1=min(np.array(scores2).mean(axis=0)),
@@ -252,21 +258,25 @@ def main(
         )
     )
     fig.savefig(
-        output_dir
-        + "/"
-        + area
-        + "_"
-        + n_iterations
-        + "it_"
-        + cgroup
-        + "_"
-        + condition[in_out]
-        + ".jpg"
+        "/".join(
+            [os.path.normpath(output_dir)]
+            + [
+                area
+                + "_"
+                + str(n_iterations)
+                + "it_"
+                + cgroup
+                + "_"
+                + condition[in_out]
+                + ".jpg"
+            ],
+        )
     )
+    logging.info("--- End ---")
 
 
 if __name__ == "__main__":
-    "/home/INT/losada.c/Documents/codes/run_pipelines/paths_decoding.txt"
+    # "/home/INT/losada.c/Documents/codes/run_pipelines/paths_decoding.txt"
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
