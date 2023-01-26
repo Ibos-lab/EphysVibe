@@ -101,12 +101,12 @@ def load_bhv_data(directory: Path, subject: str) -> Group:
 
 
 def load_eyes(
-    s_path: List, shape_0: int, shape_1: int, start_time: int = 0
+    continuous_path: List, shape_0: int, shape_1: int, n_eyes: int, start_time: int = 0
 ) -> np.ndarray:
     """Load eyes .dat file.
 
     Args:
-        s_path (List): list containing the splited continuous path
+        continuous_path (List): list containing the splited continuous path
         shape_0 (int): number of rows
         shape_1 (int): number of columns
         start_time (int, optional): sample where to start taking the signal. Defaults to 0.
@@ -115,12 +115,15 @@ def load_eyes(
         np.array: array containing the downsampled eyes values
     """
     # load eyes data
-    eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
-    continuous = load_dat_file(eyes_path, shape_0=shape_0, shape_1=shape_1)
+    # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
+    continuous = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
+    continuous = continuous[-3:, start_time:]
     # downsample signal
-    eyes_ds = signal_downsample(
-        continuous[:, start_time:], config.DOWNSAMPLE, idx_start=0, axis=1
-    )
+    eyes_ds = continuous[:, : -(continuous.shape[1] % 30)].reshape(3, -1, 30)[:, :, 0]
+
+    # eyes_ds = signal_downsample(
+    #     continuous[-3:, start_time:], config.DOWNSAMPLE, idx_start=0, axis=1
+    # )
 
     return eyes_ds
 
@@ -146,7 +149,7 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
     )  # info of each cluster
     # ignore noisy groups
     cluster_info = cluster_info[cluster_info["group"] != "noise"]
-    if cluster_info.shape[0]==0:
+    if cluster_info.shape[0] == 0:
         logging.warning("There isn't good or mua clusters")
     return idx_sp_ksamples, sp_ksamples_clusters_id, cluster_info
 
@@ -165,10 +168,15 @@ def signal_downsample(
     Returns:
         np.array: downsample signal.
     """
+
     idx_ds = np.arange(idx_start, x.shape[axis], downsample)
     if axis == 1:
         return x[:, idx_ds]
-    return x[idx_ds]
+    else:
+        x = x[idx_start:]
+        # downsample signal
+        x = x[: -(x.shape[0] % downsample)].reshape(-1, downsample)[:, 0]
+    return x
 
 
 def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
@@ -207,7 +215,6 @@ def reconstruct_8bits_words(real_strobes, e_channel, e_state):
     return full_word
 
 
-
 def check_strobes(bhv, full_word, real_strobes):
     # Check if strobe and codes number match
     bhv_codes = []
@@ -230,21 +237,27 @@ def check_strobes(bhv, full_word, real_strobes):
         logging.info("ML = %d", bhv_codes.shape[0])
         logging.info("OE = %d", full_word.shape[0])
         if full_word.shape[0] > bhv_codes.shape[0]:
-            logging.error('OE has %d more codes than ML', (full_word.shape[0] - bhv_codes.shape[0]))
+            logging.error(
+                "OE has %d more codes than ML",
+                (full_word.shape[0] - bhv_codes.shape[0]),
+            )
             raise IndexError
-        elif np.sum(full_word-bhv_codes[:full_word.shape[0]]) != 0:
+        elif np.sum(full_word - bhv_codes[: full_word.shape[0]]) != 0:
             logging.error("Strobe and codes number do not match")
             raise IndexError
-        else: # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0  
-            bhv_codes = bhv_codes[:full_word.shape[0]]
+        else:  # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0
+            bhv_codes = bhv_codes[: full_word.shape[0]]
             # find the last 18 in bhv_codes (last complete trial)
-            logging.info('ML has %d more codes than OE', (bhv_codes.shape[0]-full_word.shape[0]))
-            idx = np.where(bhv_codes==18)[0]
-            bhv_codes = bhv_codes[:idx[-1]+1]
-            full_word = full_word[:idx[-1]+1]
-            real_strobes = real_strobes[:idx[-1]+1]
-            trial_keys = list(bhv.keys())[1:len(idx)]
-            
+            logging.info(
+                "ML has %d more codes than OE",
+                (bhv_codes.shape[0] - full_word.shape[0]),
+            )
+            idx = np.where(bhv_codes == 18)[0]
+            bhv_codes = bhv_codes[: idx[-1] + 1]
+            full_word = full_word[: idx[-1] + 1]
+            real_strobes = real_strobes[: idx[-1] + 1]
+            trial_keys = list(bhv.keys())[1 : len(idx)]
+
     else:
         logging.info("ML and OE code numbers do match")
         if np.sum(bhv_codes - full_word) != 0:
@@ -252,7 +265,7 @@ def check_strobes(bhv, full_word, real_strobes):
         else:
             logging.info("ML and OE codes are the same")
 
-    return  full_word, real_strobes,trial_keys
+    return full_word, real_strobes, trial_keys
 
 
 def find_events_codes(events, bhv):
@@ -270,7 +283,9 @@ def find_events_codes(events, bhv):
         idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
-    full_word, idx_real_strobes,trial_keys = check_strobes(bhv, full_word, idx_real_strobes)
+    full_word, idx_real_strobes, trial_keys = check_strobes(
+        bhv, full_word, idx_real_strobes
+    )
 
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[
@@ -303,7 +318,7 @@ def compute_lfp(c_values: np.ndarray) -> np.ndarray:
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
     lfp_ds = np.zeros(
-        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE)) + 1)
+        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE)))
     )
     for i_data in range(c_values.shape[0]):
         data_f = sosfilt(hp_sos, c_values[i_data])

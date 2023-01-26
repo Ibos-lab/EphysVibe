@@ -57,14 +57,13 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     )
 
 
-def main(continuous_path: Path, output_dir: Path, areas:list) -> None:
+def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
     """Compute spike sorting.
 
     Args:
         continuous_path (Path):  path to the continuous file (.dat) from OE
         output_dir (Path): output directory
     """
-
 
     if not os.path.exists(continuous_path):
         raise FileExistsError
@@ -78,7 +77,7 @@ def main(continuous_path: Path, output_dir: Path, areas:list) -> None:
         event_path,
         areas_path,
     ) = define_paths(continuous_path)
-    
+
     if len(s_path) < 8:
         logging.error("continuous_path should contain at least 8 /")
         raise NotADirectoryError
@@ -93,14 +92,14 @@ def main(continuous_path: Path, output_dir: Path, areas:list) -> None:
     f.close()
     if areas == None:
         areas = areas_data["areas"].keys()
-    shape_0 = areas_data["shape_0"]
+
     # load bhv data
     bhv = utils_oe.load_bhv_data(directory, subject)
     # load timestamps
     c_samples = np.load(time_path)
     # load events
     events = utils_oe.load_event_files(event_path)
-
+    shape_0 = len(c_samples)  # areas_data["shape_0"]
     (
         full_word,
         real_strobes,
@@ -116,18 +115,18 @@ def main(continuous_path: Path, output_dir: Path, areas:list) -> None:
         bhv=bhv,
         c_samples=c_samples,
         areas_data=areas_data,
-        s_path=s_path,
-        shape_0=shape_0,
+        continuous_path=continuous_path,
     )
     # Iterate by nodes/areas
     for area in areas:
         # define dat and spikes paths
         dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        spike_path = glob.glob(
-            "/".join(
-                s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
-            )
-        )[0]
+        spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
+        # glob.glob(
+        #     "/".join(
+        #         s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
+        #     )
+        # )[0]
         # check if paths exist
         if not os.path.exists(dat_path):
             raise FileExistsError
@@ -180,9 +179,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
-    parser.add_argument(
-        "--areas", "-a", nargs="*",default=None, help="area", type=str
-    )
+    parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
     args = parser.parse_args()
     try:
         main(args.continuous_path, args.output_dir, args.areas)
