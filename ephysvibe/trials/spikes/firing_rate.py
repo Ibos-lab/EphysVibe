@@ -2,7 +2,7 @@ import os
 import logging
 from pathlib import Path
 import numpy as np
-from matplotlib import pyplot as plt
+
 from scipy import signal
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -210,23 +210,21 @@ def plot_raster_fr(
 
 
 def plot_b1(
+    ax,
     samples,
     trials_conv_fr,
     trials_time,
     trials_sp,
     events,
-    num_trials,
     in_out,
     x_lim_min,
     x_lim_max,
-    i_neuron,
     trials_mask,
-    e_align=0,
     line_len=0.5,
-    cgroup="good",
 ):
+    num_trials = np.sum(trials_mask)
     conv_max = int(np.floor(np.max(trials_conv_fr))) + 1
-    fig, ax = plt.subplots(figsize=(10, 6), sharex=True, sharey=True)
+    # fig, ax = plt.subplots(figsize=(10, 6), sharex=True, sharey=True)
     ax2 = ax.twinx()
     color, trials_sorted = [], []
     for i_s, i_sample in enumerate(samples):
@@ -256,7 +254,7 @@ def plot_b1(
         )
     ax.set(xlabel="Time (s)", ylabel="Average firing rate")
     ax2.set(xlabel="Time (s)", ylabel="trials")
-    fig.legend(fontsize=9)
+
     condition = {-1: "out", 1: "in"}
     ax.set_title(condition[in_out])
     ax.set_xlim(x_lim_min, x_lim_max)
@@ -264,16 +262,17 @@ def plot_b1(
     ax2.set_ylim(0)
     ax2.set_yticks(np.arange(conv_max, (num_trials * line_len) + conv_max, line_len))
     plt.setp(ax2.get_yticklabels(), visible=False)
-    fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.2)
-    fig.text(
-        0.10,
-        0.01,
-        s="Aligned with %s" % list(task_constants.EVENTS_B1.keys())[e_align],
-        horizontalalignment="center",
-        verticalalignment="center",
-    )
-    fig.suptitle("Neuron (%s) %d" % (cgroup, i_neuron + 1), x=0.10)
-    return fig
+    # fig.legend(fontsize=9)
+    # fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.2)
+    # fig.text(
+    #     0.10,
+    #     0.01,
+    #     s="Aligned with %s" % list(task_constants.EVENTS_B1.keys())[e_align],
+    #     horizontalalignment="center",
+    #     verticalalignment="center",
+    # )
+    # fig.suptitle("Neuron (%s) %d" % (cgroup, i_neuron + 1), x=0.10)
+    # return fig
 
 
 def fr_by_sample_neuron(

@@ -58,7 +58,7 @@ def sort_data_trial(
     eyes_values = []
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
-
+        # ! change the start and end of the trials
         # define trial masks
         sp_mask = np.logical_and(
             spike_sample >= start_trials[trial_i],
