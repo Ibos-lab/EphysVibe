@@ -1,8 +1,9 @@
 import logging
 from . import utils_oe, config
+from ..pipelines import pipe_config
 
 
-def pre_treat_oe(events, bhv, c_samples, areas_data, s_path, shape_0):
+def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
     # reconstruct 8 bit words
     (
         full_word,
@@ -10,7 +11,6 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, s_path, shape_0):
         start_trials,
         blocks,
         dict_bhv,
-        
     ) = utils_oe.find_events_codes(events, bhv)
     # Select the timestamps of continuous data
     logging.info("Selecting OE samples")
@@ -26,7 +26,11 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, s_path, shape_0):
     n_eyes = areas_data["areas"].pop("eyes", False)
     if n_eyes:
         eyes_ds = utils_oe.load_eyes(
-            s_path, shape_0=shape_0, shape_1=n_eyes, start_time=start_time
+            continuous_path,
+            shape_0=len(c_samples),
+            shape_1=sum(pipe_config.N_CHANNELS),
+            n_eyes=n_eyes,
+            start_time=start_time,
         )
     return (
         full_word,
@@ -38,5 +42,4 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, s_path, shape_0):
         start_time,
         eyes_ds,
         areas_data,
-        
     )

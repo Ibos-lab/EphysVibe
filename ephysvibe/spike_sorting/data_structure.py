@@ -89,6 +89,7 @@ def sort_data_trial(
         # select timestamps
         samples.append(ds_samples[lfp_mask])
         # select eyes
+
         eyes_values.append(eyes_ds[:, lfp_mask])
 
         spiketimes_trial = []  # n_neurons x n_times
