@@ -1,6 +1,7 @@
 import logging
 from . import utils_oe, config
 from ..pipelines import pipe_config
+import numpy as np
 
 
 def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
@@ -9,6 +10,7 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
         full_word,
         real_strobes,
         start_trials,
+        end_trials,
         blocks,
         dict_bhv,
     ) = utils_oe.find_events_codes(events, bhv)
@@ -32,10 +34,12 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
             n_eyes=n_eyes,
             start_time=start_time,
         )
+
     return (
         full_word,
         real_strobes,
         start_trials,
+        end_trials,
         blocks,
         dict_bhv,
         ds_samples,
