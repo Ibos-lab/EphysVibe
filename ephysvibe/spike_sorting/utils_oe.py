@@ -117,14 +117,26 @@ def load_eyes(
     """
     # load eyes data
     # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
-    continuous = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
-    continuous = continuous[-3:, start_time:]
+    cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
+    continuous = np.asarray(cont[-3:, start_time:])
+    del cont
+    logging.info("Downsampling eyes")
     # downsample signal
-    eyes_ds = continuous[:, : -(continuous.shape[1] % 30)].reshape(3, -1, 30)[:, :, 0]
+    eyes_ds = np.zeros(
+        (
+            continuous.shape[0],
+            int(np.floor(continuous.shape[1] / config.DOWNSAMPLE) + 1),
+        )
+    )
+    for i_data in range(continuous.shape[0]):
 
-    # eyes_ds = signal_downsample(
-    #     continuous[-3:, start_time:], config.DOWNSAMPLE, idx_start=0, axis=1
-    # )
+        eyes_ds[i_data] = signal_downsample(
+            continuous[i_data], config.DOWNSAMPLE, idx_start=0, axis=0
+        )
+
+    # eyes_ds = continuous[:, : -(continuous.shape[1] % 30)].reshape(3, -1, 30)[:, :, 0]
+
+    # eyes_ds = signal_downsample(continuous, config.DOWNSAMPLE, idx_start=0, axis=1)
 
     return eyes_ds
 
@@ -170,14 +182,18 @@ def signal_downsample(
         np.array: downsample signal.
     """
 
+    # idx_ds = np.arange(idx_start, x.shape[axis], downsample)
+    # if axis == 1:
+    #     return x[:, idx_ds]
+    # else:
+    #     x = x[idx_start:]
+    #     # downsample signal
+    #     x = x[: -(x.shape[0] % downsample)].reshape(-1, downsample)[:, 0]
+    # return x
     idx_ds = np.arange(idx_start, x.shape[axis], downsample)
     if axis == 1:
         return x[:, idx_ds]
-    else:
-        x = x[idx_start:]
-        # downsample signal
-        x = x[: -(x.shape[0] % downsample)].reshape(-1, downsample)[:, 0]
-    return x
+    return x[idx_ds]
 
 
 def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
@@ -317,7 +333,7 @@ def compute_lfp(c_values: np.ndarray) -> np.ndarray:
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
     lfp_ds = np.zeros(
-        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE)))
+        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE) + 1))
     )
     for i_data in range(c_values.shape[0]):
         data_f = sosfilt(hp_sos, c_values[i_data])
