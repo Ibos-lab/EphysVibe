@@ -118,7 +118,9 @@ def load_eyes(
     # load eyes data
     # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
     cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
-    continuous = np.asarray(cont[-3:, start_time:])
+    continuous = np.asarray(
+        cont[-3:, start_time:]
+    )  # , order="C" np.array(x, dtype, order='C')
     del cont
     logging.info("Downsampling eyes")
     # downsample signal
