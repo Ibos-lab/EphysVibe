@@ -94,6 +94,7 @@ def load_bhv_data(directory: Path, subject: str) -> Group:
     logging.info(directory)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
+        raise ValueError
     logging.info("Loading bhv data")
     bhv = h5py.File(bhv_path[0], "r")["ML"]
 
@@ -137,7 +138,7 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
     Returns:
         Tuple[np.array, np.memmap, pd.DataFrame]:
             - idx_spiketimes (np.array): array containing the spike times
-            - spiketimes_clusters_id (memmap): array containing to which neuron the spike times belongs to
+            - sp_ksamples_clusters_id (memmap): array containing to which neuron the spike times belongs to
             - cluster_info (pd.Dataframe): info about the clusters
     """
     # search kilosort folder
@@ -288,10 +289,8 @@ def find_events_codes(events, bhv):
     )
 
     real_strobes = events["samples"][idx_real_strobes]
-    start_trials = real_strobes[
-        full_word == config.START_CODE
-    ]  # samples where trials starts
-
+    start_trials = real_strobes[full_word == config.START_CODE]
+    end_trials = real_strobes[full_word == config.END_CODE]
     # search number of blocks
     n_trials = len(trial_keys)
     blocks = []
@@ -302,7 +301,7 @@ def find_events_codes(events, bhv):
     # change bhv structure
     bhv = np.array(data_structure.bhv_to_dictionary(bhv))
     bhv = bhv[:n_trials]
-    return (full_word, real_strobes, start_trials, blocks, bhv)
+    return (full_word, real_strobes, start_trials, end_trials, blocks, bhv)
 
 
 def compute_lfp(c_values: np.ndarray) -> np.ndarray:

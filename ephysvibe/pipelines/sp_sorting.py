@@ -13,7 +13,6 @@ logging.basicConfig(
     datefmt="%d/%m/%Y %I:%M:%S %p",
     level=logging.INFO,
 )
-# logging.basicConfig(level=logging.INFO)
 
 
 def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
@@ -95,15 +94,18 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
 
     # load bhv data
     bhv = utils_oe.load_bhv_data(directory, subject)
-    # load timestamps
-    c_samples = np.load(time_path)
-    # load events
+    # load timestamps (fs=30000)
+    c_samples = np.load(time_path)  # np.floor(/ config.DOWNSAMPLE).astype(int)
+
+    # load events (fs=30000)
     events = utils_oe.load_event_files(event_path)
+    events["samples"] = events["samples"]  # np.floor( / config.DOWNSAMPLE).astype(int)
     shape_0 = len(c_samples)  # areas_data["shape_0"]
     (
         full_word,
         real_strobes,
         start_trials,
+        end_trials,
         blocks,
         dict_bhv,
         ds_samples,
@@ -117,16 +119,16 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         areas_data=areas_data,
         continuous_path=continuous_path,
     )
+    # to ms
+    ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
+    start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
+    end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
+    real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
     for area in areas:
         # define dat and spikes paths
         dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
         spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
-        # glob.glob(
-        #     "/".join(
-        #         s_path[:-1] + ["Record Node " + area] + [config.KILOSORT_FOLDER_NAME]
-        #     )
-        # )[0]
         # check if paths exist
         if not os.path.exists(dat_path):
             raise FileExistsError
@@ -137,18 +139,22 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         continuous = utils_oe.load_dat_file(
             dat_path, shape_0=shape_0, shape_1=areas_data["areas"][area]
         )
-        # load spike data
         (
             idx_sp_ksamples,
             sp_ksamples_clusters_id,
             cluster_info,
         ) = utils_oe.load_spike_data(spike_path)
         if cluster_info.shape[0] != 0:  # if there are valid groups
-            spike_sample = c_samples[idx_sp_ksamples]  # timestamps of all the spikes
+            spike_sample = np.floor(
+                c_samples[idx_sp_ksamples] / config.DOWNSAMPLE
+            ).astype(
+                int
+            )  # timestamps of all the spikes (in ms)
             logging.info("Computing LFPs")
             lfp_ds = utils_oe.compute_lfp(continuous[:, start_time:])
             data = data_structure.restructure(
                 start_trials=start_trials,
+                end_trials=end_trials,
                 blocks=blocks,
                 cluster_info=cluster_info,
                 spike_sample=spike_sample,

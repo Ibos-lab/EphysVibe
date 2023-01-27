@@ -29,7 +29,6 @@ def bhv_to_dictionary(bhv):
     bhv_res = []
     for trial in trials_keys:
         bhv_res.append({"trial": re.split(r"[Trial]", trial)[-1]})
-
     bhv.visititems(visitor_func)
 
     return bhv_res
@@ -39,6 +38,7 @@ def sort_data_trial(
     clusters,
     spike_sample,
     start_trials,
+    end_trials,
     real_strobes,
     ds_samples,
     sp_ksamples_clusters_id,
@@ -47,10 +47,13 @@ def sort_data_trial(
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    start_trials = np.append(start_trials, [ds_samples[-1]])
+    start_trials = start_trials - 1500  # , [ds_samples[-1]])
     n_trials = len(start_trials) - 1
-
-    sp_samples = []  #  n_trials x n_neurons x n_times
+    #  Define arrays
+    sp_samples = np.zeros(
+        (len(start_trials), len(clusters), np.max(end_trials - (start_trials - 1500))),
+        dtype=np.int8,
+    )
     code_numbers = []
     code_samples = []
     lfp_values = []
@@ -58,26 +61,25 @@ def sort_data_trial(
     eyes_values = []
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
-
+        #! check if the masks are not all the same
         # define trial masks
         sp_mask = np.logical_and(
             spike_sample >= start_trials[trial_i],
-            spike_sample < start_trials[trial_i + 1],
+            spike_sample < end_trials[trial_i],
         )
         events_mask = np.logical_and(
             real_strobes >= start_trials[trial_i],
-            real_strobes < start_trials[trial_i + 1],
+            real_strobes < end_trials[trial_i],
         )
         lfp_mask = np.logical_and(
             ds_samples >= start_trials[trial_i],
-            ds_samples < start_trials[trial_i + 1],
+            ds_samples < end_trials[trial_i],
         )
         # select spikes
-        sp_trial = spike_sample[sp_mask]
+        sp_trial = spike_sample[sp_mask] - start_trials[trial_i]
         id_clusters = sp_ksamples_clusters_id[
             sp_mask
         ]  # to which neuron correspond each spike
-
         # select code numbers
         code_numbers.append(
             full_word[events_mask]
@@ -93,15 +95,14 @@ def sort_data_trial(
         eyes_values.append(eyes_ds[:, lfp_mask])
 
         spiketimes_trial = []  # n_neurons x n_times
-        for i_cluster in clusters_id:  # iterate over clusters
+        for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
-            spiketimes_trial.append(sp_trial[idx_cluster])
-
-        sp_samples.append(spiketimes_trial)
+            # spiketimes_trial.append(sp_trial[idx_cluster])
+            sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
 
     return (
-        np.array(sp_samples, dtype=object),
+        sp_samples,
         np.array(code_numbers, dtype=object),
         np.array(code_samples, dtype=object),
         eyes_values,
@@ -152,6 +153,7 @@ def build_data_structure(
 
 def restructure(
     start_trials,
+    end_trials,
     blocks,
     cluster_info,
     spike_sample,
@@ -175,6 +177,7 @@ def restructure(
         clusters=cluster_info,
         spike_sample=spike_sample,
         start_trials=start_trials,
+        end_trials=end_trials,
         real_strobes=real_strobes,
         ds_samples=ds_samples,
         sp_ksamples_clusters_id=sp_ksamples_clusters_id,
