@@ -3,6 +3,7 @@ import os
 import logging
 import re
 import h5py
+from ..structures import trials_data
 
 
 def bhv_to_dictionary(bhv):
@@ -48,17 +49,18 @@ def sort_data_trial(
 ):
     clusters_id = clusters["cluster_id"].values
     start_trials = start_trials - 1500  # , [ds_samples[-1]])
-    n_trials = len(start_trials) - 1
-    #  Define arrays
-    sp_samples = np.zeros(
-        (len(start_trials), len(clusters), np.max(end_trials - (start_trials - 1500))),
-        dtype=np.int8,
+    n_trials, n_neurons, n_ts = (
+        len(start_trials),
+        len(clusters),
+        np.max(end_trials - (start_trials - 1000)),
     )
+    #  Define arrays
+    sp_samples = np.full((n_trials, n_neurons, n_ts), np.nan)
     code_numbers = []
     code_samples = []
-    lfp_values = []
-    samples = []
-    eyes_values = []
+    lfp_values = np.full((n_trials, lfp_ds.shape[0], n_ts), np.nan)
+    samples = np.full((n_trials, n_ts), np.nan)
+    eyes_values = np.full((n_trials, eyes_ds.shape[0], n_ts), np.nan)
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
         #! check if the masks are not all the same
@@ -82,17 +84,16 @@ def sort_data_trial(
         ]  # to which neuron correspond each spike
         # select code numbers
         code_numbers.append(
-            full_word[events_mask]
+            full_word[events_mask].tolist()
         )  # all trials have to start & end with the same codes
         # select code times
-        code_samples.append(real_strobes[events_mask])
+        code_samples.append(real_strobes[events_mask].tolist())
         # select lfp
-        lfp_values.append(lfp_ds[:, lfp_mask])
+        lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
-        samples.append(ds_samples[lfp_mask])
+        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]
         # select eyes
-
-        eyes_values.append(eyes_ds[:, lfp_mask])
+        eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
 
         spiketimes_trial = []  # n_neurons x n_times
         for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
@@ -100,14 +101,22 @@ def sort_data_trial(
             idx_cluster = np.where(id_clusters == i_cluster)[0]
             # spiketimes_trial.append(sp_trial[idx_cluster])
             sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
+    # complete with nan
+    length = max(map(len, code_numbers))
+    code_numbers = np.array(
+        [cn_i + [np.nan] * (length - len(cn_i)) for cn_i in code_numbers]
+    )
+    code_samples = np.array(
+        [cs_i + [np.nan] * (length - len(cs_i)) for cs_i in code_samples]
+    )
 
     return (
         sp_samples,
-        np.array(code_numbers, dtype=object),
-        np.array(code_samples, dtype=object),
+        code_numbers,
+        code_samples,
         eyes_values,
         lfp_values,
-        np.array(samples, dtype=object),
+        samples,
     )
 
 
@@ -135,7 +144,7 @@ def build_data_structure(
 ):
     sp_data = {
         "sp_samples": sp_samples,
-        "blocks": np.array(blocks, dtype=int),
+        "blocks": blocks,  # ! check if int
         "code_numbers": code_numbers,
         "code_samples": code_samples,
         "eyes_values": eyes_values,
@@ -186,15 +195,28 @@ def restructure(
         eyes_ds=eyes_ds,
     )
 
-    data = build_data_structure(
-        clusters=cluster_info,
-        sp_samples=sp_samples,
-        code_numbers=code_numbers,
-        code_samples=code_samples,
-        eyes_values=eyes_values,
-        lfp_values=lfp_values,
-        samples=samples,
-        blocks=blocks,
-        bhv_trial=dict_bhv,
-    )
+    data = trials_data.TrialsData(
+        sp_samples,
+        blocks,
+        code_numbers,
+        code_samples,
+        eyes_values,
+        lfp_values,
+        samples,
+        cluster_info["cluster_id"].values,
+        cluster_info["ch"].values,
+        cluster_info["group"].values,
+        cluster_info["depth"].values,
+    )  # ! add BHV
+    # data = build_data_structure(
+    #     clusters=cluster_info,
+    #     sp_samples=sp_samples,
+    #     code_numbers=code_numbers,
+    #     code_samples=code_samples,
+    #     eyes_values=eyes_values,
+    #     lfp_values=lfp_values,
+    #     samples=samples,
+    #     blocks=blocks,
+    #     bhv_trial=dict_bhv,
+    # )
     return data
