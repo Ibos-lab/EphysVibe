@@ -40,12 +40,16 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     areas_path = "/".join(s_path[:-1] + ["channels_info.json"])
     # check if paths exist
     if not os.path.exists(directory):
+        logging.error(directory)
         raise FileExistsError
     if not os.path.exists(time_path):
+        logging.error(time_path)
         raise FileExistsError
     if not os.path.exists(event_path):
+        logging.error(event_path)
         raise FileExistsError
     if not os.path.exists(areas_path):
+        logging.error(areas_path)
         raise FileExistsError
     return (
         s_path,
@@ -166,9 +170,10 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
                 eyes_ds=eyes_ds,
                 dict_bhv=dict_bhv,
             )
-            data_structure.save_data(
-                data, output_dir, subject, date_time, area, n_exp, n_record
-            )
+            data.to_python_hdf5(output_dir)
+            # data_structure.save_data(
+            #     data, output_dir, subject, date_time, area, n_exp, n_record
+            # )
         else:
             logging.warning("No recordings")
 

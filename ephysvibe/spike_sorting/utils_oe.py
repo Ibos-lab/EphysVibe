@@ -122,7 +122,6 @@ def load_eyes(
         cont[-3:, start_time:]
     )  # , order="C" np.array(x, dtype, order='C')
     del cont
-    logging.info("Downsampling eyes")
     # downsample signal
     eyes_ds = np.zeros(
         (
@@ -131,9 +130,13 @@ def load_eyes(
         )
     )
     for i_data in range(continuous.shape[0]):
-
+        logging.info("Downsampling eyes")
+        # dat = np.array(continuous[i_data], order="C")
         eyes_ds[i_data] = signal_downsample(
-            continuous[i_data], config.DOWNSAMPLE, idx_start=0, axis=0
+            continuous[i_data],
+            config.DOWNSAMPLE,
+            idx_start=0,
+            axis=0,
         )
 
     # eyes_ds = continuous[:, : -(continuous.shape[1] % 30)].reshape(3, -1, 30)[:, :, 0]
