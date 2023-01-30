@@ -63,8 +63,6 @@ def sort_data_trial(
     eyes_values = np.full((n_trials, eyes_ds.shape[0], n_ts), np.nan)
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
-        #! check if the masks are not all the same
-        # ! change the start and end of the trials
         # define trial masks
         sp_mask = np.logical_and(
             spike_sample >= start_trials[trial_i],
@@ -83,6 +81,10 @@ def sort_data_trial(
         id_clusters = sp_ksamples_clusters_id[
             sp_mask
         ]  # to which neuron correspond each spike
+        # fill with zeros
+        sp_samples[trial_i, :, : np.sum(lfp_mask)] = np.zeros(
+            (sp_samples.shape[1], np.sum(lfp_mask))
+        )
         # select code numbers
         code_numbers.append(
             full_word[events_mask].tolist()
@@ -96,7 +98,6 @@ def sort_data_trial(
         # select eyes
         eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
 
-        spiketimes_trial = []  # n_neurons x n_times
         for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
