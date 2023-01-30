@@ -103,7 +103,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
 
     # load events (fs=30000)
     events = utils_oe.load_event_files(event_path)
-    events["samples"] = events["samples"]  # np.floor( / config.DOWNSAMPLE).astype(int)
+    # events["samples"] = events["samples"]  # np.floor( / config.DOWNSAMPLE).astype(int)
     shape_0 = len(c_samples)  # areas_data["shape_0"]
     (
         full_word,
@@ -154,8 +154,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             ).astype(
                 int
             )  # timestamps of all the spikes (in ms)
-            logging.info("Computing LFPs")
-            lfp_ds = utils_oe.compute_lfp(continuous[:, start_time:])
+            lfp_ds = utils_oe.compute_lfp(continuous, start_time)  # [:, start_time:])
             data = data_structure.restructure(
                 start_trials=start_trials,
                 end_trials=end_trials,
@@ -170,10 +169,29 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
                 eyes_ds=eyes_ds,
                 dict_bhv=dict_bhv,
             )
-            data.to_python_hdf5(output_dir)
+            output_d = os.path.normpath(output_dir)
+            path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
+            file_name = (
+                date_time
+                + "_"
+                + subject
+                + "_"
+                + area
+                + "_e"
+                + n_exp
+                + "_r"
+                + n_record
+                + ".h5"
+            )
+            if not os.path.exists(path):
+                os.makedirs(path)
+            logging.info("Saving data")
+
+            data.to_python_hdf5("/".join([path] + [file_name]))
             # data_structure.save_data(
             #     data, output_dir, subject, date_time, area, n_exp, n_record
             # )
+            logging.info("Data successfully saved")
         else:
             logging.warning("No recordings")
 

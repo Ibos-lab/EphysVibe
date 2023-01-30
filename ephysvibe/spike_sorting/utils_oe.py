@@ -117,32 +117,33 @@ def load_eyes(
     """
     # load eyes data
     # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
-    cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
-    continuous = np.asarray(
-        cont[-3:, start_time:]
-    )  # , order="C" np.array(x, dtype, order='C')
+
+    # cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
+    n_ch = 3
+    cont = np.memmap(
+        continuous_path,
+        mode="r",
+        dtype="int16",
+        shape=(shape_0, n_ch),
+        offset=shape_0 * (shape_1 - n_ch),
+    ).T
 
     # downsample signal
     eyes_ds = np.zeros(
         (
-            continuous.shape[0],
-            int(np.floor(continuous.shape[1] / config.DOWNSAMPLE) + 1),
+            cont.shape[0],
+            int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1),
         )
     )
-    for i_data in range(continuous.shape[0]):
+    for i_data in range(cont.shape[0]):
         logging.info("Downsampling eyes")
-        # dat = np.array(continuous[i_data], order="C")
+        dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         eyes_ds[i_data] = signal_downsample(
-            continuous[i_data],
+            dat,
             config.DOWNSAMPLE,
             idx_start=0,
             axis=0,
         )
-
-    # eyes_ds = continuous[:, : -(continuous.shape[1] % 30)].reshape(3, -1, 30)[:, :, 0]
-
-    # eyes_ds = signal_downsample(continuous, config.DOWNSAMPLE, idx_start=0, axis=1)
-
     return eyes_ds
 
 
@@ -186,19 +187,11 @@ def signal_downsample(
     Returns:
         np.array: downsample signal.
     """
-
-    # idx_ds = np.arange(idx_start, x.shape[axis], downsample)
-    # if axis == 1:
-    #     return x[:, idx_ds]
-    # else:
-    #     x = x[idx_start:]
-    #     # downsample signal
-    #     x = x[: -(x.shape[0] % downsample)].reshape(-1, downsample)[:, 0]
-    # return x
     idx_ds = np.arange(idx_start, x.shape[axis], downsample)
     if axis == 1:
         return x[:, idx_ds]
-    return x[idx_ds]
+    x = x[idx_ds]
+    return x
 
 
 def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
@@ -322,10 +315,17 @@ def find_events_codes(events, bhv):
     # change bhv structure
     bhv = np.array(data_structure.bhv_to_dictionary(bhv))
     bhv = bhv[:n_trials]
-    return (full_word, real_strobes, start_trials, end_trials, blocks, bhv)
+    return (
+        full_word,
+        real_strobes,
+        start_trials,
+        end_trials,
+        np.array(blocks, dtype=int),
+        bhv,
+    )
 
 
-def compute_lfp(c_values: np.ndarray) -> np.ndarray:
+def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
     """Compute lfp and downsample.
 
     Args:
@@ -334,6 +334,7 @@ def compute_lfp(c_values: np.ndarray) -> np.ndarray:
     Returns:
         np.array: lfps
     """
+    logging.info("Computing LFPs")
     # define lowpass and high pass butterworth filter
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
@@ -341,7 +342,8 @@ def compute_lfp(c_values: np.ndarray) -> np.ndarray:
         (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE) + 1))
     )
     for i_data in range(c_values.shape[0]):
-        data_f = sosfilt(hp_sos, c_values[i_data])
+        # dat = np.array(np.asarray(c_values[i_data, start_time:]), order="C")
+        data_f = sosfilt(hp_sos, c_values[i_data, start_time:])  #  dat)
         data_f = sosfilt(lp_sos, data_f)
         lfp_ds[i_data] = signal_downsample(
             data_f, config.DOWNSAMPLE, idx_start=0, axis=0

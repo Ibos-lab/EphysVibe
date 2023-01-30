@@ -3,7 +3,7 @@ import os
 import logging
 import re
 import h5py
-from ..structures import trials_data
+from ..structures.trials_data import TrialsData
 
 
 def bhv_to_dictionary(bhv):
@@ -48,11 +48,11 @@ def sort_data_trial(
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    start_trials = start_trials - 1500  # , [ds_samples[-1]])
+    start_trials = start_trials - 1000  # , [ds_samples[-1]])
     n_trials, n_neurons, n_ts = (
         len(start_trials),
         len(clusters),
-        np.max(end_trials - (start_trials - 1000)),
+        np.max(end_trials - start_trials),
     )
     #  Define arrays
     sp_samples = np.full((n_trials, n_neurons, n_ts), np.nan)
@@ -87,14 +87,14 @@ def sort_data_trial(
         )
         # select code numbers
         code_numbers.append(
-            full_word[events_mask].tolist()
+            full_word[events_mask].tolist()  # ! CHECK WHY  i did tolist()
         )  # all trials have to start & end with the same codes
         # select code times
         code_samples.append(real_strobes[events_mask].tolist())
         # select lfp
         lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
-        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]
+        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]  # !
         # select eyes
         eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
 
@@ -146,7 +146,7 @@ def build_data_structure(
 ):
     sp_data = {
         "sp_samples": sp_samples,
-        "blocks": blocks,  # ! check if int
+        "blocks": blocks,
         "code_numbers": code_numbers,
         "code_samples": code_samples,
         "eyes_values": eyes_values,
@@ -197,7 +197,7 @@ def restructure(
         eyes_ds=eyes_ds,
     )
 
-    data = trials_data.TrialsData(
+    data = TrialsData(
         sp_samples,
         blocks,
         code_numbers,
