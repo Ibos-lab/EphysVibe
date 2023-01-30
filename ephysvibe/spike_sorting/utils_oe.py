@@ -121,7 +121,7 @@ def load_eyes(
     continuous = np.asarray(
         cont[-3:, start_time:]
     )  # , order="C" np.array(x, dtype, order='C')
-    del cont
+
     # downsample signal
     eyes_ds = np.zeros(
         (
