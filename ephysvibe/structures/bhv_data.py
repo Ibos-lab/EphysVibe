@@ -6,80 +6,83 @@ from pathlib import Path
 class BhvData:
     def __init__(
         self,
+        # both
         block: np.ndarray,
+        iti: np.ndarray,
+        position: np.ndarray,
+        reward_plus: np.ndarray,
+        trial_error: np.ndarray,
+        delay_time: np.ndarray,
+        fix_time: np.ndarray,
+        fix_window_radius: np.ndarray,
+        idletime3: np.ndarray,
+        rand_delay_time: np.ndarray,
+        reward_dur: np.ndarray,
+        wait_for_fix: np.ndarray,
+        # sacc
         sacc_code: np.ndarray,
-        code_numbers: np.ndarray,
-        code_times: np.ndarray,
-        condition: np.ndarray,
-        eye_ml: np.ndarray,
+        fix_post_sacc_blank: np.ndarray,
+        max_reaction_time: np.ndarray,
+        stay_time: np.ndarray,
         fix_fp_t_time: np.ndarray,
         fix_fp_post_t_time: np.ndarray,
         fix_fp_pre_t_time: np.ndarray,
         fix_close: np.ndarray,
         fix_far: np.ndarray,
-        iti: np.ndarray,
-        stim_match: np.ndarray,
-        samp_pos: np.ndarray,
-        position: np.ndarray,
-        reward_plus: np.ndarray,
-        test_distractor: np.ndarray,
-        test_stimuli: np.ndarray,
-        stim_total: np.ndarray,
-        trial_error: np.ndarray,
         closeexc: np.ndarray,
-        delay_time: np.ndarray,
         excentricity: np.ndarray,
         farexc: np.ndarray,
-        fix_post_sacc_blank: np.ndarray,
-        fix_time: np.ndarray,
-        fix_window_radius: np.ndarray,
-        idletime3: np.ndarray,
-        max_reaction_time: np.ndarray,
-        rand_delay_time: np.ndarray,
-        reward_dur: np.ndarray,
+        # dmts
+        eye_ml: np.ndarray,
+        condition: np.ndarray,
+        code_numbers: np.ndarray,
+        code_times: np.ndarray,
+        stim_match: np.ndarray,
+        samp_pos: np.ndarray,
+        stim_total: np.ndarray,
+        test_distractor: np.ndarray,
+        test_stimuli: np.ndarray,
         sample_time: np.ndarray,
-        stay_time: np.ndarray,
         test_time: np.ndarray,
-        wait_for_fix: np.ndarray,
     ):
         """_summary_
 
         Args:
             block (np.ndarray): dim(trials)
+            iti (np.ndarray):
+            position (np.ndarray):
+            reward_plus (np.ndarray):
+            trial_error (np.ndarray):
+            delay_time (np.ndarray):
+            fix_time (np.ndarray):
+            fix_window_radius (np.ndarray):
+            idletime3 (np.ndarray):
+            rand_delay_time (np.ndarray): range of the delay variation
+            reward_dur (np.ndarray):
+            wait_for_fix (np.ndarray): max time to fixate before the trial starts. dim(trials).
             sacc_code (np.ndarray):
-            code_numbers (np.ndarray):
-            code_times (np.ndarray):
-            condition (np.ndarray): condition in the txt file. dim(trials).
-            eye_ml (np.ndarray):
+            fix_post_sacc_blank (np.ndarray):
+            max_reaction_time (np.ndarray): max time the monkey has to do the sacc
+            stay_time (np.ndarray): post sacc fix. dim(trials).
             fix_fp_t_time (np.ndarray): fixation fix point target time
             fix_fp_post_t_time (np.ndarray):
             fix_fp_pre_t_time (np.ndarray):
             fix_close (np.ndarray):
             fix_far (np.ndarray): scaling
-            iti (np.ndarray):
-            stim_match (np.ndarray):
-            samp_pos (np.ndarray):
-            position (np.ndarray):
-            reward_plus (np.ndarray):
-            test_distractor (np.ndarray):
-            test_stimuli (np.ndarray):
-            stim_total (np.ndarray):
-            trial_error (np.ndarray):
             closeexc (np.ndarray):
-            delay_time (np.ndarray):
             excentricity (np.ndarray):
             farexc (np.ndarray):
-            fix_post_sacc_blank (np.ndarray):
-            fix_time (np.ndarray):
-            fix_window_radius (np.ndarray):
-            idletime3 (np.ndarray):
-            max_reaction_time (np.ndarray): max time the monkey has to do the sacc
-            rand_delay_time (np.ndarray): range of the delay variation
-            reward_dur (np.ndarray):
+            eye_ml (np.ndarray):
+            condition (np.ndarray): condition in the txt file. dim(trials).
+            code_numbers (np.ndarray):
+            code_times (np.ndarray):
+            stim_match (np.ndarray):
+            samp_pos (np.ndarray):
+            stim_total (np.ndarray):
+            test_distractor (np.ndarray):
+            test_stimuli (np.ndarray):
             sample_time (np.ndarray):
-            stay_time (np.ndarray): post sacc fix. dim(trials).
             test_time (np.ndarray):
-            wait_for_fix (np.ndarray): max time to fixate before the trial starts. dim(trials).
         """
         self.block = block
         self.sacc_code = sacc_code

@@ -1,37 +1,99 @@
 import h5py
 import numpy as np
 from pathlib import Path
+from .bhv_data import BhvData
 
 
-class TrialsData:
+class TrialsData(BhvData):
     def __init__(
         self,
-        sp_samples,
-        blocks,
-        code_numbers,
-        code_samples,
-        eyes_values,
-        lfp_values,
-        samples,
-        clusters_id,
-        clusters_ch,
-        clustersgroup,
-        clusterdepth,
+        block: np.ndarray,
+        iti: np.ndarray,
+        position: np.ndarray,
+        reward_plus: np.ndarray,
+        trial_error: np.ndarray,
+        delay_time: np.ndarray,
+        fix_time: np.ndarray,
+        fix_window_radius: np.ndarray,
+        idletime3: np.ndarray,
+        rand_delay_time: np.ndarray,
+        reward_dur: np.ndarray,
+        wait_for_fix: np.ndarray,
+        # sacc
+        sacc_code: np.ndarray,
+        fix_post_sacc_blank: np.ndarray,
+        max_reaction_time: np.ndarray,
+        stay_time: np.ndarray,
+        fix_fp_t_time: np.ndarray,
+        fix_fp_post_t_time: np.ndarray,
+        fix_fp_pre_t_time: np.ndarray,
+        fix_close: np.ndarray,
+        fix_far: np.ndarray,
+        closeexc: np.ndarray,
+        excentricity: np.ndarray,
+        farexc: np.ndarray,
+        # dmts
+        eye_ml: np.ndarray,
+        condition: np.ndarray,
+        code_numbers: np.ndarray,
+        code_times: np.ndarray,
+        stim_match: np.ndarray,
+        samp_pos: np.ndarray,
+        stim_total: np.ndarray,
+        test_distractor: np.ndarray,
+        test_stimuli: np.ndarray,
+        sample_time: np.ndarray,
+        test_time: np.ndarray,
+        # sp
+        sp_samples: np.ndarray,
+        eyes_values: np.ndarray,
+        lfp_values: np.ndarray,
     ):
-
+        """Initialize the class."""
+        super().__init__(
+            block,
+            iti,
+            position,
+            reward_plus,
+            trial_error,
+            delay_time,
+            fix_time,
+            fix_window_radius,
+            idletime3,
+            rand_delay_time,
+            reward_dur,
+            wait_for_fix,
+            # sacc
+            sacc_code,
+            fix_post_sacc_blank,
+            max_reaction_time,
+            stay_time,
+            fix_fp_t_time,
+            fix_fp_post_t_time,
+            fix_fp_pre_t_time,
+            fix_close,
+            fix_far,
+            closeexc,
+            excentricity,
+            farexc,
+            # dmts
+            eye_ml,
+            condition,
+            code_numbers,
+            code_times,
+            stim_match,
+            samp_pos,
+            stim_total,
+            test_distractor,
+            test_stimuli,
+            sample_time,
+            test_time,
+        )
         # sp
         self.sp_samples = sp_samples
         self.eyes_values = eyes_values
         self.lfp_values = lfp_values
-        # bhv
-        self.blocks = blocks
-        self.code_numbers = code_numbers
-        self.code_samples = code_samples
-        self.samples = samples
-        self.clusters_id = clusters_id
-        self.clusters_ch = clusters_ch
-        self.clustersgroup = clustersgroup
-        self.clusterdepth = clusterdepth
+
         self._check_shapes()
 
     def _check_shapes(self):
@@ -129,7 +191,7 @@ class TrialsData:
     def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
         # load the data
-
+        bhv_dict = super().from_python_hdf5(load_path)
         with h5py.File(load_path, "r") as data:
             #  get data
             group = data["sp"]
@@ -145,7 +207,8 @@ class TrialsData:
             clustersgroup = group["clustersgroup"][:]
             clusterdepth = group["clusterdepth"][:]
         # create class object and return
-        data = {
+        trials_data = {
+            **bhv_dict,
             "sp_samples": sp_samples,
             "blocks": blocks,
             "code_numbers": code_numbers,
@@ -158,4 +221,4 @@ class TrialsData:
             "clustersgroup": clustersgroup,
             "clusterdepth": clusterdepth,
         }
-        return cls(**data)
+        return cls(**trials_data)

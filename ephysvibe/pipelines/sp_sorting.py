@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
+from ..structures.bhv_data import BhvData
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -97,7 +98,13 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         areas = areas_data["areas"].keys()
 
     # load bhv data
-    bhv = utils_oe.load_bhv_data(directory, subject)
+    bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".mat")
+    bhv_path = glob.glob(bhv_path, recursive=True)
+    if len(bhv_path) == 0:
+        logging.info("Bhv file not found")
+        raise ValueError
+    logging.info("Loading bhv data")
+    bhv = BhvData.from_matlab_mat(bhv_path)
     # load timestamps (fs=30000)
     c_samples = np.load(time_path)  # np.floor(/ config.DOWNSAMPLE).astype(int)
 
@@ -110,8 +117,6 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         real_strobes,
         start_trials,
         end_trials,
-        blocks,
-        dict_bhv,
         ds_samples,
         start_time,
         eyes_ds,
@@ -158,7 +163,6 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             data = data_structure.restructure(
                 start_trials=start_trials,
                 end_trials=end_trials,
-                blocks=blocks,
                 cluster_info=cluster_info,
                 spike_sample=spike_sample,
                 real_strobes=real_strobes,
@@ -167,7 +171,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
                 full_word=full_word,
                 lfp_ds=lfp_ds,
                 eyes_ds=eyes_ds,
-                dict_bhv=dict_bhv,
+                bhv=bhv,
             )
             output_d = os.path.normpath(output_dir)
             path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
