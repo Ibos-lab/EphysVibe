@@ -4,6 +4,7 @@ import logging
 import re
 import h5py
 from ..structures.trials_data import TrialsData
+from collections import defaultdict
 
 
 def bhv_to_dictionary(bhv):
@@ -14,12 +15,24 @@ def bhv_to_dictionary(bhv):
             if split_name[2] != "MLConfig" and split_name[2] != "TrialRecord":
                 n_trial = int(re.split(r"[Trial]", split_name[2])[-1])
                 node_name = split_name[-1]
+
                 node_data = np.array(node)
+                if len(np.array(node).shape) != 0 and np.array(node).shape[0] == 1:
+                    node_data = np.squeeze(node_data, axis=0)
+
                 if len(split_name) > 4 and split_name[4] == "Attribute":
                     node_name = split_name[4] + split_name[5] + split_name[6]
-                    if node_name == "Attribute11" or node_name == "Attribute21":
+
+                    if (
+                        node_name == "Attribute11"
+                        or node_name == "Attribute21"
+                        or node_name == "Attribute12"
+                    ):
                         # cases where data is saved in utf-8
-                        node_data = np.array(node).item().decode("utf-8")
+                        if node_data.item() != 0:
+                            node_data = np.array(
+                                node_data.item().decode("utf-8")
+                            )  # np.array(node)
                 if len(split_name) > 4 and split_name[4] == "Position":
                     node_name = split_name[4] + split_name[5]
 
@@ -31,7 +44,12 @@ def bhv_to_dictionary(bhv):
     for trial in trials_keys:
         bhv_res.append({"trial": re.split(r"[Trial]", trial)[-1]})
     bhv.visititems(visitor_func)
-
+    result = defaultdict(list)
+    for i in range(len(bhv_res)):
+        current = bhv_res[i]
+        for key, value in current.items():
+            for j in range(len(value)):
+                result[key].append(value[j])
     return bhv_res
 
 
@@ -90,7 +108,7 @@ def sort_data_trial(
             full_word[events_mask].tolist()  # ! CHECK WHY  i did tolist()
         )  # all trials have to start & end with the same codes
         # select code times
-        code_samples.append(real_strobes[events_mask].tolist())
+        code_samples.append(real_strobes[events_mask].tolist() - start_trials[trial_i])
         # select lfp
         lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps

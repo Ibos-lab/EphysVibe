@@ -32,3 +32,4 @@ share/python-wheels/
 
 # vscode
 .vscode
+test.ipynb
