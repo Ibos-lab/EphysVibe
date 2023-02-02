@@ -78,27 +78,27 @@ def load_event_files(event_path: Path) -> Dict:
     return events
 
 
-def load_bhv_data(directory: Path, subject: str) -> Group:
-    """Load behavioral data.
+# def load_bhv_data(directory: Path, subject: str) -> Group:
+#     """Load behavioral data.
 
-    Args:
-        directory (Path): path to the directory
-        subject (str): name of the subject
+#     Args:
+#         directory (Path): path to the directory
+#         subject (str): name of the subject
 
-    Returns:
-        Group: bhv file
-    """
-    # Load behavioral data
-    bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".h5")
-    bhv_path = glob.glob(bhv_path, recursive=True)
-    logging.info(directory)
-    if len(bhv_path) == 0:
-        logging.info("Bhv file not found")
-        raise ValueError
-    logging.info("Loading bhv data")
-    bhv = h5py.File(bhv_path[0], "r")["ML"]
+#     Returns:
+#         Group: bhv file
+#     """
+#     # Load behavioral data
+#     bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".mat")
+#     bhv_path = glob.glob(bhv_path, recursive=True)
+#     logging.info(directory)
+#     if len(bhv_path) == 0:
+#         logging.info("Bhv file not found")
+#         raise ValueError
+#     logging.info("Loading bhv data")
+#     bhv = h5py.File(bhv_path[0], "r")["ML"]
 
-    return bhv
+#     return bhv
 
 
 def load_eyes(
@@ -234,10 +234,13 @@ def check_strobes(bhv, full_word, real_strobes):
     # Check if strobe and codes number match
     bhv_codes = []
     trials = list(bhv.keys())[1:-1]
-    for i_trial in trials:
-        bhv_codes.append(list(bhv[i_trial]["BehavioralCodes"]["CodeNumbers"])[0])
-    bhv_codes = np.concatenate(bhv_codes)
-    trial_keys = list(bhv.keys())[1:-1]
+    # for i_trial in trials:
+    #     bhv_codes.append(list(bhv[i_trial]["BehavioralCodes"]["CodeNumbers"])[0])
+    # bhv_codes = np.concatenate(bhv_codes)
+
+    bhv_codes = bhv.code_numbers.reshape(-1)
+    bhv_codes = bhv_codes[~np.isnan(bhv_codes)]
+    # trial_keys = list(bhv.keys())[1:-1]
     if full_word.shape[0] != real_strobes.shape[0]:
         logging.warning("Strobe and codes number shapes do not match")
         logging.info("Strobes =", real_strobes.shape[0])
@@ -271,7 +274,7 @@ def check_strobes(bhv, full_word, real_strobes):
             bhv_codes = bhv_codes[: idx[-1] + 1]
             full_word = full_word[: idx[-1] + 1]
             real_strobes = real_strobes[: idx[-1] + 1]
-            trial_keys = list(bhv.keys())[1 : len(idx)]
+            # trial_keys = list(bhv.keys())[1 : len(idx)]
 
     else:
         logging.info("ML and OE code numbers do match")
@@ -280,7 +283,7 @@ def check_strobes(bhv, full_word, real_strobes):
         else:
             logging.info("ML and OE codes are the same")
 
-    return full_word, real_strobes, trial_keys
+    return full_word, real_strobes  # , trial_keys
 
 
 def find_events_codes(events, bhv):
@@ -298,30 +301,26 @@ def find_events_codes(events, bhv):
         idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
-    full_word, idx_real_strobes, trial_keys = check_strobes(
-        bhv, full_word, idx_real_strobes
-    )
+    full_word, idx_real_strobes = check_strobes(bhv, full_word, idx_real_strobes)
 
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[full_word == config.START_CODE]
     end_trials = real_strobes[full_word == config.END_CODE]
     # search number of blocks
-    n_trials = len(trial_keys)
-    blocks = []
+    # n_trials = len(trial_keys)
+    # blocks = bhv.block
     # iterate over trials
-    for trial_i in range(n_trials):
-        blocks.append(bhv[trial_keys[trial_i]]["Block"][0][0])
+    # for trial_i in range(n_trials):
+    #     blocks.append(bhv[trial_keys[trial_i]]["Block"][0][0])
 
     # change bhv structure
-    bhv = np.array(data_structure.bhv_to_dictionary(bhv))
-    bhv = bhv[:n_trials]
+    # bhv = np.array(data_structure.bhv_to_dictionary(bhv))
+    # bhv = bhv[:n_trials]
     return (
         full_word,
         real_strobes,
         start_trials,
         end_trials,
-        np.array(blocks, dtype=int),
-        bhv,
     )
 
 
