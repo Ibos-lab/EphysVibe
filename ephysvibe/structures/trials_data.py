@@ -21,11 +21,12 @@ class TrialsData:
 
         # sp
         self.sp_samples = sp_samples
+        self.eyes_values = eyes_values
+        self.lfp_values = lfp_values
+        # bhv
         self.blocks = blocks
         self.code_numbers = code_numbers
         self.code_samples = code_samples
-        self.eyes_values = eyes_values
-        self.lfp_values = lfp_values
         self.samples = samples
         self.clusters_id = clusters_id
         self.clusters_ch = clusters_ch
