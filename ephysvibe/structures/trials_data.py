@@ -191,7 +191,7 @@ class TrialsData(BhvData):
     def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
         # load the data
-        bhv_dict = super().from_python_hdf5(load_path)  # TODO: define methode
+
         with h5py.File(load_path, "r") as f:
             #  get data
             group = f["data"]
@@ -199,19 +199,19 @@ class TrialsData(BhvData):
             code_samples = group["code_samples"][:]
             eyes_values = group["eyes_values"][:]
             lfp_values = group["lfp_values"][:]
-            samples = group["samples"][:]
+
             clusters_id = group["clusters_id"][:]
             clusters_ch = group["clusters_ch"][:]
             clustersgroup = group["clustersgroup"][:]
             clusterdepth = group["clusterdepth"][:]
         # create class object and return
+        bhv_dict = super().from_python_hdf5(load_path)
         trials_data = {
             **bhv_dict,
             "sp_samples": sp_samples,
             "code_samples": code_samples,
             "eyes_values": eyes_values,
             "lfp_values": lfp_values,
-            "samples": samples,
             "clusters_id": clusters_id,
             "clusters_ch": clusters_ch,
             "clustersgroup": clustersgroup,
