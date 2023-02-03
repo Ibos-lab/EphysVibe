@@ -8,6 +8,7 @@ import numpy as np
 from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 from ..structures.bhv_data import BhvData
+from ..pipelines import pipe_config
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -145,9 +146,9 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
-        continuous = utils_oe.load_dat_file(
-            dat_path, shape_0=shape_0, shape_1=areas_data["areas"][area]
-        )
+        # continuous = utils_oe.load_dat_file(
+        #     dat_path, shape_0=shape_0, shape_1=areas_data["areas"][area]
+        # )
         (
             idx_sp_ksamples,
             sp_ksamples_clusters_id,
@@ -159,7 +160,12 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             ).astype(
                 int
             )  # timestamps of all the spikes (in ms)
-            lfp_ds = utils_oe.compute_lfp(continuous, start_time)  # [:, start_time:])
+            lfp_ds = utils_oe.compute_lfp(
+                continuous_path,
+                start_time,
+                shape_0=shape_0,
+                shape_1=sum(pipe_config.N_CHANNELS),
+            )  # [:, start_time:])
             data = data_structure.restructure(
                 start_trials=start_trials,
                 end_trials=end_trials,

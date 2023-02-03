@@ -326,7 +326,41 @@ def find_events_codes(events, bhv):
     )
 
 
-def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
+# def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
+#     """Compute lfp and downsample.
+
+#     Args:
+#         c_values (np.array): signal from which compute lfps
+
+#     Returns:
+#         np.array: lfps
+#     """
+#     logging.info("Computing LFPs")
+#     # define lowpass and high pass butterworth filter
+#     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
+#     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
+#     lfp_ds = np.zeros(
+#         (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE) + 1))
+#     )
+#     for i_data in range(c_values.shape[0]):
+#         # dat = np.array(np.asarray(c_values[i_data, start_time:]), order="C")
+#         data_f = sosfilt(hp_sos, c_values[i_data, start_time:])  #  dat)
+#         data_f = sosfilt(lp_sos, data_f)
+#         lfp_ds[i_data] = signal_downsample(
+#             data_f, config.DOWNSAMPLE, idx_start=0, axis=0
+#         )
+#     del data_f
+#     return lfp_ds
+
+
+def compute_lfp(
+    continuous_path: Path,
+    start_time: int,
+    shape_0: int,
+    shape_1: int,
+    f_ch: int = 0,
+    n_ch: int = 0,
+) -> np.ndarray:
     """Compute lfp and downsample.
 
     Args:
@@ -336,18 +370,23 @@ def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
         np.array: lfps
     """
     logging.info("Computing LFPs")
+    n_ch = 3
+    cont = np.memmap(
+        continuous_path,
+        mode="r",
+        dtype="int16",
+        shape=(shape_0, n_ch),
+        offset=shape_0 * f_ch,
+    ).T
     # define lowpass and high pass butterworth filter
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
-    lfp_ds = np.zeros(
-        (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE) + 1))
-    )
-    for i_data in range(c_values.shape[0]):
-        # dat = np.array(np.asarray(c_values[i_data, start_time:]), order="C")
-        data_f = sosfilt(hp_sos, c_values[i_data, start_time:])  #  dat)
-        data_f = sosfilt(lp_sos, data_f)
-        lfp_ds[i_data] = signal_downsample(
-            data_f, config.DOWNSAMPLE, idx_start=0, axis=0
-        )
-    del data_f
+    lfp_ds = np.zeros((n_ch, int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1)))
+    for i_data in range(shape_1 - n_ch, n_ch):
+        dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
+        dat = sosfilt(hp_sos, dat)
+        dat = sosfilt(lp_sos, dat)
+        lfp_ds[i_data] = signal_downsample(dat, config.DOWNSAMPLE, idx_start=0, axis=0)
+        del dat
+    del cont
     return lfp_ds
