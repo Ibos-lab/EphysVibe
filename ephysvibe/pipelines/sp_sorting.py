@@ -104,7 +104,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         logging.info("Bhv file not found")
         raise ValueError
     logging.info("Loading bhv data")
-    bhv = BhvData.from_matlab_mat(bhv_path)
+    bhv = BhvData.from_matlab_mat(bhv_path[0])
     # load timestamps (fs=30000)
     c_samples = np.load(time_path)  # np.floor(/ config.DOWNSAMPLE).astype(int)
 
@@ -196,6 +196,8 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             #     data, output_dir, subject, date_time, area, n_exp, n_record
             # )
             logging.info("Data successfully saved")
+            del data
+            del lfp_ds
         else:
             logging.warning("No recordings")
 

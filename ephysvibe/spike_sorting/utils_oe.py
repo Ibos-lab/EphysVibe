@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import re
 from scipy.signal import butter, sosfilt
-from . import data_structure, config
+from . import config
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -144,6 +144,8 @@ def load_eyes(
             idx_start=0,
             axis=0,
         )
+    del cont
+    del dat
     return eyes_ds
 
 
@@ -233,7 +235,7 @@ def reconstruct_8bits_words(real_strobes, e_channel, e_state):
 def check_strobes(bhv, full_word, real_strobes):
     # Check if strobe and codes number match
     bhv_codes = []
-    trials = list(bhv.keys())[1:-1]
+    # trials = list(bhv.keys())[1:-1]
     # for i_trial in trials:
     #     bhv_codes.append(list(bhv[i_trial]["BehavioralCodes"]["CodeNumbers"])[0])
     # bhv_codes = np.concatenate(bhv_codes)
@@ -347,4 +349,5 @@ def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
         lfp_ds[i_data] = signal_downsample(
             data_f, config.DOWNSAMPLE, idx_start=0, axis=0
         )
+    del data_f
     return lfp_ds

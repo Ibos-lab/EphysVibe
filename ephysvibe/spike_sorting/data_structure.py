@@ -70,7 +70,7 @@ def sort_data_trial(
     n_trials, n_neurons, n_ts = (
         len(start_trials),
         len(clusters),
-        np.max(end_trials - start_trials),
+        np.max(end_trials - start_trials) + 1,
     )
     #  Define arrays
     sp_samples = np.full((n_trials, n_neurons, n_ts), np.nan)
@@ -84,15 +84,15 @@ def sort_data_trial(
         # define trial masks
         sp_mask = np.logical_and(
             spike_sample >= start_trials[trial_i],
-            spike_sample < end_trials[trial_i],
+            spike_sample <= end_trials[trial_i],
         )
         events_mask = np.logical_and(
             real_strobes >= start_trials[trial_i],
-            real_strobes < end_trials[trial_i],
+            real_strobes <= end_trials[trial_i],
         )
         lfp_mask = np.logical_and(
             ds_samples >= start_trials[trial_i],
-            ds_samples < end_trials[trial_i],
+            ds_samples <= end_trials[trial_i],
         )
         # select spikes
         sp_trial = spike_sample[sp_mask] - start_trials[trial_i]
@@ -108,7 +108,10 @@ def sort_data_trial(
             full_word[events_mask].tolist()  # ! CHECK WHY  i did tolist()
         )  # all trials have to start & end with the same codes
         # select code times
-        code_samples.append(real_strobes[events_mask].tolist() - start_trials[trial_i])
+        code_samples.append(
+            (real_strobes[events_mask] - start_trials[trial_i]).tolist()
+        )
+        # code_samples.append(real_strobes[events_mask].tolist() - start_trials[trial_i])
         # select lfp
         lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
@@ -136,7 +139,6 @@ def sort_data_trial(
         code_samples,
         eyes_values,
         lfp_values,
-        samples,
     )
 
 
@@ -183,7 +185,6 @@ def build_data_structure(
 def restructure(
     start_trials,
     end_trials,
-    blocks,
     cluster_info,
     spike_sample,
     real_strobes,
@@ -192,7 +193,7 @@ def restructure(
     full_word,
     lfp_ds,
     eyes_ds,
-    dict_bhv,
+    bhv,
 ):
 
     (
@@ -201,7 +202,6 @@ def restructure(
         code_samples,
         eyes_values,
         lfp_values,
-        samples,
     ) = sort_data_trial(
         clusters=cluster_info,
         spike_sample=spike_sample,
@@ -216,18 +216,16 @@ def restructure(
     )
 
     data = TrialsData(
-        sp_samples,
-        blocks,
-        code_numbers,
-        code_samples,
-        eyes_values,
-        lfp_values,
-        samples,
-        cluster_info["cluster_id"].values,
-        cluster_info["ch"].values,
-        cluster_info["group"].values,
-        cluster_info["depth"].values,
-    )  # ! add BHV
+        **vars(bhv),
+        sp_samples=sp_samples,
+        eyes_values=eyes_values,
+        lfp_values=lfp_values,
+        code_samples=code_samples,
+        clusters_id=cluster_info["cluster_id"].values,
+        clusters_ch=cluster_info["ch"].values,
+        clustersgroup=cluster_info["group"].values,
+        clusterdepth=cluster_info["depth"].values,
+    )
     # data = build_data_structure(
     #     clusters=cluster_info,
     #     sp_samples=sp_samples,
