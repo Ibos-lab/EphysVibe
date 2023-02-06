@@ -152,11 +152,11 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define dat and spikes paths
-        dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
+        # dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
         spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
         # check if paths exist
-        if not os.path.exists(dat_path):
-            raise FileExistsError
+        # if not os.path.exists(dat_path):
+        #     raise FileExistsError
         if not os.path.exists(spike_path):
             raise FileExistsError
         # load continuous data
