@@ -102,7 +102,12 @@ def load_event_files(event_path: Path) -> Dict:
 
 
 def load_eyes(
-    continuous_path: List, shape_0: int, shape_1: int, n_eyes: int, start_time: int = 0
+    continuous_path: List,
+    shape_0: int,
+    shape_1: int,
+    start_ch: int,
+    n_eyes: int,
+    start_time: int = 0,
 ) -> np.ndarray:
     """Load eyes .dat file.
 
@@ -119,33 +124,33 @@ def load_eyes(
     # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
 
     # cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
-    n_ch = 3
-    total_ch = 163
+
     cont = np.memmap(
         continuous_path,
         mode="r",
         dtype="int16",
-        shape=(shape_0, total_ch),
+        shape=(shape_0, shape_1),
     ).T
 
     # downsample signal
     eyes_ds = np.zeros(
         (
-            n_ch,
+            n_eyes,
             int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1),
         )
     )
-    for i_data in range(total_ch - n_ch, total_ch):
+    for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
         logging.info("Downsampling eyes")
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
-        eyes_ds[i_data] = signal_downsample(
+        eyes_ds[i] = signal_downsample(
             dat,
             config.DOWNSAMPLE,
             idx_start=0,
             axis=0,
         )
+        del dat
     del cont
-    del dat
+
     return eyes_ds
 
 
@@ -366,7 +371,7 @@ def compute_lfp(
     start_time: int,
     shape_0: int,
     shape_1: int,
-    f_ch: int = 0,
+    start_ch: int = 0,
     n_ch: int = 0,
 ) -> np.ndarray:
     """Compute lfp and downsample.
@@ -383,14 +388,13 @@ def compute_lfp(
         continuous_path,
         mode="r",
         dtype="int16",
-        shape=(shape_0, n_ch),
-        offset=shape_0 * f_ch,
+        shape=(shape_0, shape_1),
     ).T
     # define lowpass and high pass butterworth filter
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
     lfp_ds = np.zeros((n_ch, int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1)))
-    for i_data in range(f_ch, n_ch):
+    for i_data in range(start_ch, start_ch + n_ch):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         dat = sosfilt(hp_sos, dat)
         dat = sosfilt(lp_sos, dat)
