@@ -394,11 +394,11 @@ def compute_lfp(
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
     lfp_ds = np.zeros((n_ch, int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1)))
-    for i_data in range(start_ch, start_ch + n_ch):
+    for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         dat = sosfilt(hp_sos, dat)
         dat = sosfilt(lp_sos, dat)
-        lfp_ds[i_data] = signal_downsample(dat, config.DOWNSAMPLE, idx_start=0, axis=0)
+        lfp_ds[i] = signal_downsample(dat, config.DOWNSAMPLE, idx_start=0, axis=0)
         del dat
     del cont
     return lfp_ds
