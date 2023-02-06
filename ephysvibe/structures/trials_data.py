@@ -178,7 +178,6 @@ class TrialsData(BhvData):
                 self.clustersgroup.shape,
                 data=self.clustersgroup,
                 compression="gzip",
-                dtype=str,
             )
             group.create_dataset(
                 "clusterdepth",
@@ -203,7 +202,7 @@ class TrialsData(BhvData):
 
             clusters_id = group["clusters_id"][:]
             clusters_ch = group["clusters_ch"][:]
-            clustersgroup = group["clustersgroup"][:]
+            clustersgroup = np.array(group["clustersgroup"], dtype=str)
             clusterdepth = group["clusterdepth"][:]
         # create class object and return
         bhv_dict = super().from_python_hdf5(load_path)
