@@ -9,6 +9,8 @@ from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 from ..structures.bhv_data import BhvData
 from ..pipelines import pipe_config
+from collections import defaultdict
+from typing import Dict
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -62,7 +64,13 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     )
 
 
-def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
+def main(
+    continuous_path: Path,
+    output_dir: Path,
+    areas: list,
+    start_ch: list = [0],
+    n_ch: list = [0],
+) -> None:
     """Compute spike sorting.
 
     Args:
@@ -80,7 +88,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         directory,
         time_path,
         event_path,
-        areas_path,
+        areas_path,  #! delete
     ) = define_paths(continuous_path)
 
     if len(s_path) < 8:
@@ -92,12 +100,18 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
     subject = s_path[-8]
     date_time = s_path[-7]
     # Load json channels_file
-    f = open(areas_path)
-    areas_data = json.load(f)
-    f.close()
+    # f = open(areas_path)
+    # areas_data = json.load(f)
+    # f.close()
     if areas == None:
-        areas = areas_data["areas"].keys()
-
+        areas_ch = pipe_config.AREAS  # areas_data["areas"].keys()
+        total_ch = pipe_config.TOTAL_CH
+    else:
+        total_ch = 0
+        areas_ch: Dict[str, list] = defaultdict(list)
+        for n, n_area in enumerate(areas):
+            areas_ch[n_area] = [start_ch[n], n_ch[n]]
+            total_ch += n_ch[n]
     # load bhv data
     bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".mat")
     bhv_path = glob.glob(bhv_path, recursive=True)
@@ -121,12 +135,13 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
         ds_samples,
         start_time,
         eyes_ds,
-        areas_data,
+        areas_ch,
     ) = pre_treat_oe.pre_treat_oe(
         events=events,
         bhv=bhv,
         c_samples=c_samples,
-        areas_data=areas_data,
+        areas_ch=areas_ch,
+        total_ch=total_ch,
         continuous_path=continuous_path,
     )
     # to ms
@@ -135,7 +150,7 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
     end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
-    for area in areas:
+    for area in areas_ch:
         # define dat and spikes paths
         dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
         spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
@@ -160,13 +175,14 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
             ).astype(
                 int
             )  # timestamps of all the spikes (in ms)
+
             lfp_ds = utils_oe.compute_lfp(
                 continuous_path,
                 start_time,
                 shape_0=shape_0,
-                shape_1=sum(pipe_config.N_CHANNELS),
-                f_ch=0,
-                n_ch=areas_data["areas"][area],
+                shape_1=total_ch,
+                start_ch=areas_ch[area][0],
+                n_ch=areas_ch[area][1],
             )
             data = data_structure.restructure(
                 start_trials=start_trials,

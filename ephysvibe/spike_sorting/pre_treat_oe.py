@@ -4,7 +4,7 @@ from ..pipelines import pipe_config
 import numpy as np
 
 
-def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
+def pre_treat_oe(events, bhv, c_samples, areas_ch, total_ch, continuous_path):
     # reconstruct 8 bit words
     (
         full_word,
@@ -23,12 +23,14 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
     )
 
     # check if eyes
-    n_eyes = areas_data["areas"].pop("eyes", False)
+
+    start_ch, n_eyes = areas_ch.pop("eyes", False)
     if n_eyes:
         eyes_ds = utils_oe.load_eyes(
             continuous_path,
             shape_0=len(c_samples),
-            shape_1=sum(pipe_config.N_CHANNELS),
+            shape_1=total_ch,
+            start_ch=start_ch,
             n_eyes=n_eyes,
             start_time=start_time,
         )
@@ -41,5 +43,5 @@ def pre_treat_oe(events, bhv, c_samples, areas_data, continuous_path):
         ds_samples,
         start_time,
         eyes_ds,
-        areas_data,
+        areas_ch,
     )
