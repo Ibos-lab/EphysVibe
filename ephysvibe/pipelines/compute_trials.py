@@ -165,7 +165,9 @@ def main(continuous_path: Path, output_dir: Path, areas: list) -> None:
                 start_time,
                 shape_0=shape_0,
                 shape_1=sum(pipe_config.N_CHANNELS),
-            )  # [:, start_time:])
+                f_ch=0,
+                n_ch=areas_data["areas"][area],
+            )
             data = data_structure.restructure(
                 start_trials=start_trials,
                 end_trials=end_trials,

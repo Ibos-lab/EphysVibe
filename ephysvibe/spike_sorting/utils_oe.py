@@ -120,22 +120,22 @@ def load_eyes(
 
     # cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
     n_ch = 3
+    total_ch = 163
     cont = np.memmap(
         continuous_path,
         mode="r",
         dtype="int16",
-        shape=(shape_0, n_ch),
-        offset=shape_0 * (shape_1 - n_ch),
+        shape=(shape_0, total_ch),
     ).T
 
     # downsample signal
     eyes_ds = np.zeros(
         (
-            cont.shape[0],
+            n_ch,
             int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1),
         )
     )
-    for i_data in range(cont.shape[0]):
+    for i_data in range(total_ch - n_ch, total_ch):
         logging.info("Downsampling eyes")
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         eyes_ds[i_data] = signal_downsample(
@@ -169,9 +169,17 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
     # ignore noisy groups
+
+    if cluster_info.isnull().sum().sum() > 0:
+        logging.warning(
+            "/cluster_info.tsv has %d nan values" % cluster_info.isnull().sum().sum()
+        )
+        cluster_info = cluster_info.dropna(axis=0)
+        logging.warning("Rows with nan values deleted")
     cluster_info = cluster_info[cluster_info["group"] != "noise"]
     if cluster_info.shape[0] == 0:
         logging.warning("There isn't good or mua clusters")
+
     return idx_sp_ksamples, sp_ksamples_clusters_id, cluster_info
 
 
@@ -370,7 +378,7 @@ def compute_lfp(
         np.array: lfps
     """
     logging.info("Computing LFPs")
-    n_ch = 3
+
     cont = np.memmap(
         continuous_path,
         mode="r",
@@ -382,7 +390,7 @@ def compute_lfp(
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
     lfp_ds = np.zeros((n_ch, int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1)))
-    for i_data in range(shape_1 - n_ch, n_ch):
+    for i_data in range(f_ch, n_ch):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         dat = sosfilt(hp_sos, dat)
         dat = sosfilt(lp_sos, dat)
