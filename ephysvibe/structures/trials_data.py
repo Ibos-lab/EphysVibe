@@ -178,6 +178,7 @@ class TrialsData(BhvData):
                 self.clustersgroup.shape,
                 data=self.clustersgroup,
                 compression="gzip",
+                dtype=str,
             )
             group.create_dataset(
                 "clusterdepth",

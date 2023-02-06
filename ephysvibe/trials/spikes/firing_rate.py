@@ -2,7 +2,6 @@ import os
 import logging
 from pathlib import Path
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy import signal
 import pandas as pd
 from matplotlib import pyplot as plt
