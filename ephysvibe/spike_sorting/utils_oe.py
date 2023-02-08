@@ -393,7 +393,10 @@ def compute_lfp(
     # define lowpass and high pass butterworth filter
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
-    lfp_ds = np.zeros((n_ch, int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1)))
+
+    lfp_ds = np.zeros(
+        (n_ch, int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1))
+    )
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         dat = sosfilt(hp_sos, dat)
