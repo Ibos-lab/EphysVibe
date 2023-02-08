@@ -137,7 +137,7 @@ class BhvData:
             code_numbers = group["CodeNumbers"][:].transpose()
             code_times = group["CodeTimes"][:].transpose()
             condition = group["Condition"][:].reshape(-1)
-            eye_ml = group["Eye"][:].transpose()  # n_trials, n_times, n_ch
+            eye_ml = np.array(group["Eye"]).transpose()  # n_trials, n_times, n_ch
             fix_fp_t_time = group["Fix_FP_T_time"][:].reshape(-1)
             fix_fp_post_t_time = group["Fix_FP_post_T_time"][:].reshape(-1)
             fix_fp_pre_t_time = group["Fix_FP_pre_T_time"][:].reshape(-1)
