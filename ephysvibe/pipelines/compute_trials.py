@@ -41,26 +41,23 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     event_path = "/".join(
         s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
-    areas_path = "/".join(s_path[:-1] + ["channels_info.json"])
+
     # check if paths exist
     if not os.path.exists(directory):
-        logging.error(directory)
+        logging.error("directory: %s does not exist" % directory)
         raise FileExistsError
     if not os.path.exists(time_path):
-        logging.error(time_path)
+        logging.error("time_path: %s does not exist" % time_path)
         raise FileExistsError
     if not os.path.exists(event_path):
-        logging.error(event_path)
+        logging.error("event_path: %s does not exist" % event_path)
         raise FileExistsError
-    if not os.path.exists(areas_path):
-        logging.error(areas_path)
-        raise FileExistsError
+
     return (
         s_path,
         directory,
         time_path,
         event_path,
-        areas_path,
     )
 
 
@@ -79,7 +76,7 @@ def main(
     """
 
     if not os.path.exists(continuous_path):
-        logging.error("Continuous path does not exist")
+        logging.error("continuous_path %s does not exist" % continuous_path)
         raise FileExistsError
     logging.info("-- Start --")
 
@@ -89,7 +86,6 @@ def main(
         directory,
         time_path,
         event_path,
-        areas_path,  #! delete
     ) = define_paths(continuous_path)
 
     if len(s_path) < 8:
@@ -156,6 +152,7 @@ def main(
         spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
         # check if path exist
         if not os.path.exists(spike_path):
+            logging.error("spike_path: %s does not exist" % spike_path)
             raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
