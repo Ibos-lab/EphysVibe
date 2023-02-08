@@ -136,7 +136,7 @@ def load_eyes(
     eyes_ds = np.zeros(
         (
             n_eyes,
-            int(np.floor(cont.shape[1] / config.DOWNSAMPLE) + 1),
+            int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1),
         )
     )
     for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
