@@ -154,17 +154,14 @@ def main(
     for area in areas_ch:
         # define dat and spikes paths
         # dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
+        spike_path = "/".join(s_path[:-1] + ["KS " + area.upper()])
         # check if paths exist
-        # if not os.path.exists(dat_path):
-        #     raise FileExistsError
+
         if not os.path.exists(spike_path):
             raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
-        # continuous = utils_oe.load_dat_file(
-        #     dat_path, shape_0=shape_0, shape_1=areas_data["areas"][area]
-        # )
+
         (
             idx_sp_ksamples,
             sp_ksamples_clusters_id,
