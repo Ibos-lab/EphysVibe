@@ -79,7 +79,7 @@ def main(
     """
 
     if not os.path.exists(continuous_path):
-        raise FileExistsError
+        raise FileExistsError("Continuous path does not exist")
     logging.info("-- Start --")
 
     # define paths
