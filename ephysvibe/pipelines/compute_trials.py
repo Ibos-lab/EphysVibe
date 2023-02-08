@@ -152,11 +152,9 @@ def main(
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
     for area in areas_ch:
-        # define dat and spikes paths
-        # dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        spike_path = "/".join(s_path[:-1] + ["KS " + area.upper()])
-        # check if paths exist
-
+        # define spikes paths
+        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
+        # check if path exist
         if not os.path.exists(spike_path):
             raise FileExistsError
         # load continuous data
