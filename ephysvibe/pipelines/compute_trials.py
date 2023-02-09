@@ -149,7 +149,7 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths
-        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper() + "/kilosort2"])
+        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper() + "/kilosort3"])
         # check if path exist
         if not os.path.exists(spike_path):
             logging.error("spike_path: %s does not exist" % spike_path)
