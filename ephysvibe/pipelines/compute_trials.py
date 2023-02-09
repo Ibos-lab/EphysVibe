@@ -65,8 +65,8 @@ def main(
     continuous_path: Path,
     output_dir: Path,
     areas: list,
-    start_ch: list = [0],
-    n_ch: list = [0],
+    start_ch: list,
+    n_ch: list,
 ) -> None:
     """Compute spike sorting.
 
@@ -104,6 +104,8 @@ def main(
         areas_ch = pipe_config.AREAS  # areas_data["areas"].keys()
         total_ch = pipe_config.TOTAL_CH
     else:
+        if n_ch == None or start_ch == None:
+            raise KeyError("n_ch or start_ch = None")
         total_ch = 0
         areas_ch: Dict[str, list] = defaultdict(list)
         for n, n_area in enumerate(areas):
@@ -149,7 +151,7 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths
-        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper() + "/kilosort3"])
+        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
         # check if path exist
         if not os.path.exists(spike_path):
             logging.error("spike_path: %s does not exist" % spike_path)
@@ -232,8 +234,15 @@ if __name__ == "__main__":
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
+    parser.add_argument(
+        "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=str
+    )
+    parser.add_argument("--n_ch", "-n", nargs="*", default=None, help="n_ch", type=str)
+
     args = parser.parse_args()
     try:
-        main(args.continuous_path, args.output_dir, args.areas)
+        main(
+            args.continuous_path, args.output_dir, args.areas, args.start_ch, args.n_ch
+        )
     except FileExistsError:
         logging.error("path does not exist")
