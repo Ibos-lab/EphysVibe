@@ -105,7 +105,7 @@ def sort_data_trial(
         )
         # select code numbers
         code_numbers.append(
-            full_word[events_mask].tolist()  # ! CHECK WHY  i did tolist()
+            full_word[events_mask].tolist()
         )  # all trials have to start & end with the same codes
         # select code times
         code_samples.append(
@@ -115,7 +115,7 @@ def sort_data_trial(
         # select lfp
         lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
-        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]  # !
+        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]
         # select eyes
         eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
 
@@ -226,15 +226,5 @@ def restructure(
         clustersgroup=cluster_info["group"].values,
         clusterdepth=cluster_info["depth"].values,
     )
-    # data = build_data_structure(
-    #     clusters=cluster_info,
-    #     sp_samples=sp_samples,
-    #     code_numbers=code_numbers,
-    #     code_samples=code_samples,
-    #     eyes_values=eyes_values,
-    #     lfp_values=lfp_values,
-    #     samples=samples,
-    #     blocks=blocks,
-    #     bhv_trial=dict_bhv,
-    # )
+
     return data

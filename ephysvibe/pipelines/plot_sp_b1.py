@@ -12,6 +12,7 @@ from ..spike_sorting import config
 from ..task import task_constants
 import warnings
 from matplotlib import pyplot as plt
+from ..structures.trials_data import TrialsData
 
 warnings.filterwarnings("ignore")
 
@@ -50,11 +51,13 @@ def main(
     if not os.path.exists(filepath):
         raise FileExistsError
     logging.info("-- Start --")
-    file = np.load(filepath, allow_pickle=True).item(0)
-    sp, bhv = file["sp_data"], file["bhv"]
+    # file = np.load(filepath, allow_pickle=True).item(0)
+    # sp, bhv = file["sp_data"], file["bhv"]
+    data = TrialsData.from_python_hdf5(filepath)
+    trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
     # Select trials and create task frame
-    trial_idx = select_trials.select_trials_block(sp, n_block=1)
-    trial_idx = select_trials.select_correct_trials(bhv, trial_idx)
+    # trial_idx = select_trials.select_trials_block(sp, n_block=1)
+    # trial_idx = select_trials.select_correct_trials(bhv, trial_idx)
     task = def_task.create_task_frame(trial_idx, bhv, task_constants.SAMPLES_COND)
     fig_task, _ = def_task.info_task(task)
     neurons = np.where(sp["clustersgroup"] == cgroup)[0]

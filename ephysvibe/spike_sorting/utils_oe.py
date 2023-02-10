@@ -78,29 +78,6 @@ def load_event_files(event_path: Path) -> Dict:
     return events
 
 
-# def load_bhv_data(directory: Path, subject: str) -> Group:
-#     """Load behavioral data.
-
-#     Args:
-#         directory (Path): path to the directory
-#         subject (str): name of the subject
-
-#     Returns:
-#         Group: bhv file
-#     """
-#     # Load behavioral data
-#     bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".mat")
-#     bhv_path = glob.glob(bhv_path, recursive=True)
-#     logging.info(directory)
-#     if len(bhv_path) == 0:
-#         logging.info("Bhv file not found")
-#         raise ValueError
-#     logging.info("Loading bhv data")
-#     bhv = h5py.File(bhv_path[0], "r")["ML"]
-
-#     return bhv
-
-
 def load_eyes(
     continuous_path: List,
     shape_0: int,
@@ -121,9 +98,6 @@ def load_eyes(
         np.array: array containing the downsampled eyes values
     """
     # load eyes data
-    # eyes_path = "/".join(s_path[:-1] + ["Record Node eyes"] + ["eyes.dat"])
-
-    # cont = load_dat_file(continuous_path, shape_0=shape_0, shape_1=shape_1)
 
     cont = np.memmap(
         continuous_path,
