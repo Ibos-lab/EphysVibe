@@ -41,26 +41,23 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     event_path = "/".join(
         s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
-    areas_path = "/".join(s_path[:-1] + ["channels_info.json"])
+
     # check if paths exist
     if not os.path.exists(directory):
-        logging.error(directory)
+        logging.error("directory: %s does not exist" % directory)
         raise FileExistsError
     if not os.path.exists(time_path):
-        logging.error(time_path)
+        logging.error("time_path: %s does not exist" % time_path)
         raise FileExistsError
     if not os.path.exists(event_path):
-        logging.error(event_path)
+        logging.error("event_path: %s does not exist" % event_path)
         raise FileExistsError
-    if not os.path.exists(areas_path):
-        logging.error(areas_path)
-        raise FileExistsError
+
     return (
         s_path,
         directory,
         time_path,
         event_path,
-        areas_path,
     )
 
 
@@ -68,8 +65,8 @@ def main(
     continuous_path: Path,
     output_dir: Path,
     areas: list,
-    start_ch: list = [0],
-    n_ch: list = [0],
+    start_ch: list,
+    n_ch: list,
 ) -> None:
     """Compute spike sorting.
 
@@ -79,6 +76,7 @@ def main(
     """
 
     if not os.path.exists(continuous_path):
+        logging.error("continuous_path %s does not exist" % continuous_path)
         raise FileExistsError
     logging.info("-- Start --")
 
@@ -88,7 +86,6 @@ def main(
         directory,
         time_path,
         event_path,
-        areas_path,  #! delete
     ) = define_paths(continuous_path)
 
     if len(s_path) < 8:
@@ -107,6 +104,8 @@ def main(
         areas_ch = pipe_config.AREAS  # areas_data["areas"].keys()
         total_ch = pipe_config.TOTAL_CH
     else:
+        if n_ch == None or start_ch == None:
+            raise KeyError("n_ch or start_ch = None")
         total_ch = 0
         areas_ch: Dict[str, list] = defaultdict(list)
         for n, n_area in enumerate(areas):
@@ -151,19 +150,15 @@ def main(
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
     for area in areas_ch:
-        # define dat and spikes paths
-        # dat_path = "/".join(s_path[:-1] + ["Record Node " + area] + [area + ".dat"])
-        spike_path = "/".join(s_path[:-1] + ["Record Node " + area])
-        # check if paths exist
-        # if not os.path.exists(dat_path):
-        #     raise FileExistsError
+        # define spikes paths
+        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
+        # check if path exist
         if not os.path.exists(spike_path):
+            logging.error("spike_path: %s does not exist" % spike_path)
             raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
-        # continuous = utils_oe.load_dat_file(
-        #     dat_path, shape_0=shape_0, shape_1=areas_data["areas"][area]
-        # )
+
         (
             idx_sp_ksamples,
             sp_ksamples_clusters_id,
@@ -239,8 +234,21 @@ if __name__ == "__main__":
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
+<<<<<<< HEAD
     args = parser.parse_args()
     try:
         main(args.continuous_path, args.output_dir, args.areas)
+=======
+    parser.add_argument(
+        "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=str
+    )
+    parser.add_argument("--n_ch", "-n", nargs="*", default=None, help="n_ch", type=str)
+
+    args = parser.parse_args()
+    try:
+        main(
+            args.continuous_path, args.output_dir, args.areas, args.start_ch, args.n_ch
+        )
+>>>>>>> cfe1461f11e6520b73751eae377c13e8f8b1a160
     except FileExistsError:
         logging.error("path does not exist")
