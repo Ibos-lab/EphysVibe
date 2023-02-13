@@ -234,11 +234,6 @@ if __name__ == "__main__":
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
-<<<<<<< HEAD
-    args = parser.parse_args()
-    try:
-        main(args.continuous_path, args.output_dir, args.areas)
-=======
     parser.add_argument(
         "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=str
     )
@@ -249,6 +244,5 @@ if __name__ == "__main__":
         main(
             args.continuous_path, args.output_dir, args.areas, args.start_ch, args.n_ch
         )
->>>>>>> cfe1461f11e6520b73751eae377c13e8f8b1a160
     except FileExistsError:
         logging.error("path does not exist")
