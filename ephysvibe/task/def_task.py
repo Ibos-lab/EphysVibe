@@ -26,97 +26,21 @@ def test_stim(task, bhv_idx):
     return task, n_test
 
 
-def create_task_frame(trial_idx, bhv, samples_cond):
+def create_task_frame(condition, test_stimuli, samples_cond):
     task: Dict[str, list] = defaultdict(list)
-    for idx in trial_idx:
-        task["idx_trial"] += [idx]
-        cond = int(bhv[idx]["Condition"][0][0])
-        o1_c1_out = samples_cond["o1_c1_in"] + 28
-        o1_c5_out = samples_cond["o1_c5_in"] + 28
-        o5_c1_out = samples_cond["o5_c1_in"] + 28
-        o5_c5_out = samples_cond["o5_c5_in"] + 28
-        # IN
-        if cond in samples_cond["o1_c1_in"]:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o1_c1"
-            code = 7 - (samples_cond["o1_c1_in"][-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in samples_cond["o1_c5_in"]:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o1_c5"
-            code = 7 - (samples_cond["o1_c5_in"][-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in samples_cond["o5_c1_in"]:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o5_c1"
-            code = 7 - (samples_cond["o5_c1_in"][-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in samples_cond["o5_c5_in"]:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o5_c5"
-            code = 7 - (samples_cond["o5_c5_in"][-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        # OUT
-        elif cond in o1_c1_out:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o1_c1"
-            code = 7 - (o1_c1_out[-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [-1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in o1_c5_out:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o1_c5"
-            code = 7 - (o1_c5_out[-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [-1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in o5_c1_out:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o5_c1"
-            code = 7 - (o5_c1_out[-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [-1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
-        elif cond in o5_c5_out:
-            task, n_test = test_stim(task, bhv[idx])
-            sample_id = "o5_c5"
-            code = 7 - (o5_c5_out[-1] - cond)
-            if code == 7:
-                sample_id = "o0_c0"
-            task["sample_id"] += [sample_id]
-            task["in_out"] += [-1]
-            task["n_test_stimuli"] += [n_test]
-            task["code"] += [code]
+    for key_cond, n_cond in samples_cond.items():
+        idx = np.where(np.in1d(condition, n_cond))[0]
+        n_test_stimuli = np.sum(~np.isnan(test_stimuli[idx]), axis=1)
+        code = 7 - (n_cond[-1] - condition[idx])
+        sample = np.where(
+            np.logical_and(code == 7, n_test_stimuli == 5), "o0_c0", key_cond[:5]
+        )
+
+        task["trial_idx"] += idx.tolist()
+        task["sample"] += sample.tolist()
+        task["in_out"] += [key_cond[6:]] * len(idx)
+        task["n_test_stimuli"] += n_test_stimuli.tolist()
+        task["code"] += code.astype(int).tolist()
 
     return pd.DataFrame(task)
 
