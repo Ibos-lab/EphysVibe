@@ -61,9 +61,10 @@ def main(
     """
     x_lim_max = 4
     x_lim_min = -0.7
-    s_path = os.path.normpath(filepath).split(os.sep)[-1][:-4]
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path])
-    log_output = output_dir + "/" + s_path + "_plot_sp_b1.log"
+    s_path = os.path.normpath(filepath).split(os.sep)
+    ss_path = s_path[-1][:-4]
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
+    log_output = output_dir + "/" + ss_path + "_plot_sp_b1.log"
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -104,59 +105,82 @@ def main(
         ],
     ]
     samples = np.sort(np.unique(task["sample"].values))
-    # target_trials_idx = task["trial_idx"].values
+
     # plot fr for each neuron
     for i_neuron, neuron in enumerate(neurons):
-        neuron_sp = trials_sp[:, i_neuron, :]
+        neuron_sp = trials_sp[:, neuron, :]
         shift_sp = indep_roll(neuron_sp, -(trials_s_on + 1 - 200).astype(int), axis=1)[
-            :, :1200
+            :, :1300
         ]
 
         # Iterate by sample and condition
-        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 6), sharey=True)
-
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), sharey=True)
+        ax2 = [ax[0].twinx(), ax[1].twinx()]
+        all_max_conv = 0
         for i_ax, cond in enumerate(["in", "out"]):
-            trials_conv_fr, all_mask = [], []
-            ax2 = ax[i_ax].twinx()
-            for i_sample in samples:
+            count_trials = 0
+            max_conv = 0
+            for i_s, i_sample in enumerate(samples):
                 sample_idx = task[
                     np.logical_and(task["in_out"] == cond, task["sample"] == i_sample)
                 ]["trial_idx"].values
                 mean_sp = shift_sp[sample_idx].mean(axis=0)
-                conv = (
-                    np.convolve(mean_sp, kernel, mode="same") * 1000
-                )  # todo: check fs and change the 1000
-
-                ax.plot(
-                    conv,
+                conv = np.convolve(mean_sp, kernel, mode="same") * 1000
+                max_conv = np.max(conv) if np.max(conv) > max_conv else max_conv
+                time = np.arange(0, len(conv)) - 200
+                ax[i_ax].plot(time, conv, color=task_constants.PALETTE_B1[i_sample])
+                # Plot spikes
+                count_t = len(sample_idx)
+                rows, cols = np.where(shift_sp[sample_idx] == 1)
+                ax2[i_ax].scatter(
+                    cols - 200,
+                    rows + count_trials,
+                    marker=2,
+                    linewidths=0.5,
+                    alpha=1,
+                    edgecolors="none",
                     color=task_constants.PALETTE_B1[i_sample],
                     label="Sample %s" % i_sample,
                 )
+                count_trials += count_t
+            all_max_conv = max_conv if max_conv > all_max_conv else all_max_conv
+            ax[i_ax].set_title(cond)
 
-            # firing_rate.plot_b1(
-            #     ax[i_ax],
-            #     samples,
-            #     trials_conv_fr,
-            #     trials_time,
-            #     neuron_trials_shift[task["in_out"] == cond],
-            #     events_shift,
-            #     cond,
-            #     x_lim_min,
-            #     x_lim_max,
-            #     all_mask,
-            # )
-        ax[1].legend(fontsize=9)
+        for i_ax in range(2):
+            ax[i_ax].set_ylim(0, all_max_conv + count_trials + 5)
+            ax[i_ax].set_yticks(np.arange(0, all_max_conv + 5, 5))
+            ax2[i_ax].set_yticks(np.arange(-all_max_conv - 5, count_trials))
+            plt.setp(ax2[i_ax].get_yticklabels(), visible=False)
+            ax[i_ax].vlines(
+                0,
+                0,
+                all_max_conv + count_trials + 5,
+                color="k",
+                linestyles="dashed",
+            )
+        ax[0].set(xlabel="Time (s)", ylabel="Average firing rate")
+        ax2[1].set(xlabel="Time (s)", ylabel="trials")
+        ax2[1].legend(
+            fontsize=9,
+            scatterpoints=5,
+            columnspacing=0.5,
+            facecolor="white",
+            framealpha=1,
+            loc="upper right",
+        )
         # fig.legend()
-        fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.2)
+        fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.8)
         fig.text(
-            0.10,
-            0.01,
+            0.5,
+            0.99,
             s="%s - Aligned with %s"
-            % (s_path[:10], list(task_constants.EVENTS_B1.keys())[e_align]),
+            % (ss_path[:10], list(task_constants.EVENTS_B1.keys())[2]),
             horizontalalignment="center",
             verticalalignment="center",
         )
-        fig.suptitle("Neuron (%s) %d" % (cgroup, i_neuron + 1), x=0.10)
+        fig.suptitle(
+            "%s: neuron %d (%s)" % (s_path[-2], i_neuron + 1, cgroup), x=0.05, y=0.99
+        )
 
         if output_dir:
 
@@ -165,13 +189,13 @@ def main(
                 "/".join(
                     [os.path.normpath(output_dir)]
                     + [
-                        s_path
+                        ss_path
                         + "_n"
                         + str(i_neuron + 1)
                         + "_"
                         + cgroup
                         + "_"
-                        + condition[in_out]
+                        + cond
                         + "_b1.jpg"
                     ]
                 )

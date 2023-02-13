@@ -222,11 +222,6 @@ def reconstruct_8bits_words(real_strobes, e_channel, e_state):
 def check_strobes(bhv, full_word, real_strobes):
     # Check if strobe and codes number match
     bhv_codes = []
-    # trials = list(bhv.keys())[1:-1]
-    # for i_trial in trials:
-    #     bhv_codes.append(list(bhv[i_trial]["BehavioralCodes"]["CodeNumbers"])[0])
-    # bhv_codes = np.concatenate(bhv_codes)
-
     bhv_codes = bhv.code_numbers.reshape(-1)
     bhv_codes = bhv_codes[~np.isnan(bhv_codes)]
     # trial_keys = list(bhv.keys())[1:-1]
@@ -295,49 +290,12 @@ def find_events_codes(events, bhv):
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[full_word == config.START_CODE]
     end_trials = real_strobes[full_word == config.END_CODE]
-    # search number of blocks
-    # n_trials = len(trial_keys)
-    # blocks = bhv.block
-    # iterate over trials
-    # for trial_i in range(n_trials):
-    #     blocks.append(bhv[trial_keys[trial_i]]["Block"][0][0])
-
-    # change bhv structure
-    # bhv = np.array(data_structure.bhv_to_dictionary(bhv))
-    # bhv = bhv[:n_trials]
     return (
         full_word,
         real_strobes,
         start_trials,
         end_trials,
     )
-
-
-# def compute_lfp(c_values: np.ndarray, start_time: int) -> np.ndarray:
-#     """Compute lfp and downsample.
-
-#     Args:
-#         c_values (np.array): signal from which compute lfps
-
-#     Returns:
-#         np.array: lfps
-#     """
-#     logging.info("Computing LFPs")
-#     # define lowpass and high pass butterworth filter
-#     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
-#     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
-#     lfp_ds = np.zeros(
-#         (c_values.shape[0], int(np.floor(c_values.shape[1] / config.DOWNSAMPLE) + 1))
-#     )
-#     for i_data in range(c_values.shape[0]):
-#         # dat = np.array(np.asarray(c_values[i_data, start_time:]), order="C")
-#         data_f = sosfilt(hp_sos, c_values[i_data, start_time:])  #  dat)
-#         data_f = sosfilt(lp_sos, data_f)
-#         lfp_ds[i_data] = signal_downsample(
-#             data_f, config.DOWNSAMPLE, idx_start=0, axis=0
-#         )
-#     del data_f
-#     return lfp_ds
 
 
 def compute_lfp(
