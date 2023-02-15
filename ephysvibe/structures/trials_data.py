@@ -95,40 +95,56 @@ class TrialsData(BhvData):
             test_time,
         )
         # sp
-        self.sp_samples = sp_samples
-        self.eyes_values = eyes_values
-        self.lfp_values = lfp_values
-        self.code_samples = code_samples
+        self.sp_samples = sp_samples  # trials x neurons x time
+        self.eyes_values = eyes_values  # trials x ch x time
+        self.lfp_values = lfp_values  # trials x ch x time
+        self.code_samples = code_samples  # trials x ncodes
         self.clusters_id = clusters_id
         self.clusters_ch = clusters_ch
         self.clustersgroup = clustersgroup
         self.clusterdepth = clusterdepth
 
-        # self._check_shapes()
+        self.check_shapes()
 
-    # def _check_shapes(self):
-    #     n_trials, n_neurons, n_ts = self.sp_samples.shape
-    #     n_codes = self.code_numbers.shape[1]
-    #     if self.blocks.shape != (n_trials,):
-    #         raise ValueError(
-    #             "sp_samples and blocks must have the same number of trials (%d != %d)"
-    #             % (n_trials, len(self.blocks))
-    #         )
-    #     if self.code_numbers.shape != (n_trials, n_codes):
-    #         raise ValueError(
-    #             "Expected shape: (%s,%s), but blocks has shape %d"
-    #             % (n_trials, len(self.blocks))
-    #         )
-    #     if self.code_samples.shape != (n_trials, n_codes):
-    #         raise ValueError(
-    #             "sp_samples and blocks must have the same number of trials (%d != %d)"
-    #             % (n_trials, len(self.blocks))
-    #         )
-    #     if self.eyes_values.shape[0] != n_trials or self.eyes_values.shape[2] != n_ts:
-    #         raise ValueError(
-    #             "sp_samples and blocks must have the same number of trials (%d != %d)"
-    #             % (n_trials, len(self.blocks))
-    #         )
+    def check_shapes(self):
+        n_trials, n_neurons, n_ts = self.sp_samples.shape
+        n_codes = self.code_numbers.shape[1]
+
+        if self.eyes_values.shape[0] != n_trials or self.eyes_values.shape[2] != n_ts:
+            raise ValueError(
+                "eyes_values shape: (%s, %s, %s), expected: (%s, n, %s)"
+                % (self.eyes_values.shape, n_trials, n_ts)
+            )
+        if self.lfp_values.shape[0] != n_trials or self.lfp_values.shape[2] != n_ts:
+            raise ValueError(
+                "lfp_values shape: (%s, %s, %s), expected: (%s, n, %s)"
+                % (self.lfp_values.shape, n_trials, n_ts)
+            )
+        if self.code_samples.shape != (n_trials, n_codes):
+            raise ValueError(
+                "code_samples shape: (%s, %s), expected: (%s, %s)"
+                % (self.code_samples.shape, n_trials, n_codes)
+            )
+        if self.clusters_id.shape[0] != n_neurons:
+            raise ValueError(
+                "clusters_id shape: %s, expected: %s"
+                % (self.clusters_id.shape[0], n_neurons)
+            )
+        if self.clusters_ch.shape[0] != n_neurons:
+            raise ValueError(
+                "clusters_ch shape: %s, expected: %s"
+                % (self.clusters_ch.shape[0], n_neurons)
+            )
+        if self.clustersgroup.shape[0] != n_neurons:
+            raise ValueError(
+                "clustersgroup shape: %s, expected: %s"
+                % (self.clustersgroup.shape[0], n_neurons)
+            )
+        if self.clusterdepth.shape[0] != n_neurons:
+            raise ValueError(
+                "clusterdepth shape: %s, expected: %s"
+                % (self.clusterdepth.shape[0], n_neurons)
+            )
 
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""
