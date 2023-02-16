@@ -96,7 +96,7 @@ def main(
         neuron_sp = trials_sp[:, i_n, :]
         shift_sp = TrialsData.indep_roll(
             neuron_sp, -(trials_s_on + 1 - t_before).astype(int), axis=1
-        )[:, :1300]
+        )[:, :1600]
         # Iterate by sample and condition
         fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), sharey=True)
         ax2 = [ax[0].twinx(), ax[1].twinx()]

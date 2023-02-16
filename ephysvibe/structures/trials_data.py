@@ -54,7 +54,20 @@ class TrialsData(BhvData):
         clusterdepth: np.ndarray,
         code_samples: np.ndarray,
     ):
-        """Initialize the class."""
+        """Initialize the class.
+
+        Args:
+            sp_samples (np.ndarray): array of shape (trials x neurons x time) containing the number of spikes at each ms.
+            eyes_values (np.ndarray): array of shape (trials x ch x time) containing the position of the eye (ch1=x,ch2=y)
+                                    and the dilation of the eye (ch3) at each ms.
+            lfp_values (np.ndarray): array of shape (trials x ch x time) containing the lfp values at each ms.
+            clusters_id (np.ndarray): array of shape (neurons,1)
+            clusters_ch (np.ndarray): array of shape (neurons,1)
+            clustersgroup (np.ndarray): array of shape (neurons,1) containing "good" when is a neuron or "mua" when is
+                                        multi unit activity.
+            clusterdepth (np.ndarray): array of shape (neurons,1) containing the de depth of each neuron/mua.
+            code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
+        """
         super().__init__(
             block,
             iti,
@@ -95,21 +108,25 @@ class TrialsData(BhvData):
             test_time,
         )
         # sp
-        self.sp_samples = sp_samples  # trials x neurons x time
-        self.eyes_values = eyes_values  # trials x ch x time
-        self.lfp_values = lfp_values  # trials x ch x time
-        self.code_samples = code_samples  # trials x ncodes
+        self.sp_samples = sp_samples
+        self.eyes_values = eyes_values
+        self.lfp_values = lfp_values
+        self.code_samples = code_samples
         self.clusters_id = clusters_id
         self.clusters_ch = clusters_ch
         self.clustersgroup = clustersgroup
         self.clusterdepth = clusterdepth
-
         self.check_shapes()
 
     def check_shapes(self):
         n_trials, n_neurons, n_ts = self.sp_samples.shape
         n_codes = self.code_numbers.shape[1]
-
+        # Check if the number of trials is the same than in bhv
+        if self.block.shape[0] != n_trials:
+            raise ValueError(
+                "bhv n_trials (%s) != sp n_trials (%s)"
+                % (self.block.shape[0], n_trials)
+            )
         if self.eyes_values.shape[0] != n_trials or self.eyes_values.shape[2] != n_ts:
             raise ValueError(
                 "eyes_values shape: (%s, %s, %s), expected: (%s, n, %s)"
@@ -206,8 +223,6 @@ class TrialsData(BhvData):
     @classmethod
     def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
-        # load the data
-
         with h5py.File(load_path, "r") as f:
             #  get data
             group = f["data"]
@@ -248,11 +263,9 @@ class TrialsData(BhvData):
         """
         arr = np.swapaxes(arr, axis, -1)
         all_idcs = np.ogrid[[slice(0, n) for n in arr.shape]]
-
         # Convert to a positive shift
         shifts[shifts < 0] += arr.shape[-1]
         all_idcs[-1] = all_idcs[-1] - shifts[:, np.newaxis]
-
         result = arr[tuple(all_idcs)]
         arr = np.swapaxes(result, -1, axis)
         return arr
