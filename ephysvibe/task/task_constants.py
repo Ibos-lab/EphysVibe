@@ -27,3 +27,12 @@ PALETTE_B1 = {
     "o5_c5": "lightseagreen",
     "o0_c0": "grey",
 }
+
+EVENTS_B2 = {
+    "start_trial": 9,
+    "target_on": 37,
+    "target_off": 38,
+    "fix_spot_off": 36,
+    "correct_response": 40,
+    "end_trial": 18,
+}
