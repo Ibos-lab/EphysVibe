@@ -14,14 +14,14 @@ from matplotlib import pyplot as plt
 from ..structures.trials_data import TrialsData
 
 warnings.filterwarnings("ignore")
+logging.basicConfig(
+    format="%(asctime)s | %(message)s ",
+    datefmt="%d/%m/%Y %I:%M:%S %p",
+    level=logging.INFO,
+)
 
 
-def main(
-    filepath: Path,
-    output_dir: Path,
-    e_align: int,
-    t_before: int,
-):
+def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     """Compute and plot firing rate during task b1.
 
     Args:
@@ -34,16 +34,11 @@ def main(
     s_path = os.path.normpath(filepath).split(os.sep)
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
-    log_output = output_dir + "/" + ss_path + "_plot_sp_b1.log"
+
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    logging.basicConfig(
-        handlers=[logging.FileHandler(log_output), logging.StreamHandler(sys.stdout)],
-        format="%(asctime)s | %(message)s ",
-        datefmt="%d/%m/%Y %I:%M:%S %p",
-        level=logging.INFO,
-    )
+
     # check if filepath exist
     if not os.path.exists(filepath):
         raise FileExistsError
@@ -169,7 +164,8 @@ def main(
             "/".join(
                 [os.path.normpath(output_dir)]
                 + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
-            )
+            ),
+            bbox_inches="tight",
         )
     logging.info("-- end --")
 
