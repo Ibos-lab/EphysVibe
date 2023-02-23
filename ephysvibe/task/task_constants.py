@@ -33,6 +33,7 @@ EVENTS_B2 = {
     "target_on": 37,
     "target_off": 38,
     "fix_spot_off": 36,
+    "eye_in_target": 10,
     "correct_response": 40,
     "end_trial": 18,
 }

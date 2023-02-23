@@ -97,9 +97,6 @@ def main(
     subject = s_path[-8]
     date_time = s_path[-7]
     # Load json channels_file
-    # f = open(areas_path)
-    # areas_data = json.load(f)
-    # f.close()
     if areas == None:
         areas_ch = pipe_config.AREAS  # areas_data["areas"].keys()
         total_ch = pipe_config.TOTAL_CH
@@ -211,9 +208,7 @@ def main(
             logging.info("Saving data")
 
             data.to_python_hdf5("/".join([path] + [file_name]))
-            # data_structure.save_data(
-            #     data, output_dir, subject, date_time, area, n_exp, n_record
-            # )
+
             logging.info("Data successfully saved")
             del data
             del lfp_ds
