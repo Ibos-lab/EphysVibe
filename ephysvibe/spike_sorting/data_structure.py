@@ -111,7 +111,6 @@ def sort_data_trial(
         code_samples.append(
             (real_strobes[events_mask] - start_trials[trial_i]).tolist()
         )
-        # code_samples.append(real_strobes[events_mask].tolist() - start_trials[trial_i])
         # select lfp
         lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
@@ -122,7 +121,6 @@ def sort_data_trial(
         for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
-            # spiketimes_trial.append(sp_trial[idx_cluster])
             sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
     # complete with nan
     length = max(map(len, code_numbers))
@@ -198,7 +196,7 @@ def restructure(
 
     (
         sp_samples,
-        code_numbers,
+        code_numbers,  # ! check if it's the same than in bhv
         code_samples,
         eyes_values,
         lfp_values,

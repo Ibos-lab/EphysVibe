@@ -35,13 +35,11 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     """
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
-
     directory = "/".join(s_path[:-3])
     time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
     event_path = "/".join(
         s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
-
     # check if paths exist
     if not os.path.exists(directory):
         logging.error("directory: %s does not exist" % directory)
@@ -68,26 +66,25 @@ def main(
     start_ch: list,
     n_ch: list,
 ) -> None:
-    """Compute spike sorting.
+    """Compute trials.
 
     Args:
-        continuous_path (Path):  path to the continuous file (.dat) from OE
-        output_dir (Path): output directory
+        continuous_path (Path):  path to the continuous file (.dat) from OE.
+        output_dir (Path): output directory.
+        areas (list): list containing the areas to which to compute the trials data.
+        start_ch (list): list containing the index of the first channel for each area.
+        n_ch (list): list containing the number of channels for each area.
     """
-
     if not os.path.exists(continuous_path):
         logging.error("continuous_path %s does not exist" % continuous_path)
         raise FileExistsError
     logging.info("-- Start --")
-
-    # define paths
     (
         s_path,
         directory,
         time_path,
         event_path,
     ) = define_paths(continuous_path)
-
     if len(s_path) < 8:
         logging.error("continuous_path should contain at least 8 /")
         raise NotADirectoryError
@@ -96,9 +93,9 @@ def main(
     n_record = s_path[-4][-1]
     subject = s_path[-8]
     date_time = s_path[-7]
-    # Load json channels_file
+    # check n_areas and n_channels
     if areas == None:
-        areas_ch = pipe_config.AREAS  # areas_data["areas"].keys()
+        areas_ch = pipe_config.AREAS
         total_ch = pipe_config.TOTAL_CH
     else:
         if n_ch == None or start_ch == None:
@@ -116,13 +113,10 @@ def main(
         raise ValueError
     logging.info("Loading bhv data")
     bhv = BhvData.from_matlab_mat(bhv_path[0])
-    # load timestamps (fs=30000)
-    c_samples = np.load(time_path)  # np.floor(/ config.DOWNSAMPLE).astype(int)
-
-    # load events (fs=30000)
+    # load timestamps and events
+    c_samples = np.load(time_path)
     events = utils_oe.load_event_files(event_path)
-    # events["samples"] = events["samples"]  # np.floor( / config.DOWNSAMPLE).astype(int)
-    shape_0 = len(c_samples)  # areas_data["shape_0"]
+    shape_0 = len(c_samples)
     (
         full_word,
         real_strobes,
@@ -147,27 +141,23 @@ def main(
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
     for area in areas_ch:
-        # define spikes paths
+        # define spikes paths and check if path exist
         spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
-        # check if path exist
         if not os.path.exists(spike_path):
             logging.error("spike_path: %s does not exist" % spike_path)
             raise FileExistsError
         # load continuous data
         logging.info("Loading %s", area)
-
         (
             idx_sp_ksamples,
             sp_ksamples_clusters_id,
             cluster_info,
         ) = utils_oe.load_spike_data(spike_path)
         if cluster_info.shape[0] != 0:  # if there are valid groups
+            # timestamps of all the spikes (in ms)
             spike_sample = np.floor(
                 c_samples[idx_sp_ksamples] / config.DOWNSAMPLE
-            ).astype(
-                int
-            )  # timestamps of all the spikes (in ms)
-
+            ).astype(int)
             lfp_ds = utils_oe.compute_lfp(
                 continuous_path,
                 start_time,

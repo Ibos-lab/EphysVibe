@@ -90,7 +90,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             ]
             shift_sp = TrialsData.indep_roll(
                 data.sp_samples[target_t_idx, i_n],
-                -(trials_s_on + 1 - t_before).astype(int),
+                -(trials_s_on - t_before).astype(int),
                 axis=1,
             )[:, :2300]
             mean_sp = shift_sp.mean(axis=0)
@@ -153,7 +153,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             horizontalalignment="center",
             verticalalignment="center",
         )
-        # fig.legend(["Target ON"], fontsize=9)
         # ----- end plot ----
         logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
         plt.savefig(

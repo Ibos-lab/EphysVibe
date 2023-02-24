@@ -90,7 +90,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             i_mua += 1
         neuron_sp = trials_sp[:, i_n, :]
         shift_sp = TrialsData.indep_roll(
-            neuron_sp, -(trials_s_on + 1 - t_before).astype(int), axis=1
+            neuron_sp, -(trials_s_on - t_before).astype(int), axis=1
         )[:, :1600]
         # Iterate by sample and condition
         fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), sharey=True)
