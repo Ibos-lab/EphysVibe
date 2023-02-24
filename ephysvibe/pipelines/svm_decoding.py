@@ -3,10 +3,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
-from ephysvibe.trials.spikes import firing_rate
-from ephysvibe.trials import select_trials
-import sys
-from ephysvibe.task import def_task, task_constants
+from ..task import def_task, task_constants
+from ..structures.trials_data import TrialsData
 from collections import defaultdict
 from typing import Dict
 import logging
@@ -27,133 +25,158 @@ logging.basicConfig(
 )
 
 
-def get_fr_df(filepath, in_out, cgroup, e_align):
-    py_f = np.load(filepath, allow_pickle=True).item(0)
-    sp = py_f["sp_data"]
-    bhv = py_f["bhv"]
-    trial_idx = select_trials.select_trials_block(sp, n_block=1)
-    trial_idx = select_trials.select_correct_trials(bhv, trial_idx)
-    task = def_task.create_task_frame(trial_idx, bhv, task_constants.SAMPLES_COND)
-    if cgroup == "all":
-        neurons = np.where((sp["clustersgroup"] != cgroup))[0]
-    else:
-        neurons = np.where((sp["clustersgroup"] == cgroup))[0]
-    fr_samples = firing_rate.fr_by_sample_neuron(
-        sp=sp,
-        neurons=neurons,
-        task=task,
-        in_out=in_out,
-        kernel=0,
-        e_align=e_align,
-        plot=False,
-    )
-    return fr_samples
+def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
+    d_shape = data.shape
+    d_avg = np.zeros((d_shape[0], d_shape[1], int(np.floor(d_shape[2] / step))))
+    count = 0
+    for i_step in np.arange(0, d_shape[2] - step, step):
+        d_avg[:, :, count] = np.mean(data[:, :, i_step : i_step + win], axis=2)
+        count += 1
+    return d_avg
 
 
 def load_fr_samples(
-    path: str,
-    in_out: int,
-    cgroup: str,
-    win_size: int,
-    step: int,
-    fix_duration: int,
-    sample_duration: int,
+    filepath, cgroup, win, step, in_out="in", e_align="sample_on", t_before=200
 ):
-    df = get_fr_df(path, in_out, cgroup, e_align=2)
-    rolling_df = (
-        df.loc[:, :"neuron"]
-        .iloc[:, :-1]
-        .rolling(window=win_size, axis=1, step=step, min_periods=1)
-        .mean()
+    logging.info(filepath)
+    data = TrialsData.from_python_hdf5(filepath)
+    if in_out == "in":
+        in_out_cond = data.condition < task_constants.SAMPLES_COND["o1_c1_out"][0]
+    else:
+        in_out_cond = data.condition >= task_constants.SAMPLES_COND["o1_c1_out"][0]
+
+    trial_idx = np.where(
+        np.logical_and(
+            np.logical_and(data.trial_error == 0, data.block == 1), in_out_cond
+        )
+    )[0]
+    task = def_task.create_task_frame(
+        condition=data.condition[trial_idx],
+        test_stimuli=data.test_stimuli[trial_idx],
+        samples_cond=task_constants.SAMPLES_COND,
     )
-    rolling_df_sample = rolling_df.iloc[
-        :,
-        int((df["sample_on"][0] - fix_duration) / step) : int(
-            (df["sample_on"][0] + sample_duration) / step
-        ),
+    if cgroup == "all":
+        neurons = np.where(data.clustersgroup != cgroup)[0]
+    else:
+        neurons = np.where(data.clustersgroup == cgroup)[0]
+
+    trials_s_on = data.code_samples[
+        trial_idx,
+        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1["sample_on"])[
+            1
+        ],
     ]
-    df = get_fr_df(path, in_out, cgroup, e_align=4)
-    rolling_df = (
-        df.loc[:, :"neuron"]
-        .iloc[:, :-1]
-        .rolling(window=win_size, axis=1, step=step, min_periods=1)
-        .mean()
-    )
-    rolling_df_test = rolling_df.iloc[
-        :, int((df["test_on_1"][0] - 400) / step) :
-    ]  # int((df['test_on_1'][0]+2500)/step)
-    rolling_df = pd.concat([rolling_df_sample, rolling_df_test], axis=1)
-    rolling_df.columns = np.arange(rolling_df.shape[1])
-    rolling_df = pd.concat([rolling_df, df[["neuron", "sample", "trial_idx"]]], axis=1)
-    return rolling_df
+    shifts = -(trials_s_on - t_before).astype(int)
+    shifts = shifts[:, np.newaxis]
+    shift_sp = TrialsData.indep_roll(
+        data.sp_samples[trial_idx][:, neurons], shifts, axis=2
+    )[:, :, :1600]
+    sp_avg = moving_average(shift_sp, win=win, step=step)
+    s_path = os.path.normpath(filepath).split(os.sep)
+    logging.info("%s finished" % s_path[-1])
+    return task, sp_avg
 
 
-## svm
-def sample_df(fr_samples, seed, max_n_trials):
-    all_df = []
-    for fr_s in fr_samples:  # days
-        for i_sample in fr_s["sample"].unique():
-            n_df = fr_s[fr_s["sample"] == i_sample]
-            sam_df = (
-                n_df[n_df["neuron"] == n_df["neuron"].iloc[0]]
-                .sample(min(max_n_trials), random_state=seed)
-                .reset_index(drop=True)[["sample", "trial_idx"]]
+# def load_fr_samples(
+#     path: str,
+#     cgroup: str,
+#     win: int,
+#     step: int,
+#     in_out: str,
+#     e_align: str,
+#     t_before: int = 200,
+# ):
+
+#     task, sp_avg = get_avg_fr(
+#         filepath=path,
+#         cgroup=cgroup,
+#         win=win,
+#         step=step,
+#         in_out=in_out,
+#         e_align=e_align,
+#         t_before=t_before,
+#     )
+#     return task, sp_avg
+
+
+def sample_df(frs_avg, tasks, min_trials, seed):
+
+    sample_dict: Dict[str, list] = defaultdict(list)
+    for i_sample in tasks[0]["sample"].unique():
+        all_sample_fr = []
+        for fr_s, n_task in zip(frs_avg, tasks):  # days
+            t_idx = (
+                n_task[n_task["sample"] == i_sample]
+                .sample(min_trials, random_state=seed)["trial_idx"]
+                .values
             )
-            sam_df = pd.merge(fr_s, sam_df, on=["sample", "trial_idx"], how="inner")
-            sam_df["trial_idx"].replace(
-                sam_df["trial_idx"].unique(),
-                np.arange(0, min(max_n_trials)),
-                inplace=True,
-            )
-            all_df.append(sam_df)
-    all_df = pd.concat(all_df)
-    all_df = all_df.replace(np.nan, 0)
-    return all_df
+            sample_fr = fr_s[t_idx]
+            all_sample_fr.append(sample_fr)
+        all_sample_fr = np.concatenate(all_sample_fr, axis=1)
+        sample_dict[i_sample] = all_sample_fr
+    return sample_dict
 
 
-def compute_window_matrix(all_df, n_win, max_n_trials):
+def compute_window_matrix(all_df, n_win):
     y, all_samples = [], []
-    for i_sample in all_df["sample"].unique():
-        n_df = all_df[all_df["sample"] == i_sample]
-        data = n_df[[n_win, "neuron", "trial_idx"]]
-        n_pivot = pd.pivot_table(
-            data, values=n_win, index="trial_idx", columns="neuron"
-        ).reset_index(
-            drop=True
-        )  # .loc[:,0:]
-        all_samples.append(n_pivot)
-        y.append([i_sample] * min(max_n_trials))
-    return pd.concat(all_samples).reset_index(drop=True), np.concatenate(y)
+    for i_sample in all_df.keys():
+        n_df = all_df[i_sample]
+        data = n_df[:, :, n_win]
+
+        all_samples.append(data)
+        y.append([i_sample] * data.shape[0])
+    return np.concatenate(all_samples, axis=0), np.concatenate(y)
 
 
-def run_svm_decoder(model, fr_samples, windows, it_seed, n_it, le, max_n_trials):
+def run_svm_decoder(model, frs_avg, tasks, windows, min_trials, it_seed, n_it, le):
     scores = np.zeros((windows))
-    all_df = sample_df(fr_samples, it_seed[n_it], max_n_trials)
-    all_df["sample"] = le.transform(all_df["sample"])
+    all_df = sample_df(frs_avg, tasks, min_trials, it_seed[n_it])
+    # all_df['sample']=le.transform(all_df['sample'])
     for n_win in np.arange(0, windows):
         #  select trials randomly
-        X, y = compute_window_matrix(all_df, n_win, max_n_trials)
+        X, y = compute_window_matrix(all_df, n_win)
+
+        y = le.transform(y)
         # split in train and test
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, shuffle=True, random_state=it_seed[n_it], stratify=y
         )
-        X_train["label_encoder"] = y_train
-        # Sample with replacement (only train set)
-        X_train = X_train.sample(len(X_train), random_state=it_seed[n_it], replace=True)
-        y_train = X_train["label_encoder"]
-        X_train = X_train.iloc[:, :-1]
+        np.random.seed(it_seed[n_it])
+        idx_swr = np.random.choice(
+            X_train.shape[0], size=X_train.shape[0], replace=True, p=None
+        )
+        X_train = X_train[idx_swr]
+        y_train = y_train[idx_swr]
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
         scores[n_win] = metrics.accuracy_score(y_test, y_predict)
     return scores
 
 
+# plot results
+def plot_accuracy(scores, win_steps, neuron_max_shift, x_lim_min, x_lim_max, n_neuron):
+    fig, ax = plt.subplots()
+    ax.plot(
+        ((np.arange(0, len(scores[0])) * win_steps) - neuron_max_shift[n_neuron - 1])
+        / 1000,
+        scores[:13].mean(axis=0),
+    )
+    ax.set_xlim(x_lim_min, x_lim_max)
+    ax.vlines(0, 0.3, 1, color="k", linestyles="dashed")  # sample on
+    ax.hlines(0.5, x_lim_min, x_lim_max, color="gray", linestyles="solid")
+    ax.set_title("Is neuron %d engaged in the task?" % (n_neuron))
+    ax.set(xlabel="Time (s)", ylabel="SVM classifier accuracy")
+    fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.2)
+    fig.legend(["Accuracy", "Sample on"], fontsize=9)
+
+
 def main(
     fr_paths: Path,
-    area: str,
     output_dir: Path,
     in_out: int,
     cgroup: str,
+    jobs_load: int = 1,
+    jobs_svm: int = 1,
 ):
     logging.info("--- Start ---")
     file1 = open(fr_paths, "r")
@@ -167,107 +190,96 @@ def main(
     win_size = 100
     step = 10
     fix_duration = 200
-    sample_duration = 450
-    fr_samples = []
-    max_n_trials = []
-    num_neurons = 0
 
-    with Pool(3) as pool:
+    t_before = 200
+    e_align = "sample_on"
+    tasks, frs_avg = [], []
+    with Pool(jobs_load) as pool:
         async_fr = [
             pool.apply_async(
                 load_fr_samples,
                 args=(
                     paths[n],
-                    in_out,
                     cgroup,
                     win_size,
                     step,
-                    fix_duration,
-                    sample_duration,
+                    in_out,
+                    e_align,
+                    t_before,
                 ),
             )
             for n in np.arange(len(paths))
         ]
-        fr_roll = [asc.get() for asc in async_fr]
+        for asc in async_fr:
+            tasks.append(asc.get()[0])
+            frs_avg.append(asc.get()[1])
     logging.info("load_fr_samples finished")
-    for rolling_df in fr_roll:
-        # max number of trials that can be used
-        max_n_trials.append(
-            rolling_df[["neuron", "sample"]][rolling_df["neuron"] == 1]
-            .groupby(["sample"])
-            .count()
-            .min()[0]
-        )
-        # rename neurons
-        unique_neurons = rolling_df["neuron"].unique()
-        rolling_df["neuron"].replace(
-            unique_neurons,
-            np.arange(num_neurons, num_neurons + len(unique_neurons)),
-            inplace=True,
-        )
-        num_neurons += len(unique_neurons)
-        # rename trials
-        unique_trials = rolling_df["trial_idx"].unique()
-        rolling_df["trial_idx"].replace(
-            unique_trials, np.arange(len(unique_trials)), inplace=True
-        )
-        fr_samples.append(rolling_df)
-
+    # max number of trials that can be used
+    min_trials = frs_avg[0].shape[0]
+    for rec in range(len(tasks)):
+        min_n_trials = tasks[rec].groupby(["sample"]).count().min()[0]
+        min_trials = min_n_trials if min_n_trials < min_trials else min_trials
+    # define model
     model = SVC(kernel="linear", C=20, decision_function_shape="ovr", gamma=0.001)
 
     le = LabelEncoder()
-    le.fit(pd.concat(fr_samples)["sample"].unique())
+    le.fit(tasks[0]["sample"].unique())
     # all_df['sample']=le.transform(all_df['sample'])
     n_iterations = 100
     rng = np.random.default_rng(seed=seed)
     it_seed = rng.integers(low=1, high=2023, size=n_iterations, dtype=int)
-    windows = 354  # 0
+    windows = frs_avg[0].shape[2]
     logging.info("Runing decoder")
-    with Pool(10) as pool:
+    with Pool(jobs_svm) as pool:
         async_scores = [
             pool.apply_async(
                 run_svm_decoder,
-                args=(model, fr_samples, windows, it_seed, n, le, max_n_trials),
+                args=(model, frs_avg, tasks, windows, min_trials, it_seed, n, le),
             )
             for n in np.arange(n_iterations)
         ]
-        scores2 = [asc.get() for asc in async_scores]
+        scores = [asc.get() for asc in async_scores]
 
-    fig, ax = plt.subplots(figsize=(16, 5))
-    x = ((np.arange(0, len(scores2[0]))) - fix_duration / 10) / 100
-    ax.plot(x, np.array(scores2).mean(axis=0), label="Accuracy")
-    ss = np.sum(np.array(scores2) < 0.2, axis=0) / np.array(scores2).shape[0]
+    s_path = os.path.normpath(paths[0]).split(os.sep)
+    n_neurons = 0
+    for rec in range(len(frs_avg)):
+        n_neurons += frs_avg[rec].shape[1]
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+    x = ((np.arange(0, len(scores[0]))) - fix_duration / 10) / 100
+    ax.plot(x, np.array(scores).mean(axis=0), label="Accuracy")
+    ss = np.sum(np.array(scores) <= 0.2, axis=0) / np.array(scores).shape[0]
     ax.fill_between(
         x,
-        y1=min(np.array(scores2).mean(axis=0)),
-        y2=max(np.array(scores2).mean(axis=0)),
-        where=ss <= 0.05,
+        y1=min(np.array(scores).mean(axis=0)),
+        y2=max(np.array(scores).mean(axis=0)),
+        where=ss >= 0.05,
         color="grey",
         alpha=0.5,
-        label="Below 5%",
+        label="Above 5%",
     )
     fig.legend(fontsize=9)
-    condition = {-1: "out", 1: "in"}
     fig.suptitle(
         "%s, condition: %s, group: %s, %d neurons"
         % (
-            area,
-            condition[in_out],
+            s_path[-2],
+            in_out,
             cgroup,
-            pd.concat(fr_samples)["neuron"].unique()[-1],
+            n_neurons,
         )
     )
+
     fig.savefig(
         "/".join(
             [os.path.normpath(output_dir)]
             + [
-                area
+                s_path[-2]
                 + "_"
                 + str(n_iterations)
                 + "it_"
                 + cgroup
                 + "_"
-                + condition[in_out]
+                + in_out
                 + ".jpg"
             ],
         )
@@ -276,23 +288,33 @@ def main(
 
 
 if __name__ == "__main__":
-    # "/home/INT/losada.c/Documents/codes/run_pipelines/paths_decoding.txt"
+
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("fr_paths", help="Path to txt file", type=Path)
-    parser.add_argument("area", help="area", type=str)
+
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
-    parser.add_argument("--in_out", default=1, help="1 in, -1 out of the rf", type=int)
+    parser.add_argument("--in_out", default="in", help="in or out of the rf", type=str)
 
     parser.add_argument(
         "--cgroup", "-g", default="good", help="cluster goup, good, mua, all", type=str
     )
+    parser.add_argument("--jobs_load", "-l", default=2, help="", type=int)
+    parser.add_argument("--jobs_svm", "-s", default=8, help="", type=int)
+
     args = parser.parse_args()
     try:
-        main(args.fr_paths, args.area, args.output_dir, args.in_out, args.cgroup)
+        main(
+            args.fr_paths,
+            args.output_dir,
+            args.in_out,
+            args.cgroup,
+            args.jobs_load,
+            args.jobs_svm,
+        )
     except FileExistsError:
         logging.error("filepath does not exist")
