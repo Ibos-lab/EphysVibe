@@ -6,6 +6,10 @@ SAMPLES_COND = {
     "o1_c5_in": np.arange(8, 15),
     "o5_c1_in": np.arange(15, 22),
     "o5_c5_in": np.arange(22, 29),
+    "o1_c1_out": np.arange(1, 8) + 28,
+    "o1_c5_out": np.arange(8, 15) + 28,
+    "o5_c1_out": np.arange(15, 22) + 28,
+    "o5_c5_out": np.arange(22, 29) + 28,
 }
 EVENTS_B1 = {
     "start_trial": 9,
@@ -22,4 +26,14 @@ PALETTE_B1 = {
     "o5_c1": "tomato",
     "o5_c5": "lightseagreen",
     "o0_c0": "grey",
+}
+
+EVENTS_B2 = {
+    "start_trial": 9,
+    "target_on": 37,
+    "target_off": 38,
+    "fix_spot_off": 36,
+    "eye_in_target": 10,
+    "correct_response": 40,
+    "end_trial": 18,
 }

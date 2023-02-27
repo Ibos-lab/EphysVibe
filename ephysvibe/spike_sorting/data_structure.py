@@ -3,6 +3,8 @@ import os
 import logging
 import re
 import h5py
+from ..structures.trials_data import TrialsData
+from collections import defaultdict
 
 
 def bhv_to_dictionary(bhv):
@@ -13,12 +15,24 @@ def bhv_to_dictionary(bhv):
             if split_name[2] != "MLConfig" and split_name[2] != "TrialRecord":
                 n_trial = int(re.split(r"[Trial]", split_name[2])[-1])
                 node_name = split_name[-1]
+
                 node_data = np.array(node)
+                if len(np.array(node).shape) != 0 and np.array(node).shape[0] == 1:
+                    node_data = np.squeeze(node_data, axis=0)
+
                 if len(split_name) > 4 and split_name[4] == "Attribute":
                     node_name = split_name[4] + split_name[5] + split_name[6]
-                    if node_name == "Attribute11" or node_name == "Attribute21":
+
+                    if (
+                        node_name == "Attribute11"
+                        or node_name == "Attribute21"
+                        or node_name == "Attribute12"
+                    ):
                         # cases where data is saved in utf-8
-                        node_data = np.array(node).item().decode("utf-8")
+                        if node_data.item() != 0:
+                            node_data = np.array(
+                                node_data.item().decode("utf-8")
+                            )  # np.array(node)
                 if len(split_name) > 4 and split_name[4] == "Position":
                     node_name = split_name[4] + split_name[5]
 
@@ -29,9 +43,13 @@ def bhv_to_dictionary(bhv):
     bhv_res = []
     for trial in trials_keys:
         bhv_res.append({"trial": re.split(r"[Trial]", trial)[-1]})
-
     bhv.visititems(visitor_func)
-
+    result = defaultdict(list)
+    for i in range(len(bhv_res)):
+        current = bhv_res[i]
+        for key, value in current.items():
+            for j in range(len(value)):
+                result[key].append(value[j])
     return bhv_res
 
 
@@ -39,6 +57,7 @@ def sort_data_trial(
     clusters,
     spike_sample,
     start_trials,
+    end_trials,
     real_strobes,
     ds_samples,
     sp_ksamples_clusters_id,
@@ -47,65 +66,77 @@ def sort_data_trial(
     eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    start_trials = np.append(start_trials, [ds_samples[-1]])
-    n_trials = len(start_trials) - 1
-
-    sp_samples = []  #  n_trials x n_neurons x n_times
+    start_trials = start_trials - 1000  # , [ds_samples[-1]])
+    n_trials, n_neurons, n_ts = (
+        len(start_trials),
+        len(clusters),
+        np.max(end_trials - start_trials) + 1,
+    )
+    #  Define arrays
+    sp_samples = np.full((n_trials, n_neurons, n_ts), np.nan)
     code_numbers = []
     code_samples = []
-    lfp_values = []
-    samples = []
-    eyes_values = []
+    lfp_values = np.full((n_trials, lfp_ds.shape[0], n_ts), np.nan)
+    samples = np.full((n_trials, n_ts), np.nan)
+    eyes_values = np.full((n_trials, eyes_ds.shape[0], n_ts), np.nan)
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
-        # ! change the start and end of the trials
         # define trial masks
         sp_mask = np.logical_and(
             spike_sample >= start_trials[trial_i],
-            spike_sample < start_trials[trial_i + 1],
+            spike_sample <= end_trials[trial_i],
         )
         events_mask = np.logical_and(
             real_strobes >= start_trials[trial_i],
-            real_strobes < start_trials[trial_i + 1],
+            real_strobes <= end_trials[trial_i],
         )
         lfp_mask = np.logical_and(
             ds_samples >= start_trials[trial_i],
-            ds_samples < start_trials[trial_i + 1],
+            ds_samples <= end_trials[trial_i],
         )
         # select spikes
-        sp_trial = spike_sample[sp_mask]
+        sp_trial = spike_sample[sp_mask] - start_trials[trial_i]
         id_clusters = sp_ksamples_clusters_id[
             sp_mask
         ]  # to which neuron correspond each spike
-
+        # fill with zeros
+        sp_samples[trial_i, :, : np.sum(lfp_mask)] = np.zeros(
+            (sp_samples.shape[1], np.sum(lfp_mask))
+        )
         # select code numbers
         code_numbers.append(
-            full_word[events_mask]
+            full_word[events_mask].tolist()
         )  # all trials have to start & end with the same codes
         # select code times
-        code_samples.append(real_strobes[events_mask])
+        code_samples.append(
+            (real_strobes[events_mask] - start_trials[trial_i]).tolist()
+        )
         # select lfp
-        lfp_values.append(lfp_ds[:, lfp_mask])
+        lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
         # select timestamps
-        samples.append(ds_samples[lfp_mask])
+        samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]
         # select eyes
-        eyes_values.append(eyes_ds[:, lfp_mask])
+        eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
 
-        spiketimes_trial = []  # n_neurons x n_times
-        for i_cluster in clusters_id:  # iterate over clusters
+        for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
-            spiketimes_trial.append(sp_trial[idx_cluster])
-
-        sp_samples.append(spiketimes_trial)
+            sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
+    # complete with nan
+    length = max(map(len, code_numbers))
+    code_numbers = np.array(
+        [cn_i + [np.nan] * (length - len(cn_i)) for cn_i in code_numbers]
+    )
+    code_samples = np.array(
+        [cs_i + [np.nan] * (length - len(cs_i)) for cs_i in code_samples]
+    )
 
     return (
-        np.array(sp_samples, dtype=object),
-        np.array(code_numbers, dtype=object),
-        np.array(code_samples, dtype=object),
+        sp_samples,
+        code_numbers,
+        code_samples,
         eyes_values,
         lfp_values,
-        np.array(samples, dtype=object),
     )
 
 
@@ -133,7 +164,7 @@ def build_data_structure(
 ):
     sp_data = {
         "sp_samples": sp_samples,
-        "blocks": np.array(blocks, dtype=int),
+        "blocks": blocks,
         "code_numbers": code_numbers,
         "code_samples": code_samples,
         "eyes_values": eyes_values,
@@ -151,7 +182,7 @@ def build_data_structure(
 
 def restructure(
     start_trials,
-    blocks,
+    end_trials,
     cluster_info,
     spike_sample,
     real_strobes,
@@ -160,7 +191,7 @@ def restructure(
     full_word,
     lfp_ds,
     eyes_ds,
-    dict_bhv,
+    bhv,
 ):
 
     (
@@ -169,11 +200,11 @@ def restructure(
         code_samples,
         eyes_values,
         lfp_values,
-        samples,
     ) = sort_data_trial(
         clusters=cluster_info,
         spike_sample=spike_sample,
         start_trials=start_trials,
+        end_trials=end_trials,
         real_strobes=real_strobes,
         ds_samples=ds_samples,
         sp_ksamples_clusters_id=sp_ksamples_clusters_id,
@@ -181,17 +212,20 @@ def restructure(
         lfp_ds=lfp_ds,
         eyes_ds=eyes_ds,
     )
+    # check if code_numbers == bhv.code_numbers
+    if np.nansum(code_numbers - bhv.code_numbers) != 0:
+        logging.error("bhv.code_numbers != code_numbers")
+        raise ValueError
 
-    data = build_data_structure(
-        clusters=cluster_info,
+    data = TrialsData(
+        **vars(bhv),
         sp_samples=sp_samples,
-        code_numbers=code_numbers,
-        code_samples=code_samples,
         eyes_values=eyes_values,
         lfp_values=lfp_values,
-        samples=samples,
-        blocks=blocks,
-        bhv_trial=dict_bhv,
+        code_samples=code_samples,
+        clusters_id=cluster_info["cluster_id"].values,
+        clusters_ch=cluster_info["ch"].values,
+        clustersgroup=cluster_info["group"].values,
+        clusterdepth=cluster_info["depth"].values,
     )
-    logging.info(" ")
     return data

@@ -6,7 +6,7 @@ from open_ephys.analysis import Session
 import numpy as np
 import json
 import os
-
+import ephysvibe.pipelines.pipe_config as pipe_config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,10 +24,9 @@ def main(continuous_path):
     recordnode = session.recordnodes[n_node]
     # Load continuous data
     continuous = recordnode.recordings[n_record].continuous[0]
-
     shape_0 = continuous.samples.shape[0]
-    areas = ["lip", "v4", "pfc", "eyes"]
-    n_channels = [32, 64, 64, 3]
+    areas = pipe_config.AREAS
+    n_channels = pipe_config.N_CHANNELS
     n_total = 0
     # Define dict to save info about channels
     channels_info = {"shape_0": shape_0, "areas": {}}
