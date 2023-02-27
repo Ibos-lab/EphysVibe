@@ -3,14 +3,14 @@ from pathlib import Path
 import logging
 import os
 import json
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import numpy as np
 from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 from ..structures.bhv_data import BhvData
 from ..pipelines import pipe_config
 from collections import defaultdict
-from typing import Dict
+
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -196,9 +196,7 @@ def main(
             if not os.path.exists(path):
                 os.makedirs(path)
             logging.info("Saving data")
-
             data.to_python_hdf5("/".join([path] + [file_name]))
-
             logging.info("Data successfully saved")
             del data
             del lfp_ds

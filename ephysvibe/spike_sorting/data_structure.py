@@ -196,7 +196,7 @@ def restructure(
 
     (
         sp_samples,
-        code_numbers,  # ! check if it's the same than in bhv
+        code_numbers,
         code_samples,
         eyes_values,
         lfp_values,
@@ -212,6 +212,10 @@ def restructure(
         lfp_ds=lfp_ds,
         eyes_ds=eyes_ds,
     )
+    # check if code_numbers == bhv.code_numbers
+    if np.nansum(code_numbers - bhv.code_numbers) != 0:
+        logging.error("bhv.code_numbers != code_numbers")
+        raise ValueError
 
     data = TrialsData(
         **vars(bhv),

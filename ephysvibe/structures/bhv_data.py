@@ -48,22 +48,22 @@ class BhvData:
         """_summary_
 
         Args:
-            block (np.ndarray): dim(trials)
-            iti (np.ndarray):
-            position (np.ndarray):
-            reward_plus (np.ndarray):
-            trial_error (np.ndarray):
-            delay_time (np.ndarray):
-            fix_time (np.ndarray):
-            fix_window_radius (np.ndarray):
+            block (np.ndarray): shape: (trials).
+            iti (np.ndarray): duration of the intertrial interval. shape: (trials).
+            position (np.ndarray): position of the stimulus.  shape: (trials, 2).
+            reward_plus (np.ndarray): the amount of reward if more was given. shape: (trials).
+            trial_error (np.ndarray): if 0: correct trial else: code of the error. shape: (trials).
+            delay_time (np.ndarray): duration of the delay. shape: (trials).
+            fix_time (np.ndarray): duration of the fixation. shape: (trials).
+            fix_window_radius (np.ndarray): shape: (trials).
             idletime3 (np.ndarray):
-            rand_delay_time (np.ndarray): range of the delay variation
-            reward_dur (np.ndarray):
-            wait_for_fix (np.ndarray): max time to fixate before the trial starts. dim(trials).
-            sacc_code (np.ndarray):
+            rand_delay_time (np.ndarray): range of the delay variation. shape: (trials).
+            reward_dur (np.ndarray): duration of the reward. shape: (trials).
+            wait_for_fix (np.ndarray): max time to fixate before the trial starts. shape: (trials).
+            sacc_code (np.ndarray): shape: (trials).
             fix_post_sacc_blank (np.ndarray):
             max_reaction_time (np.ndarray): max time the monkey has to do the sacc
-            stay_time (np.ndarray): post sacc fix. dim(trials).
+            stay_time (np.ndarray): post sacc fix. shape: (trials).
             fix_fp_t_time (np.ndarray): fixation fix point target time
             fix_fp_post_t_time (np.ndarray):
             fix_fp_pre_t_time (np.ndarray):
@@ -73,11 +73,11 @@ class BhvData:
             excentricity (np.ndarray):
             farexc (np.ndarray):
             eye_ml (np.ndarray):
-            condition (np.ndarray): condition in the txt file. dim(trials).
-            code_numbers (np.ndarray):
-            code_times (np.ndarray):
+            condition (np.ndarray): condition in the txt file. shape: (trials).
+            code_numbers (np.ndarray): code of the events.  shape: (trials, events).
+            code_times (np.ndarray): exact time when each event ocurred during the trial. shape: (trials, events).
             stim_match (np.ndarray):
-            samp_pos (np.ndarray):
+            samp_pos (np.ndarray): position of the sample stimulus. shape: (trials, 2).
             stim_total (np.ndarray):
             test_distractor (np.ndarray):
             test_stimuli (np.ndarray):

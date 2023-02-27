@@ -1,10 +1,8 @@
 # Tools for pre-processing OpenEphis data
 import os
 import glob
-import h5py
-from h5py import Group
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 import logging
 from open_ephys.analysis import Session
 import numpy as np
@@ -12,6 +10,7 @@ import pandas as pd
 import re
 from scipy.signal import butter, sosfilt
 from . import config
+from ..structures.bhv_data import BhvData
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -26,7 +25,6 @@ def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
             - areas (List): name of the recorded areas
     """
     logging.info("Loading OE data")
-    # directory = bhv_path.parents[3]
     session = Session(directory)
     split_dir = os.path.normpath(directory).split(os.sep)
     date_time = split_dir[-1]
@@ -41,19 +39,19 @@ def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
     return session, subject, date_time, areas
 
 
-def load_dat_file(dat_path: Path, shape_0: int, shape_1: int) -> np.memmap:
-    """load .dat file.
+# def load_dat_file(dat_path: Path, shape_0: int, shape_1: int) -> np.memmap:
+#     """load .dat file.
 
-    Args:
-        dat_path (Path): path to the .dat file
-        shape_0 (int): number of rows
-        shape_1 (int): number of columns
+#     Args:
+#         dat_path (Path): path to the .dat file
+#         shape_0 (int): number of rows
+#         shape_1 (int): number of columns
 
-    Returns:
-        np.memmap: .dat file
-    """
-    dat_file = np.memmap(dat_path, mode="r", dtype="int16", shape=(shape_0, shape_1)).T
-    return dat_file
+#     Returns:
+#         np.memmap: .dat file
+#     """
+#     dat_file = np.memmap(dat_path, mode="r", dtype="int16", shape=(shape_0, shape_1)).T
+#     return dat_file
 
 
 def load_event_files(event_path: Path) -> Dict:
@@ -63,10 +61,10 @@ def load_event_files(event_path: Path) -> Dict:
         event_path (Path): path to the events folder
 
     Returns:
-        Dict[np.array, np.array, np.array]:
-            - samples (np.array): n sample at wich each event acurres
-            - channel (np.array): channel that change of state at each sample
-            - state (np.array): state of the channel:
+        Dict[np.ndarray, np.ndarray, np.ndarray]:
+            - samples (np.ndarray): n sample at wich each event acurres
+            - channel (np.ndarray): channel that change of state at each sample
+            - state (np.ndarray): state of the channel:
                 - 1 switched to on
                 - 0 switched to off
     """
@@ -95,17 +93,15 @@ def load_eyes(
         start_time (int, optional): sample where to start taking the signal. Defaults to 0.
 
     Returns:
-        np.array: array containing the downsampled eyes values
+        np.ndarray: array containing the downsampled eyes values
     """
     # load eyes data
-
     cont = np.memmap(
         continuous_path,
         mode="r",
         dtype="int16",
         shape=(shape_0, shape_1),
     ).T
-
     # downsample signal
     eyes_ds = np.zeros(
         (
@@ -124,20 +120,19 @@ def load_eyes(
         )
         del dat
     del cont
-
     return eyes_ds
 
 
-def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFrame]:
+def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
     """Load spikes data.
 
     Args:
         spike_path (str): path to the kilosort folder
 
     Returns:
-        Tuple[np.array, np.memmap, pd.DataFrame]:
-            - idx_spiketimes (np.array): array containing the spike times
-            - sp_ksamples_clusters_id (memmap): array containing to which neuron the spike times belongs to
+        Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+            - idx_spiketimes (np.ndarray): array containing the spike times
+            - sp_ksamples_clusters_id (np.ndarray): array containing to which neuron the spike times belongs to
             - cluster_info (pd.Dataframe): info about the clusters
     """
     # search kilosort folder
@@ -148,7 +143,6 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
     # ignore noisy groups
-
     if cluster_info.isnull().sum().sum() > 0:
         logging.warning(
             "/cluster_info.tsv has %d nan values" % cluster_info.isnull().sum().sum()
@@ -163,18 +157,18 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.memmap, pd.DataFram
 
 
 def signal_downsample(
-    x: np.array, downsample: int, idx_start: int = 0, axis: int = 1
+    x: np.ndarray, downsample: int, idx_start: int = 0, axis: int = 1
 ) -> np.ndarray:
     """Downsample signal.
 
     Args:
-        x (np.array): signal to downsample
+        x (np.ndarray): signal to downsample
         downsample (int): amount to downsample
         idx_start (int, optional): sample where to start taking the signal. Defaults to 0.
         axis (int, optional): axis where to apply the downsample. Defaults to 1.
 
     Returns:
-        np.array: downsample signal.
+        np.ndarray: downsample signal.
     """
     idx_ds = np.arange(idx_start, x.shape[axis], downsample)
     if axis == 1:
@@ -183,7 +177,9 @@ def signal_downsample(
     return x
 
 
-def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
+def select_samples(
+    c_samples, e_samples, fs, t_before_event=10, downsample=30
+) -> Tuple[np.ndarray, np.ndarray]:
     # Select the samples of continuous data from t sec before the first event occurs
     # This is done to reduce the data
     start_time = np.where(c_samples == e_samples[0])[0]
@@ -199,7 +195,9 @@ def select_samples(c_samples, e_samples, fs, t_before_event=10, downsample=30):
     return ds_samples, start_time
 
 
-def reconstruct_8bits_words(real_strobes, e_channel, e_state):
+def reconstruct_8bits_words(
+    real_strobes: np.ndarray, e_channel: np.ndarray, e_state: np.ndarray
+) -> np.ndarray:
     idx_old = 0
     current_8code = np.zeros(8, dtype=np.int64)
     full_word = np.zeros(len(real_strobes))
@@ -219,12 +217,13 @@ def reconstruct_8bits_words(real_strobes, e_channel, e_state):
     return full_word
 
 
-def check_strobes(bhv, full_word, real_strobes):
+def check_strobes(
+    bhv: BhvData, full_word: np.ndarray, real_strobes: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     # Check if strobe and codes number match
     bhv_codes = []
     bhv_codes = bhv.code_numbers.reshape(-1)
     bhv_codes = bhv_codes[~np.isnan(bhv_codes)]
-    # trial_keys = list(bhv.keys())[1:-1]
     if full_word.shape[0] != real_strobes.shape[0]:
         logging.warning("Strobe and codes number shapes do not match")
         logging.info("Strobes =", real_strobes.shape[0])
@@ -233,7 +232,6 @@ def check_strobes(bhv, full_word, real_strobes):
         logging.info("Strobe and codes number shapes do match")
         logging.info("Strobes = %d", real_strobes.shape[0])
         logging.info("codes number = %d", full_word.shape[0])
-
     if full_word.shape[0] != bhv_codes.shape[0]:
         logging.warning("ML and OE shapes do not match")
         logging.info("ML = %d", bhv_codes.shape[0])
@@ -258,8 +256,6 @@ def check_strobes(bhv, full_word, real_strobes):
             bhv_codes = bhv_codes[: idx[-1] + 1]
             full_word = full_word[: idx[-1] + 1]
             real_strobes = real_strobes[: idx[-1] + 1]
-            # trial_keys = list(bhv.keys())[1 : len(idx)]
-
     else:
         logging.info("ML and OE code numbers do match")
         if np.sum(bhv_codes - full_word) != 0:
@@ -267,10 +263,12 @@ def check_strobes(bhv, full_word, real_strobes):
         else:
             logging.info("ML and OE codes are the same")
 
-    return full_word, real_strobes  # , trial_keys
+    return full_word, real_strobes
 
 
-def find_events_codes(events, bhv):
+def find_events_codes(
+    events: Dict, bhv: BhvData
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # Reconstruct 8 bit words
     logging.info("Reconstructing 8 bit words")
     idx_real_strobes = np.where(
@@ -286,7 +284,6 @@ def find_events_codes(events, bhv):
     )
     # Check if strobe and codes number match
     full_word, idx_real_strobes = check_strobes(bhv, full_word, idx_real_strobes)
-
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[full_word == config.START_CODE]
     end_trials = real_strobes[full_word == config.END_CODE]
@@ -309,13 +306,12 @@ def compute_lfp(
     """Compute lfp and downsample.
 
     Args:
-        c_values (np.array): signal from which compute lfps
+        c_values (np.ndarray): signal from which compute lfps.
 
     Returns:
-        np.array: lfps
+        np.ndarray: lfps.
     """
     logging.info("Computing LFPs")
-
     cont = np.memmap(
         continuous_path,
         mode="r",

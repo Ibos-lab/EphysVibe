@@ -1,10 +1,28 @@
 import logging
 from . import utils_oe, config
-from ..pipelines import pipe_config
 import numpy as np
+from typing import List, Dict, Tuple
+from ..structures.bhv_data import BhvData
+from pathlib import Path
 
 
-def pre_treat_oe(events, bhv, c_samples, areas_ch, total_ch, continuous_path):
+def pre_treat_oe(
+    events: Dict,
+    bhv: BhvData,
+    c_samples: np.ndarray,
+    areas_ch: Dict,
+    total_ch: int,
+    continuous_path: Path,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
     # reconstruct 8 bit words
     (
         full_word,
@@ -21,9 +39,7 @@ def pre_treat_oe(events, bhv, c_samples, areas_ch, total_ch, continuous_path):
         t_before_event=config.T_EVENT,
         downsample=config.DOWNSAMPLE,
     )
-
     # check if eyes
-
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     if n_eyes:
         eyes_ds = utils_oe.load_eyes(
@@ -34,7 +50,6 @@ def pre_treat_oe(events, bhv, c_samples, areas_ch, total_ch, continuous_path):
             n_eyes=n_eyes,
             start_time=start_time,
         )
-
     return (
         full_word,
         real_strobes,
