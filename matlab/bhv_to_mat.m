@@ -32,7 +32,7 @@ end
 % Define variables
 CodeTimes = nan(n_trials,max_codes);
 CodeNumbers = nan(n_trials,max_codes);
-Eye = nan(n_trials,max_eyes,3);
+Eye = nan(n_trials,3,max_eyes);
 PupilSize =[];
 Position = nan(n_trials,2,2);
 % bhv.UserVars
@@ -78,7 +78,7 @@ for i_trial=1:n_trials
     end
     eye_pupil = cat(2,bhv(i_trial).AnalogData.Eye,PupilSize);
     n_eyes = size(bhv(i_trial).AnalogData.Eye,1);
-    Eye(i_trial,1:n_eyes,:) = eye_pupil;
+    Eye(i_trial,:,1:n_eyes) = reshape(eye_pupil,3,[]);
     % bhv.VariableChanges
     
     fix_time = cat(1,fix_time,bhv(i_trial).VariableChanges.fix_time);
@@ -117,7 +117,9 @@ for i_trial=1:n_trials
         Pos = cat(1,Pos,bhv(i_trial).TaskObject.CurrentConditionInfo.pos);
         Match = cat(1,Match,bhv(i_trial).TaskObject.CurrentConditionInfo.match);
         Total = cat(1,Total,bhv(i_trial).TaskObject.CurrentConditionInfo.total);
-        Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
+        if size(bhv(i_trial).ObjectStatusRecord.Position,1) ~= 0
+            Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
+        end
         reward_dur(i_trial) = bhv(i_trial).VariableChanges.reward_dur;
         n_test = (length(fieldnames(bhv(i_trial).UserVars))-1)/2; 
         if n_test == 7 || n_test == 6
