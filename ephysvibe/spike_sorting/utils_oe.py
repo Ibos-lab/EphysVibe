@@ -142,14 +142,22 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFra
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
-    # ignore noisy groups
-    if cluster_info.isnull().sum().sum() > 0:
+
+    if (  # check if nan values in relevant columns
+        cluster_info[["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]]
+        .isnull()
+        .sum()
+        .sum()
+        > 0
+    ):
         logging.warning(
             "/cluster_info.tsv has %d nan values" % cluster_info.isnull().sum().sum()
         )
-        cluster_info = cluster_info.dropna(axis=0)
+        cluster_info = cluster_info.dropna(
+            axis=0, subset=["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]
+        )
         logging.warning("Rows with nan values deleted")
-    cluster_info = cluster_info[cluster_info["group"] != "noise"]
+    cluster_info = cluster_info[cluster_info["group"] != "noise"]  # ignore noise groups
     if cluster_info.shape[0] == 0:
         logging.warning("There isn't good or mua clusters")
 
