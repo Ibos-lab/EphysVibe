@@ -179,7 +179,7 @@ def main(
     for line in Lines:
         paths.append(line.strip())
 
-    win_size = 100
+    win_size = 50
     step = 10
     fix_duration = 200
     t_before = 200

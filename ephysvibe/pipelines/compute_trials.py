@@ -217,9 +217,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
     parser.add_argument(
-        "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=str
+        "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=int
     )
-    parser.add_argument("--n_ch", "-n", nargs="*", default=None, help="n_ch", type=str)
+    parser.add_argument("--n_ch", "-n", nargs="*", default=None, help="n_ch", type=int)
 
     args = parser.parse_args()
     try:
