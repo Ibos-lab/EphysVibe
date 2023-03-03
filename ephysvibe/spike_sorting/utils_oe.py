@@ -262,12 +262,13 @@ def check_strobes(
             logging.error("Strobe and codes number do not match")
             raise IndexError
         else:  # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0
-            bhv_codes = bhv_codes[: full_word.shape[0]]
+
             # find the last 18 in bhv_codes (last complete trial)
             logging.info(
                 "ML has %d more codes than OE",
                 (bhv_codes.shape[0] - full_word.shape[0]),
             )
+            bhv_codes = bhv_codes[: full_word.shape[0]]
             idx = np.where(bhv_codes == 18)[0]
             bhv = select_trials_bhv(bhv, idx[-1] + 1)
             # bhv_codes = bhv_codes[: idx[-1] + 1]
@@ -280,7 +281,7 @@ def check_strobes(
         else:
             logging.info("ML and OE codes are the same")
 
-    return full_word, real_strobes
+    return full_word, real_strobes, bhv
 
 
 def find_events_codes(
@@ -300,16 +301,11 @@ def find_events_codes(
         idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
-    full_word, idx_real_strobes = check_strobes(bhv, full_word, idx_real_strobes)
+    full_word, idx_real_strobes, bhv = check_strobes(bhv, full_word, idx_real_strobes)
     real_strobes = events["samples"][idx_real_strobes]
     start_trials = real_strobes[full_word == config.START_CODE]
     end_trials = real_strobes[full_word == config.END_CODE]
-    return (
-        full_word,
-        real_strobes,
-        start_trials,
-        end_trials,
-    )
+    return (full_word, real_strobes, start_trials, end_trials, bhv)
 
 
 def compute_lfp(

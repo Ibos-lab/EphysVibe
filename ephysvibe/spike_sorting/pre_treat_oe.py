@@ -29,6 +29,7 @@ def pre_treat_oe(
         real_strobes,
         start_trials,
         end_trials,
+        bhv,
     ) = utils_oe.find_events_codes(events, bhv)
     # Select the timestamps of continuous data
     logging.info("Selecting OE samples")
@@ -59,4 +60,5 @@ def pre_treat_oe(
         start_time,
         eyes_ds,
         areas_ch,
+        bhv,
     )

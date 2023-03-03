@@ -125,6 +125,7 @@ def main(
         start_time,
         eyes_ds,
         areas_ch,
+        bhv,
     ) = pre_treat_oe.pre_treat_oe(
         events=events,
         bhv=bhv,
