@@ -216,7 +216,7 @@ def main(
 
     le = LabelEncoder()
     le.fit(tasks[0]["sample"].unique())
-    n_iterations = 100
+    n_iterations = 1000
     rng = np.random.default_rng(seed=seed)
     it_seed = rng.integers(low=1, high=2023, size=n_iterations, dtype=int)
     windows = frs_avg[0].shape[2]
