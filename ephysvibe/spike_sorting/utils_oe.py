@@ -142,17 +142,14 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFra
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
-
-    if (  # check if nan values in relevant columns
+    nan_values = (
         cluster_info[["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]]
         .isnull()
         .sum()
         .sum()
-        > 0
-    ):
-        logging.warning(
-            "/cluster_info.tsv has %d nan values" % cluster_info.isnull().sum().sum()
-        )
+    )
+    if nan_values > 0:  # check if nan values in relevant columns
+        logging.warning("/cluster_info.tsv has %d nan values" % nan_values)
         cluster_info = cluster_info.dropna(
             axis=0, subset=["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]
         )
