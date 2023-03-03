@@ -96,15 +96,14 @@ def main(
     # check n_areas and n_channels
     if areas == None:
         areas_ch = pipe_config.AREAS
-        total_ch = pipe_config.TOTAL_CH
+
     else:
         if n_ch == None or start_ch == None:
             raise KeyError("n_ch or start_ch = None")
-        total_ch = 0
         areas_ch: Dict[str, list] = defaultdict(list)
         for n, n_area in enumerate(areas):
             areas_ch[n_area] = [start_ch[n], n_ch[n]]
-            total_ch += n_ch[n]
+    total_ch = pipe_config.TOTAL_CH
     # load bhv data
     bhv_path = os.path.normpath(str(directory) + "/*" + subject + ".mat")
     bhv_path = glob.glob(bhv_path, recursive=True)
