@@ -213,7 +213,7 @@ def restructure(
         eyes_ds=eyes_ds,
     )
     # check if code_numbers == bhv.code_numbers
-    if np.nansum(code_numbers - bhv.code_numbers) != 0:
+    if np.nansum(code_numbers - bhv.code_numbers[: code_numbers.shape[0]]) != 0:
         logging.error("bhv.code_numbers != code_numbers")
         raise ValueError
 

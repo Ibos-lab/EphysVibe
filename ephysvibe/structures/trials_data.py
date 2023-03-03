@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 from pathlib import Path
 from .bhv_data import BhvData
+import logging
 
 
 class TrialsData(BhvData):
@@ -123,7 +124,7 @@ class TrialsData(BhvData):
         n_codes = self.code_numbers.shape[1]
         # Check if the number of trials is the same than in bhv
         if self.block.shape[0] != n_trials:
-            raise ValueError(
+            logging.warning(
                 "bhv n_trials (%s) != sp n_trials (%s)"
                 % (self.block.shape[0], n_trials)
             )
