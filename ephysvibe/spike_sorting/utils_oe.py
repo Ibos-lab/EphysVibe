@@ -226,13 +226,12 @@ def reconstruct_8bits_words(
 
 
 def select_trials_bhv(bhv: BhvData, n_trials: int):
-
+    bhv_trials = bhv.block.shape[0]
     new_bhv = vars(bhv).copy()
     for key, val in new_bhv.items():
-        if val.shape[0] == n_trials:
-            new_bhv[key] = val[:2]
-        else:
-            print(val.shape)
+        if val.shape[0] == bhv_trials:
+            new_bhv[key] = val[:n_trials]
+
     new_bhv = BhvData(**new_bhv)
     return new_bhv
 
