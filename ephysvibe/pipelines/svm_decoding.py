@@ -36,7 +36,14 @@ def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
 
 
 def load_fr_samples(
-    filepath, cgroup, win, step, in_out="in", e_align="sample_on", t_before=200
+    filepath,
+    cgroup,
+    win,
+    step,
+    in_out="in",
+    e_align="sample_on",
+    t_before=200,
+    to_decode="samples",
 ):
     logging.info(filepath)
     data = TrialsData.from_python_hdf5(filepath)
@@ -55,6 +62,15 @@ def load_fr_samples(
         test_stimuli=data.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
     )
+    if to_decode == "samples":
+        task = task[task["sample"] != "o0_c0"]
+    elif to_decode == "neutral":
+        task["sample"].replace(
+            ["o1_c1", "o1_c5", "o5_c1", "o5_c5"], "no_neutral", inplace=True
+        )
+    else:
+        logging.error('to_decode must be "samples" or "neutral"')
+        raise ValueError
     if cgroup == "all":
         neurons = np.where(data.clustersgroup != cgroup)[0]
     else:
@@ -62,9 +78,7 @@ def load_fr_samples(
 
     trials_s_on = data.code_samples[
         trial_idx,
-        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1["sample_on"])[
-            1
-        ],
+        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1[e_align])[1],
     ]
     shifts = -(trials_s_on - t_before).astype(int)
     shifts = shifts[:, np.newaxis]
@@ -75,28 +89,6 @@ def load_fr_samples(
     s_path = os.path.normpath(filepath).split(os.sep)
     logging.info("%s finished" % s_path[-1])
     return task, sp_avg
-
-
-# def load_fr_samples(
-#     path: str,
-#     cgroup: str,
-#     win: int,
-#     step: int,
-#     in_out: str,
-#     e_align: str,
-#     t_before: int = 200,
-# ):
-
-#     task, sp_avg = get_avg_fr(
-#         filepath=path,
-#         cgroup=cgroup,
-#         win=win,
-#         step=step,
-#         in_out=in_out,
-#         e_align=e_align,
-#         t_before=t_before,
-#     )
-#     return task, sp_avg
 
 
 def sample_df(frs_avg, tasks, min_trials, seed):
@@ -131,7 +123,6 @@ def compute_window_matrix(all_df, n_win):
 def run_svm_decoder(model, frs_avg, tasks, windows, min_trials, it_seed, n_it, le):
     scores = np.zeros((windows))
     all_df = sample_df(frs_avg, tasks, min_trials, it_seed[n_it])
-    # all_df['sample']=le.transform(all_df['sample'])
     for n_win in np.arange(0, windows):
         #  select trials randomly
         X, y = compute_window_matrix(all_df, n_win)
@@ -177,6 +168,7 @@ def main(
     cgroup: str,
     jobs_load: int = 1,
     jobs_svm: int = 1,
+    to_decode: str = "samples",
 ):
     logging.info("--- Start ---")
     file1 = open(fr_paths, "r")
@@ -190,7 +182,6 @@ def main(
     win_size = 100
     step = 10
     fix_duration = 200
-
     t_before = 200
     e_align = "sample_on"
     tasks, frs_avg = [], []
@@ -206,6 +197,7 @@ def main(
                     in_out,
                     e_align,
                     t_before,
+                    to_decode,
                 ),
             )
             for n in np.arange(len(paths))
@@ -224,7 +216,6 @@ def main(
 
     le = LabelEncoder()
     le.fit(tasks[0]["sample"].unique())
-    # all_df['sample']=le.transform(all_df['sample'])
     n_iterations = 100
     rng = np.random.default_rng(seed=seed)
     it_seed = rng.integers(low=1, high=2023, size=n_iterations, dtype=int)
@@ -244,19 +235,22 @@ def main(
     n_neurons = 0
     for rec in range(len(frs_avg)):
         n_neurons += frs_avg[rec].shape[1]
-
         fig, ax = plt.subplots(figsize=(10, 5))
     x = ((np.arange(0, len(scores[0]))) - fix_duration / 10) / 100
     ax.plot(x, np.array(scores).mean(axis=0), label="Accuracy")
-    ss = np.sum(np.array(scores) <= 0.2, axis=0) / np.array(scores).shape[0]
+    if to_decode == "samples":
+        threshole = 0.25
+    else:
+        threshole = 0.5
+    ss = np.sum(np.array(scores) <= threshole, axis=0) / np.array(scores).shape[0]
     ax.fill_between(
         x,
         y1=min(np.array(scores).mean(axis=0)),
         y2=max(np.array(scores).mean(axis=0)),
-        where=ss >= 0.05,
+        where=ss >= 0.01,
         color="grey",
         alpha=0.5,
-        label="Above 5%",
+        label="Above 1%",
     )
     fig.legend(fontsize=9)
     fig.suptitle(
@@ -305,6 +299,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--jobs_load", "-l", default=2, help="", type=int)
     parser.add_argument("--jobs_svm", "-s", default=8, help="", type=int)
+    parser.add_argument(
+        "--to_decode", "-c", default="samples", help="samples or neutral", type=str
+    )
 
     args = parser.parse_args()
     try:
@@ -315,6 +312,7 @@ if __name__ == "__main__":
             args.cgroup,
             args.jobs_load,
             args.jobs_svm,
+            args.to_decode,
         )
     except FileExistsError:
         logging.error("filepath does not exist")
