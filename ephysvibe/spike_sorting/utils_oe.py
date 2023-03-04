@@ -270,7 +270,7 @@ def check_strobes(
             )
             bhv_codes = bhv_codes[: full_word.shape[0]]
             idx = np.where(bhv_codes == 18)[0]
-            bhv = select_trials_bhv(bhv, idx[-1] + 1)
+            bhv = select_trials_bhv(bhv, len(idx))
             # bhv_codes = bhv_codes[: idx[-1] + 1]
             full_word = full_word[: idx[-1] + 1]
             real_strobes = real_strobes[: idx[-1] + 1]
