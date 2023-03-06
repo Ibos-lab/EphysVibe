@@ -236,31 +236,34 @@ def main(
     for rec in range(len(frs_avg)):
         n_neurons += frs_avg[rec].shape[1]
         fig, ax = plt.subplots(figsize=(10, 5))
-    x = ((np.arange(0, len(scores[0]))) - fix_duration / 10) / 100
+    x = ((np.arange(0, len(scores[0]))) - fix_duration / step) * 10
     ax.plot(x, np.array(scores).mean(axis=0), label="Accuracy")
     if to_decode == "samples":
         threshole = 0.25
     else:
         threshole = 0.5
     ss = np.sum(np.array(scores) <= threshole, axis=0) / np.array(scores).shape[0]
-    ax.fill_between(
-        x,
-        y1=min(np.array(scores).mean(axis=0)),
-        y2=max(np.array(scores).mean(axis=0)),
-        where=ss >= 0.01,
-        color="grey",
-        alpha=0.5,
-        label="Above 1%",
+    mask_inf = ss <= 0.01
+    # stars
+    ax.scatter(
+        x[mask_inf],
+        [threshole - 0.1] * len(x[mask_inf]),
+        color="k",
+        marker="*",
+        label="Below 1%",
+        s=6,
     )
+    ax.set_ylim(0, 1)
+    ax.set_yticks(np.arange(0, 1.1, 0.1))
+    # delete boundaries
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
     fig.legend(fontsize=9)
     fig.suptitle(
-        "%s, condition: %s, group: %s, %d neurons"
-        % (
-            s_path[-2],
-            in_out,
-            cgroup,
-            n_neurons,
-        )
+        "%s, condition: %s, group: %s, %d neurons,window: %d, steps: %d"
+        % (s_path[-2], in_out, cgroup, n_neurons, win_size, step)
     )
 
     fig.savefig(
@@ -268,6 +271,8 @@ def main(
             [os.path.normpath(output_dir)]
             + [
                 s_path[-2]
+                + "_"
+                + to_decode
                 + "_"
                 + str(n_iterations)
                 + "it_"
