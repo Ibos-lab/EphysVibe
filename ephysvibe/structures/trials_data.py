@@ -54,6 +54,7 @@ class TrialsData(BhvData):
         clustersgroup: np.ndarray,
         clusterdepth: np.ndarray,
         code_samples: np.ndarray,
+        neuron_cond: np.ndarray = np.nan,
     ):
         """Initialize the class.
 
@@ -117,6 +118,7 @@ class TrialsData(BhvData):
         self.clusters_ch = clusters_ch
         self.clustersgroup = clustersgroup
         self.clusterdepth = clusterdepth
+        self.neuron_cond = neuron_cond
         self.check_shapes()
 
     def check_shapes(self):
@@ -219,6 +221,12 @@ class TrialsData(BhvData):
                 data=self.clusterdepth,
                 compression="gzip",
             )
+            group.create_dataset(
+                "neuron_cond",
+                self.neuron_cond.shape,
+                data=self.neuron_cond,
+                compression="gzip",
+            )
         f.close()
 
     @classmethod
@@ -236,6 +244,10 @@ class TrialsData(BhvData):
             clusters_ch = group["clusters_ch"][:]
             clustersgroup = np.array(group["clustersgroup"], dtype=str)
             clusterdepth = group["clusterdepth"][:]
+            try:
+                neuron_cond = group["neuron_cond"][:]
+            except:
+                neuron_cond = np.nan
         # create class object and return
         bhv_dict = super().from_python_hdf5(load_path)
         trials_data = {
@@ -248,6 +260,7 @@ class TrialsData(BhvData):
             "clusters_ch": clusters_ch,
             "clustersgroup": clustersgroup,
             "clusterdepth": clusterdepth,
+            "neuron_cond": neuron_cond,
         }
         return cls(**trials_data)
 
