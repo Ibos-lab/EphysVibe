@@ -293,7 +293,7 @@ class BhvData:
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""
         # save the data
-        with h5py.File(save_path, "w-") as f:
+        with h5py.File(save_path, "w") as f:
 
             group = f.create_group("data")
             group.create_dataset(

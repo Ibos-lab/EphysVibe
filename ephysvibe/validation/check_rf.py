@@ -13,11 +13,10 @@ logging.basicConfig(
 )
 
 
-def main(data_path: Path, path_img: Path, output_dir: Path):
+def main(data_path: Path, path_img: Path):
     # define paths and read data
     s_path = os.path.normpath(data_path).split(os.sep)
 
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-1]])
     path_id = s_path[-1][:-3]
     logging.info("Loading data")
     data = TrialsData.from_python_hdf5(data_path)
@@ -56,7 +55,9 @@ def main(data_path: Path, path_img: Path, output_dir: Path):
     new_data["neuron_cond"] = np.array(in_out)
     new_data["clustersgroup"] = np.array(data.clustersgroup, dtype=object)
     new_data = TrialsData(**new_data)
-    new_data.to_python_hdf5(output_dir)
+    logging.info("Saving")
+    new_data.to_python_hdf5(data_path)
+    logging.info("Saved")
 
 
 if __name__ == "__main__":
@@ -67,13 +68,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("data_path", help="Path to the data (TrialsData)", type=Path)
     parser.add_argument("path_img", help="Path to the img folder", type=Path)
-    parser.add_argument(
-        "--output_dir", "-o", default="./output", help="Output directory", type=Path
-    )
+
     args = parser.parse_args()
 
     try:
-        main(args.data_path, args.path_img, args.output_dir)
+        main(args.data_path, args.path_img)
 
     except FileExistsError:
 
