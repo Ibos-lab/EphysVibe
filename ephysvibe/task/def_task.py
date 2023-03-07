@@ -26,21 +26,28 @@ def test_stim(task, bhv_idx):
     return task, n_test
 
 
-def create_task_frame(condition, test_stimuli, samples_cond):
+def create_task_frame(condition, test_stimuli, samples_cond, neuron_cond):
     task: Dict[str, list] = defaultdict(list)
     for key_cond, n_cond in samples_cond.items():
-        idx = np.where(np.in1d(condition, n_cond))[0]
-        n_test_stimuli = np.sum(~np.isnan(test_stimuli[idx]), axis=1)
-        code = 7 - (n_cond[-1] - condition[idx])
-        sample = np.where(
-            np.logical_and(code == 7, n_test_stimuli == 5), "o0_c0", key_cond[:5]
-        )
+        for i_neuron, i_neuron_cond in enumerate(neuron_cond):
+            idx = np.where(np.in1d(condition, n_cond))[0]
+            n_test_stimuli = np.sum(~np.isnan(test_stimuli[idx]), axis=1)
+            code = 7 - (n_cond[-1] - condition[idx])
+            sample = np.where(
+                np.logical_and(code == 7, n_test_stimuli == 5), "o0_c0", key_cond[:5]
+            )
+            in_out = key_cond[6:]
+            if i_neuron_cond == 2 and in_out == "in":
+                in_out = "out"
+            elif i_neuron_cond == 2 and in_out == "out":
+                in_out = "in"
 
-        task["trial_idx"] += idx.tolist()
-        task["sample"] += sample.tolist()
-        task["in_out"] += [key_cond[6:]] * len(idx)
-        task["n_test_stimuli"] += n_test_stimuli.tolist()
-        task["code"] += code.astype(int).tolist()
+            task["i_neuron"] += [i_neuron] * len(idx)
+            task["trial_idx"] += idx.tolist()
+            task["sample"] += sample.tolist()
+            task["in_out"] += [in_out] * len(idx)
+            task["n_test_stimuli"] += n_test_stimuli.tolist()
+            task["code"] += code.astype(int).tolist()
 
     return pd.DataFrame(task)
 
