@@ -16,8 +16,8 @@ logging.basicConfig(
 def main(data_path: Path, path_img: Path, output_dir: Path):
     # define paths and read data
     s_path = os.path.normpath(data_path).split(os.sep)
-    area = s_path[-2]
-    output_dir = os.path.normpath(output_dir) + "/" + s_path[-1]
+
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-1]])
     path_id = s_path[-1][:-3]
     logging.info("Loading data")
     data = TrialsData.from_python_hdf5(data_path)

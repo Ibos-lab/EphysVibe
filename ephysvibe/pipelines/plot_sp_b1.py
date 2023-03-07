@@ -35,6 +35,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
 
+    # check if output dir exist, create it if not
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # check if filepath exist
     if not os.path.exists(filepath):
         raise FileExistsError
