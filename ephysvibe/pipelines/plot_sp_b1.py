@@ -46,11 +46,15 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     data = TrialsData.from_python_hdf5(filepath)
     # Select trials and create task frame
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
+    if np.isnan(data.neuron_cond):
+        neuron_cond = np.ones(len(data.clustersgroup))
+    else:
+        neuron_cond = data.neuron_cond
     task = def_task.create_task_frame(
         condition=data.condition[trial_idx],
         test_stimuli=data.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
-        neuron_cond=data.neuron_cond,
+        neuron_cond=neuron_cond,
     )
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
     # define kernel for convolution
