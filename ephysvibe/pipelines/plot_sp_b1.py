@@ -35,10 +35,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
 
-    # check if output dir exist, create it if not
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
     # check if filepath exist
     if not os.path.exists(filepath):
         raise FileExistsError
@@ -50,6 +46,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         condition=data.condition[trial_idx],
         test_stimuli=data.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
+        neuron_cond=data.neuron_cond,
     )
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
     # define kernel for convolution
@@ -102,7 +99,12 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             max_conv = 0
             for i_sample in samples:
                 sample_idx = task[
-                    np.logical_and(task["in_out"] == cond, task["sample"] == i_sample)
+                    np.logical_and(
+                        task["i_neuron"] == i_neuron,
+                        np.logical_and(
+                            task["in_out"] == cond, task["sample"] == i_sample
+                        ),
+                    )
                 ]["trial_idx"].values
                 mean_sp = shift_sp[sample_idx].mean(axis=0)
                 conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
