@@ -47,21 +47,29 @@ def load_fr_samples(
 ):
     logging.info(filepath)
     data = TrialsData.from_python_hdf5(filepath)
-    if in_out == "in":
-        in_out_cond = data.condition < task_constants.SAMPLES_COND["o1_c1_out"][0]
-    else:
-        in_out_cond = data.condition >= task_constants.SAMPLES_COND["o1_c1_out"][0]
 
-    trial_idx = np.where(
-        np.logical_and(
-            np.logical_and(data.trial_error == 0, data.block == 1), in_out_cond
-        )
-    )[0]
+    trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
+    if np.any(np.isnan(data.neuron_cond)):
+        neuron_cond = np.ones(len(data.clustersgroup))
+    else:
+        neuron_cond = data.neuron_cond
     task = def_task.create_task_frame(
         condition=data.condition[trial_idx],
         test_stimuli=data.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
+        neuron_cond=neuron_cond,
     )
+    if cgroup == "all":
+        neurons = np.where(data.clustersgroup != cgroup)[0]
+    else:
+        neurons = np.where(data.clustersgroup == cgroup)[0]
+
+    task = task[
+        np.logical_and(
+            np.in1d(task["i_neuron"].values, neurons), task["in_out"] == in_out
+        )
+    ]
+
     if to_decode == "samples":
         task = task[task["sample"] != "o0_c0"]
     elif to_decode == "neutral":
@@ -71,24 +79,50 @@ def load_fr_samples(
     else:
         logging.error('to_decode must be "samples" or "neutral"')
         raise ValueError
-    if cgroup == "all":
-        neurons = np.where(data.clustersgroup != cgroup)[0]
+    # split in two groups where the neurons in each have the same trials in in or out
+    task_1 = task[task["i_neuron"] == neurons[0]].copy()
+    trials_neuron = task_1["trial_idx"].values
+    task_1["trial_idx"] = task_1["trial_idx"].replace(
+        trials_neuron, np.arange(0, len(trials_neuron))
+    )
+    t_neurons = task[np.in1d(task["trial_idx"].values, trials_neuron)][
+        "i_neuron"
+    ].unique()
+    t_neurons_2 = neurons[~np.in1d(neurons, t_neurons)]
+    task_all = [task_1]
+    if len(t_neurons_2) != 0:
+        trials_neuron_2 = task[task["i_neuron"] == t_neurons_2[0]]["trial_idx"].values
+        trials_neuron = [trials_neuron, trials_neuron_2]
+        t_neurons = [t_neurons, t_neurons_2]
+        task_2 = task[task["i_neuron"] == t_neurons_2[0]].copy()
+        task_2["trial_idx"] = task_2["trial_idx"].replace(
+            trials_neuron_2, np.arange(0, len(trials_neuron_2))
+        )
+        task_all = [task_1, task_2]
     else:
-        neurons = np.where(data.clustersgroup == cgroup)[0]
+        trials_neuron = [trials_neuron]
+        t_neurons = [t_neurons]
 
-    trials_s_on = data.code_samples[
-        trial_idx,
-        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1[e_align])[1],
-    ]
-    shifts = -(trials_s_on - t_before).astype(int)
-    shifts = shifts[:, np.newaxis]
-    shift_sp = TrialsData.indep_roll(
-        data.sp_samples[trial_idx][:, neurons], shifts, axis=2
-    )[:, :, :1600]
-    sp_avg = moving_average(shift_sp, win=win, step=step)
+    sp_avg_all = []
+    for trial_idx_n, neurons in zip(trials_neuron, t_neurons):
+
+        trials_s_on = data.code_samples[
+            trial_idx[trial_idx_n],
+            np.where(
+                data.code_numbers[trial_idx[trial_idx_n]]
+                == task_constants.EVENTS_B1["sample_on"]
+            )[1],
+        ]
+        shifts = -(trials_s_on - t_before).astype(int)
+        shifts = shifts[:, np.newaxis]
+        shift_sp = TrialsData.indep_roll(
+            data.sp_samples[trial_idx[trial_idx_n]][:, neurons], shifts, axis=2
+        )[:, :, :1600]
+        sp_avg = moving_average(shift_sp, win=win, step=step)
+        sp_avg_all.append(sp_avg)
     s_path = os.path.normpath(filepath).split(os.sep)
     logging.info("%s finished" % s_path[-1])
-    return task, sp_avg
+    return task_all, sp_avg_all
 
 
 def sample_df(frs_avg, tasks, min_trials, seed):
@@ -184,7 +218,7 @@ def main(
     fix_duration = 200
     t_before = 200
     e_align = "sample_on"
-    tasks, frs_avg = [], []
+    tasks_all, frs_avg_all = [], []
     with Pool(jobs_load) as pool:
         async_fr = [
             pool.apply_async(
@@ -203,9 +237,16 @@ def main(
             for n in np.arange(len(paths))
         ]
         for asc in async_fr:
-            tasks.append(asc.get()[0])
-            frs_avg.append(asc.get()[1])
+            tasks_all.append(asc.get()[0])
+            frs_avg_all.append(asc.get()[1])
     logging.info("load_fr_samples finished")
+    tasks, frs_avg = [], []
+    for i in range(len(frs_avg_all)):
+        frs_avg.append(frs_avg_all[i][0])
+        tasks.append(tasks_all[i][0])
+        if len(frs_avg_all[i]) > 1:
+            frs_avg.append(frs_avg_all[i][1])
+            tasks.append(tasks_all[i][1])
     # max number of trials that can be used
     min_trials = frs_avg[0].shape[0]
     for rec in range(len(tasks)):
@@ -213,7 +254,6 @@ def main(
         min_trials = min_n_trials if min_n_trials < min_trials else min_trials
     # define model
     model = SVC(kernel="linear", C=20, decision_function_shape="ovr", gamma=0.001)
-
     le = LabelEncoder()
     le.fit(tasks[0]["sample"].unique())
     n_iterations = 1000
