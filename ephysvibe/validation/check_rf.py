@@ -36,15 +36,23 @@ def main(data_path: Path, path_img: Path):
             + [path_id + "_" + cluster + "_" + str(n_group) + ".jpg"]
         )
         img = cv2.imread(c_path_img)
+        flag = 0
         while 1:
             cv2.imshow("ff", img)
             k = cv2.waitKey(30)
             if k == 32:  # space key to stop
-                break
+                if flag == 1:
+                    flag = 0
+                    break
+                else:
+                    logging.error("Choose 1 or 2 before pressing the space")
+
             elif k == 49:  # if user press 1 (in)
+                flag = 1
                 in_out.append(1)
                 logging.info(1)  # else print its value
             elif k == 50:  # if user press 2
+                flag = 1
                 in_out.append(2)
                 logging.info(2)
             else:  # normally -1 is returned
