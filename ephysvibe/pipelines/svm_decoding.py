@@ -203,6 +203,7 @@ def main(
     jobs_load: int = 1,
     jobs_svm: int = 1,
     to_decode: str = "samples",
+    win_size: int = 50,
 ):
     logging.info("--- Start ---")
     file1 = open(fr_paths, "r")
@@ -213,7 +214,6 @@ def main(
     for line in Lines:
         paths.append(line.strip())
 
-    win_size = 50
     step = 10
     fix_duration = 200
     t_before = 200
@@ -319,10 +319,32 @@ def main(
                 + cgroup
                 + "_"
                 + in_out
+                + "_win"
+                + str(win_size)
                 + ".jpg"
             ],
         )
     )
+
+    scores_path = "/".join(
+        [os.path.normpath(output_dir)]
+        + [
+            s_path[-2]
+            + "_"
+            + to_decode
+            + "_"
+            + str(n_iterations)
+            + "it_"
+            + cgroup
+            + "_"
+            + in_out
+            + "_win"
+            + str(win_size)
+        ],
+    )
+    # save accuracy
+    np.save(scores_path, arr=np.array(scores))
+
     logging.info("--- End ---")
 
 
@@ -347,6 +369,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--to_decode", "-c", default="samples", help="samples or neutral", type=str
     )
+    parser.add_argument("--win_size", "-w", default=50, help="", type=int)
 
     args = parser.parse_args()
     try:
@@ -358,6 +381,7 @@ if __name__ == "__main__":
             args.jobs_load,
             args.jobs_svm,
             args.to_decode,
+            args.win_size,
         )
     except FileExistsError:
         logging.error("filepath does not exist")
