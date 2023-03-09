@@ -302,8 +302,8 @@ def main(
     ax.spines["bottom"].set_visible(False)
     fig.legend(fontsize=9)
     fig.suptitle(
-        "%s, condition: %s, group: %s, %d neurons,window: %d, steps: %d"
-        % (s_path[-2], in_out, cgroup, n_neurons, win_size, step)
+        "%s, condition: %s, group: %s, %d neurons,window: %d, steps: %d, trials: %d"
+        % (s_path[-2], in_out, cgroup, n_neurons, win_size, step, min_trials)
     )
 
     fig.savefig(
