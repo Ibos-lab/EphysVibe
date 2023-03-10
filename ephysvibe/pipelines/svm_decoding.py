@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
@@ -12,7 +11,7 @@ import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn import metrics
 from multiprocessing import Pool
 
@@ -124,7 +123,7 @@ def load_fr_samples(
                 trial_idx[trial_idx_n],
                 np.where(
                     data.code_numbers[trial_idx[trial_idx_n]]
-                    == task_constants.EVENTS_B1["sample_on"]
+                    == task_constants.EVENTS_B1[e_align]
                 )[1],
             ]
             shifts = -(trials_s_on - t_before).astype(int)
@@ -174,7 +173,8 @@ def run_svm_decoder(model, frs_avg, tasks, windows, min_trials, it_seed, n_it, l
     for n_win in np.arange(0, windows):
         #  select trials randomly
         X, y = compute_window_matrix(all_df, n_win)
-
+        scaler = MinMaxScaler()
+        X = scaler.fit_transform(X)
         y = le.transform(y)
         # split in train and test
         X_train, X_test, y_train, y_test = train_test_split(
