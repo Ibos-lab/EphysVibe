@@ -76,8 +76,18 @@ def load_fr_samples(
         task["sample"].replace(
             ["o1_c1", "o1_c5", "o5_c1", "o5_c5"], "no_neutral", inplace=True
         )
+    elif to_decode == "colors":
+        task = task[task["sample"] != "o0_c0"]
+        task["sample"].replace(["o1_c1", "o5_c1"], "c1", inplace=True)
+        task["sample"].replace(["o1_c5", "o5_c5"], "c5", inplace=True)
+    elif to_decode == "orientation":
+        task = task[task["sample"] != "o0_c0"]
+        task["sample"].replace(["o1_c1", "o1_c5"], "o1", inplace=True)
+        task["sample"].replace(["o5_c1", "o5_c5"], "o5", inplace=True)
     else:
-        logging.error('to_decode must be "samples" or "neutral"')
+        logging.error(
+            'to_decode must be "samples", "neutral", "colors" or "orientation"'
+        )
         raise ValueError
     # split in two groups where the neurons in each have the same trials in in or out
     task_1 = task[task["i_neuron"] == neurons[0]].copy()
@@ -289,6 +299,7 @@ def main(
         threshole = 0.5
     ss = np.sum(np.array(scores) <= threshole, axis=0) / np.array(scores).shape[0]
     mask_inf = ss <= 0.01
+    mask_inf_5 = ss <= 0.05
     # stars
     ax.scatter(
         x[mask_inf],
@@ -296,6 +307,14 @@ def main(
         color="k",
         marker="*",
         label="Below 1%",
+        s=6,
+    )
+    ax.scatter(
+        x[mask_inf_5],
+        [threshole - 0.12] * len(x[mask_inf_5]),
+        color="r",
+        marker="*",
+        label="Below 5%",
         s=6,
     )
     ax.set_ylim(0, 1)
