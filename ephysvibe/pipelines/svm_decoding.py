@@ -104,24 +104,28 @@ def load_fr_samples(
         t_neurons = [t_neurons]
 
     sp_avg_all = []
-    for trial_idx_n, neurons in zip(trials_neuron, t_neurons):
-
-        trials_s_on = data.code_samples[
-            trial_idx[trial_idx_n],
-            np.where(
-                data.code_numbers[trial_idx[trial_idx_n]]
-                == task_constants.EVENTS_B1["sample_on"]
-            )[1],
-        ]
-        shifts = -(trials_s_on - t_before).astype(int)
-        shifts = shifts[:, np.newaxis]
-        shift_sp = TrialsData.indep_roll(
-            data.sp_samples[trial_idx[trial_idx_n]][:, neurons], shifts, axis=2
-        )[:, :, :1600]
-        sp_avg = moving_average(shift_sp, win=win, step=step)
-        sp_avg_all.append(sp_avg)
-    s_path = os.path.normpath(filepath).split(os.sep)
-    logging.info("%s finished" % s_path[-1])
+    for i_task, (trial_idx_n, neurons, task) in enumerate(
+        zip(trials_neuron, t_neurons, task_all)
+    ):
+        min_task = task.groupby(["sample"]).count().min().min()
+        # check number of trials
+        if min_task >= 30:
+            trials_s_on = data.code_samples[
+                trial_idx[trial_idx_n],
+                np.where(
+                    data.code_numbers[trial_idx[trial_idx_n]]
+                    == task_constants.EVENTS_B1["sample_on"]
+                )[1],
+            ]
+            shifts = -(trials_s_on - t_before).astype(int)
+            shifts = shifts[:, np.newaxis]
+            shift_sp = TrialsData.indep_roll(
+                data.sp_samples[trial_idx[trial_idx_n]][:, neurons], shifts, axis=2
+            )[:, :, :1600]
+            sp_avg = moving_average(shift_sp, win=win, step=step)
+            sp_avg_all.append(sp_avg)
+        else:
+            task_all.pop(i_task)
     return task_all, sp_avg_all
 
 
@@ -242,11 +246,12 @@ def main(
     logging.info("load_fr_samples finished")
     tasks, frs_avg = [], []
     for i in range(len(frs_avg_all)):
-        frs_avg.append(frs_avg_all[i][0])
-        tasks.append(tasks_all[i][0])
-        if len(frs_avg_all[i]) > 1:
-            frs_avg.append(frs_avg_all[i][1])
-            tasks.append(tasks_all[i][1])
+        if len(frs_avg_all[i]) > 0:
+            frs_avg.append(frs_avg_all[i][0])
+            tasks.append(tasks_all[i][0])
+            if len(frs_avg_all[i]) > 1:
+                frs_avg.append(frs_avg_all[i][1])
+                tasks.append(tasks_all[i][1])
     # max number of trials that can be used
     min_trials = frs_avg[0].shape[0]
     for rec in range(len(tasks)):

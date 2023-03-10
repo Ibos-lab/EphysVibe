@@ -18,6 +18,14 @@ EVENTS_B1 = {
     "sample_off": 24,
     "test_on_1": 25,
     "test_off_1": 26,
+    "test_on_2": 27,
+    "test_off_2": 28,
+    "test_on_3": 29,
+    "test_off_3": 30,
+    "test_on_4": 31,
+    "test_off_4": 32,
+    "test_on_5": 33,
+    "test_off_5": 34,
     "end_trial": 18,
 }
 PALETTE_B1 = {
