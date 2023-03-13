@@ -165,11 +165,11 @@ class TrialsData(BhvData):
                 "clusterdepth shape: %s, expected: %s"
                 % (self.clusterdepth.shape[0], n_neurons)
             )
-        if self.neuron_cond.shape[0] != n_neurons:
-            raise ValueError(
-                "neuron_cond shape: %s, expected: %s"
-                % (self.neuron_cond.shape[0], n_neurons)
-            )
+        # if self.neuron_cond.shape[0] != n_neurons:
+        #     raise ValueError(
+        #         "neuron_cond shape: %s, expected: %s"
+        #         % (self.neuron_cond.shape[0], n_neurons)
+        #     )
 
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""
