@@ -41,7 +41,8 @@ def main(data_path: Path, path_img: Path):
             cv2.imshow("ff", img)
             k = cv2.waitKey(30)
             if k == 32:  # space key to stop
-                if flag == 1:
+                if flag == 1 or flag == 2:
+                    in_out.append(flag)
                     flag = 0
                     break
                 else:
@@ -49,11 +50,11 @@ def main(data_path: Path, path_img: Path):
 
             elif k == 49:  # if user press 1 (in)
                 flag = 1
-                in_out.append(1)
+
                 logging.info(1)  # else print its value
             elif k == 50:  # if user press 2
-                flag = 1
-                in_out.append(2)
+                flag = 2
+
                 logging.info(2)
             else:  # normally -1 is returned
                 continue
