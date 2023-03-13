@@ -54,7 +54,7 @@ class TrialsData(BhvData):
         clustersgroup: np.ndarray,
         clusterdepth: np.ndarray,
         code_samples: np.ndarray,
-        neuron_cond: np.ndarray = np.nan,
+        neuron_cond: np.ndarray = np.array([np.nan]),
     ):
         """Initialize the class.
 
@@ -247,7 +247,7 @@ class TrialsData(BhvData):
             try:
                 neuron_cond = group["neuron_cond"][:]
             except:
-                neuron_cond = np.nan
+                neuron_cond = np.array([np.nan])
         # create class object and return
         bhv_dict = super().from_python_hdf5(load_path)
         trials_data = {
