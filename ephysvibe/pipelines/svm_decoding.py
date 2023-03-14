@@ -220,6 +220,12 @@ def main(
     win_size: int = 50,
 ):
     logging.info("--- Start ---")
+    # check if output dir exist, create it if not
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # check if fr_paths exist
+    if not os.path.exists(fr_paths):
+        raise FileExistsError
     file1 = open(fr_paths, "r")
     Lines = file1.readlines()
 

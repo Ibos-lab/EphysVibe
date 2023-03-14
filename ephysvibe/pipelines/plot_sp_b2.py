@@ -34,8 +34,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     data = TrialsData.from_python_hdf5(filepath)
     # Select trials and create task frame
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 2))[0]
-    cgroup = "mua"
-    neurons = np.where(data.clustersgroup == cgroup)[0]
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
     # Define target codes
     target_codes = {
