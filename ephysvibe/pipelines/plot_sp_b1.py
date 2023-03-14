@@ -108,7 +108,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             for i_sample in samples:
                 sample_idx = task[
                     np.logical_and(
-                        task["i_neuron"] == i_neuron,
+                        task["i_neuron"] == i_n,
                         np.logical_and(
                             task["in_out"] == cond, task["sample"] == i_sample
                         ),
