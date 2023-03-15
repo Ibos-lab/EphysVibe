@@ -296,7 +296,7 @@ def main(
     n_neurons = 0
     for rec in range(len(frs_avg)):
         n_neurons += frs_avg[rec].shape[1]
-        fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(10, 5))
     x = ((np.arange(0, len(scores[0]))) - fix_duration / step) * 10
     ax.plot(x, np.array(scores).mean(axis=0), label="Accuracy")
     if to_decode == "samples":
