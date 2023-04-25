@@ -168,8 +168,8 @@ def check_clusters(
         if ~np.all(clusters_out == "noise"):
             raise IndexError
         else:
-            spike_times_idx = spike_times_idx[: len_samples - 1]
-            spike_clusters = spike_clusters[: len_samples - 1]
+            spike_times_idx = spike_times_idx[: min(idx_sp_out)]
+            spike_clusters = spike_clusters[: min(idx_sp_out)]
     nan_values = (
         cluster_info[["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]]
         .isnull()
