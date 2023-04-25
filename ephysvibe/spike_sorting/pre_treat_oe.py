@@ -42,6 +42,7 @@ def pre_treat_oe(
     )
     # check if eyes
     start_ch, n_eyes = areas_ch.pop("eyes", False)
+    eyes_ds = np.array([])
     if n_eyes:
         eyes_ds = utils_oe.load_eyes(
             continuous_path,

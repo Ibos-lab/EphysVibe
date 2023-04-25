@@ -149,59 +149,68 @@ def main(
         # load continuous data
         logging.info("Loading %s", area)
         (
-            idx_sp_ksamples,
-            sp_ksamples_clusters_id,
+            spike_times_idx,
+            spike_clusters,
             cluster_info,
         ) = utils_oe.load_spike_data(spike_path)
-        if cluster_info.shape[0] != 0:  # if there are valid groups
-            # timestamps of all the spikes (in ms)
-            spike_sample = np.floor(
-                c_samples[idx_sp_ksamples] / config.DOWNSAMPLE
-            ).astype(int)
-            lfp_ds = utils_oe.compute_lfp(
-                continuous_path,
-                start_time,
-                shape_0=shape_0,
-                shape_1=total_ch,
-                start_ch=areas_ch[area][0],
-                n_ch=areas_ch[area][1],
+        try:
+            spike_times_idx, spike_clusters, cluster_info = utils_oe.check_clusters(
+                spike_times_idx, spike_clusters, cluster_info, len(c_samples)
             )
-            data = data_structure.restructure(
-                start_trials=start_trials,
-                end_trials=end_trials,
-                cluster_info=cluster_info,
-                spike_sample=spike_sample,
-                real_strobes=real_strobes,
-                ds_samples=ds_samples,
-                sp_ksamples_clusters_id=sp_ksamples_clusters_id,
-                full_word=full_word,
-                lfp_ds=lfp_ds,
-                eyes_ds=eyes_ds,
-                bhv=bhv,
+        except IndexError:
+            logging.error(
+                "Spikes of valid units are detected after the end of the recording"
             )
-            output_d = os.path.normpath(output_dir)
-            path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
-            file_name = (
-                date_time
-                + "_"
-                + subject
-                + "_"
-                + area
-                + "_e"
-                + n_exp
-                + "_r"
-                + n_record
-                + ".h5"
-            )
-            if not os.path.exists(path):
-                os.makedirs(path)
-            logging.info("Saving data")
-            data.to_python_hdf5("/".join([path] + [file_name]))
-            logging.info("Data successfully saved")
-            del data
-            del lfp_ds
-        else:
-            logging.warning("No recordings")
+            continue
+        except ValueError:
+            logging.error("There isn't good or mua clusters")
+            continue
+        # timestamps of all the spikes (in ms)
+        spike_sample = np.floor(c_samples[spike_times_idx] / config.DOWNSAMPLE).astype(
+            int
+        )
+        lfp_ds = utils_oe.compute_lfp(
+            continuous_path,
+            start_time,
+            shape_0=shape_0,
+            shape_1=total_ch,
+            start_ch=areas_ch[area][0],
+            n_ch=areas_ch[area][1],
+        )
+        data = data_structure.restructure(
+            start_trials=start_trials,
+            end_trials=end_trials,
+            cluster_info=cluster_info,
+            spike_sample=spike_sample,
+            real_strobes=real_strobes,
+            ds_samples=ds_samples,
+            sp_ksamples_clusters_id=spike_clusters,
+            full_word=full_word,
+            lfp_ds=lfp_ds,
+            eyes_ds=eyes_ds,
+            bhv=bhv,
+        )
+        output_d = os.path.normpath(output_dir)
+        path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
+        file_name = (
+            date_time
+            + "_"
+            + subject
+            + "_"
+            + area
+            + "_e"
+            + n_exp
+            + "_r"
+            + n_record
+            + ".h5"
+        )
+        if not os.path.exists(path):
+            os.makedirs(path)
+        logging.info("Saving data")
+        data.to_python_hdf5("/".join([path] + [file_name]))
+        logging.info("Data successfully saved")
+        del data
+        del lfp_ds
 
 
 if __name__ == "__main__":

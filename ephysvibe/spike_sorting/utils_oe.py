@@ -39,21 +39,6 @@ def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
     return session, subject, date_time, areas
 
 
-# def load_dat_file(dat_path: Path, shape_0: int, shape_1: int) -> np.memmap:
-#     """load .dat file.
-
-#     Args:
-#         dat_path (Path): path to the .dat file
-#         shape_0 (int): number of rows
-#         shape_1 (int): number of columns
-
-#     Returns:
-#         np.memmap: .dat file
-#     """
-#     dat_file = np.memmap(dat_path, mode="r", dtype="int16", shape=(shape_0, shape_1)).T
-#     return dat_file
-
-
 def load_event_files(event_path: Path) -> Dict:
     """Load files in the event folder from OE.
 
@@ -131,17 +116,60 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFra
 
     Returns:
         Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
-            - idx_spiketimes (np.ndarray): array containing the spike times
-            - sp_ksamples_clusters_id (np.ndarray): array containing to which neuron the spike times belongs to
+            - spike_times_idx (np.ndarray): array containing the spike times
+            - spike_clusters (np.ndarray): array containing to which neuron the spike belongs to
             - cluster_info (pd.Dataframe): info about the clusters
     """
     # search kilosort folder
     logging.info("Loading spikes data")
-    idx_sp_ksamples = np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
-    sp_ksamples_clusters_id = np.load(spike_path + "/spike_clusters.npy", "r")  #
+    spike_times_idx = (
+        np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
+    )  # -1 to have the first idx = 0 and not 1
+    spike_clusters = np.load(spike_path + "/spike_clusters.npy", "r")  #
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
+
+    return spike_times_idx, spike_clusters, cluster_info
+
+
+def check_clusters(
+    spike_times_idx: np.ndarray,
+    spike_clusters: np.ndarray,
+    cluster_info: pd.DataFrame,
+    len_samples: int,
+) -> Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    """Check whether spikes are detected during the recording and if there are good or mua.
+
+    Args:
+        spike_times_idx (np.ndarray): array containing the spike times
+        spike_clusters (np.ndarray): array containing to which neuron the spike belongs to
+        cluster_info (pd.DataFrame): info about the clusters
+        len_samples (int):
+
+    Raises:
+        IndexError: spikes of mua or good units are detected after the end of the recording
+        ValueError: there are not good or mua units
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+            - spike_times_idx (np.ndarray): array containing the spike times during the recording
+            - spike_clusters (np.ndarray): array containing to which neuron the spike belongs to during the recording
+            - cluster_info (pd.Dataframe): info about good and mua clusters
+    """
+    # check if all the spikes are detected inside the time of recording
+    idx_sp_out = np.where(spike_times_idx >= len_samples)[0]
+    if len(idx_sp_out) > 0:
+        sp_out_id = spike_clusters[idx_sp_out]
+        cluster_info[cluster_info["cluster_id"] == sp_out_id[0]]["group"].values
+        clusters_out = cluster_info[cluster_info["cluster_id"].isin(sp_out_id)][
+            "group"
+        ].values
+        if ~np.all(clusters_out == "noise"):
+            raise IndexError
+        else:
+            spike_times_idx = spike_times_idx[:len_samples]
+            spike_clusters = spike_clusters[:len_samples]
     nan_values = (
         cluster_info[["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]]
         .isnull()
@@ -154,11 +182,11 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFra
             axis=0, subset=["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]
         )
         logging.warning("Rows with nan values deleted")
-    cluster_info = cluster_info[cluster_info["group"] != "noise"]  # ignore noise groups
+    cluster_info = cluster_info[cluster_info["group"] != "noise"]  # ignore noisy groups
     if cluster_info.shape[0] == 0:
-        logging.warning("There isn't good or mua clusters")
+        raise ValueError
 
-    return idx_sp_ksamples, sp_ksamples_clusters_id, cluster_info
+    return spike_times_idx, spike_clusters, cluster_info
 
 
 def signal_downsample(
@@ -303,6 +331,7 @@ def find_events_codes(
     # Check if strobe and codes number match
     full_word, idx_real_strobes, bhv = check_strobes(bhv, full_word, idx_real_strobes)
     real_strobes = events["samples"][idx_real_strobes]
+    # ! check if time == in oe and ML
     start_trials = real_strobes[full_word == config.START_CODE]
     end_trials = real_strobes[full_word == config.END_CODE]
     return (full_word, real_strobes, start_trials, end_trials, bhv)
