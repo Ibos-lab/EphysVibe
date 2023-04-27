@@ -227,5 +227,6 @@ def restructure(
         clusters_ch=cluster_info["ch"].values,
         clustersgroup=cluster_info["group"].values,
         clusterdepth=cluster_info["depth"].values,
+        start_trials=start_trials
     )
     return data

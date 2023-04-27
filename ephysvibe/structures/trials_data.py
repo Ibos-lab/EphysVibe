@@ -55,6 +55,7 @@ class TrialsData(BhvData):
         clusterdepth: np.ndarray,
         code_samples: np.ndarray,
         neuron_cond: np.ndarray = np.array([np.nan]),
+        start_trials: np.ndarray = np.array([np.nan]),
     ):
         """Initialize the class.
 
@@ -69,6 +70,7 @@ class TrialsData(BhvData):
                                         multi unit activity.
             clusterdepth (np.ndarray): array of shape (neurons,1) containing the de depth of each neuron/mua.
             code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
+            start_trials (np.ndarray): array of shape (trials) containing the timestamp of the start of each trial (downsampled).
         """
         super().__init__(
             block,
@@ -119,6 +121,7 @@ class TrialsData(BhvData):
         self.clustersgroup = clustersgroup
         self.clusterdepth = clusterdepth
         self.neuron_cond = neuron_cond
+        self.start_trials = start_trials
         self.check_shapes()
 
     def check_shapes(self):
@@ -232,6 +235,12 @@ class TrialsData(BhvData):
                 data=self.neuron_cond,
                 compression="gzip",
             )
+            group.create_dataset(
+                "start_trials",
+                self.start_trials.shape,
+                data=self.start_trials,
+                compression="gzip",
+            )
         f.close()
 
     @classmethod
@@ -253,6 +262,10 @@ class TrialsData(BhvData):
                 neuron_cond = group["neuron_cond"][:]
             except:
                 neuron_cond = np.array([np.nan])
+            try:
+                start_trials = group["start_trials"][:]
+            except:
+                start_trials = np.array([np.nan])
         # create class object and return
         bhv_dict = super().from_python_hdf5(load_path)
         trials_data = {
@@ -266,6 +279,7 @@ class TrialsData(BhvData):
             "clustersgroup": clustersgroup,
             "clusterdepth": clusterdepth,
             "neuron_cond": neuron_cond,
+            "start_trials": start_trials,
         }
         return cls(**trials_data)
 
