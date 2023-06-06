@@ -4,14 +4,16 @@
 % and the savepath
 %% 
 addpath(genpath('C:\Users\camil\Documents\int\matlab\'))  
-cd 'C:\Users\camil\Documents\int\data\Riesling\2023-01-20_11-00-24\Record Node 102\experiment1\recording1\'
-savepath='C:\Users\camil\Documents\int\matlab\';
-datapath=uigetdir;
-cd(datapath)
-directory=pwd;
+savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-06_10-32-51/Record Node 102/experiment1/recording1/';
+%%datapath=uigetdir;
+%cd(datapath)
 
+cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-06_10-32-51/Record Node 102/experiment1/recording1/'
+directory=pwd;
 bhvfiles=dir('*.bhv2');
+%path = "\\envau_cifs.intlocal.univ-amu.fr\work\invibe\USERS\IBOS\openephys\221201_TSCM_5cj_5cl_Riesling.bhv2";
 bhv=mlread(bhvfiles.name);
+%bhv=mlread(path);
 %%
 % Define constants
 n_trials = size(bhv,2);
@@ -32,7 +34,7 @@ end
 % Define variables
 CodeTimes = nan(n_trials,max_codes);
 CodeNumbers = nan(n_trials,max_codes);
-Eye = nan(n_trials,3,max_eyes);
+Eye = nan(n_trials,3,max_eyes);%nan(n_trials,max_eyes,3);
 PupilSize =[];
 Position = nan(n_trials,2,2);
 % bhv.UserVars
@@ -78,7 +80,7 @@ for i_trial=1:n_trials
     end
     eye_pupil = cat(2,bhv(i_trial).AnalogData.Eye,PupilSize);
     n_eyes = size(bhv(i_trial).AnalogData.Eye,1);
-    Eye(i_trial,:,1:n_eyes) = reshape(eye_pupil,3,[]);
+    Eye(i_trial,:,1:n_eyes) = transpose(eye_pupil);
     % bhv.VariableChanges
     
     fix_time = cat(1,fix_time,bhv(i_trial).VariableChanges.fix_time);
