@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
-from ..trials.spikes import firing_rate, sp_constants
+from ..trials.spikes import firing_rate, sp_constants, plot_raster
 from ..spike_sorting import config
 from ..task import task_constants
 from ephysvibe.structures.trials_data import TrialsData
@@ -36,8 +36,8 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 2))[0]
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
     # Define target codes
-    target_codes = {
-        # code: [ML axis], [plot axis]
+    position_codes = {
+        # code: [[MonkeyLogic axis], [plot axis]]
         "127": [[10, 0], [1, 2]],
         "126": [[7, 7], [0, 2]],
         "125": [[0, 10], [0, 1]],
@@ -47,9 +47,9 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         "121": [[0, -10], [2, 1]],
         "120": [[7, -7], [2, 2]],
     }
-    # create dict with the trials that have each code
-    trials_idx = {}
-    for i_key, key in enumerate(target_codes.keys()):
+    # create dict with the trials having each code
+    target_codes = {}
+    for i_key, key in enumerate(position_codes.keys()):
         trials = []
         code_idx = []
         for i_trial, code in zip(trial_idx, data.code_numbers[trial_idx]):
@@ -57,7 +57,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             if len(idx) != 0:
                 code_idx.append(idx[0])
                 trials.append(i_trial)
-        trials_idx[key] = {"code_idx": code_idx, "trials_idx": trials}
+        target_codes[key] = {
+            "code_idx": code_idx,
+            "trial_idx": trials,
+            "position_codes": position_codes[key][1],
+        }
     # kernel parameters
     fs_ds = config.FS / config.DOWNSAMPLE
     kernel = firing_rate.define_kernel(
@@ -73,58 +77,31 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         else:
             i_cluster = i_mua
             i_mua += 1
-        fig, _ = plt.subplots(figsize=(10, 10), sharex=True, sharey=True)
-        all_ax, all_ax2 = [], []
-        all_max_conv, max_num_trials = 0, 0
-        for code in target_codes.keys():
-            target_t_idx = trials_idx[code][
-                "trials_idx"
-            ]  # select trials with the same stimulus
-            trials_s_on = data.code_samples[
-                target_t_idx,
-                np.where(
-                    data.code_numbers[target_t_idx] == task_constants.EVENTS_B2[e_align]
-                )[1],
-            ]
-            shift_sp = TrialsData.indep_roll(
-                data.sp_samples[target_t_idx, i_n],
-                -(trials_s_on - t_before).astype(int),
-                axis=1,
-            )[:, :2300]
-            mean_sp = shift_sp.mean(axis=0)
-            conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
-            conv_max = max(conv)
-            all_max_conv = conv_max if conv_max > all_max_conv else all_max_conv
-            num_trials = shift_sp.shape[0]
-            max_num_trials = (
-                num_trials if num_trials > max_num_trials else max_num_trials
-            )
-            axis = target_codes[code][1]
-            ax = plt.subplot2grid((3, 3), (axis[0], axis[1]))
-            time = np.arange(0, len(conv)) - t_before
-            # ----- plot ----------
-            ax2 = ax.twinx()
-            ax.plot(time, conv)
+            code_samples = data.code_samples
+        code_numbers = data.code_numbers
+        sp_samples = data.sp_samples
+        e_code_align = task_constants.EVENTS_B2[e_align]
+        fig, _ = plt.subplots(figsize=(8, 8), sharex=True, sharey=True)  # define figure
+        (
+            all_ax,
+            all_ax2,
+            all_max_conv,
+            max_num_trials,
+        ) = plot_raster.plot_activity_location(
+            target_codes,
+            code_samples,
+            code_numbers,
+            sp_samples,
+            i_n,
+            e_code_align,
+            t_before,
+            fs_ds,
+            kernel,
+            rf_t_test=pd.DataFrame(),
+        )
 
-            num_trials = shift_sp.shape[0]
+        avg_events = [-500, 0, 100, 1100]
 
-            rows, cols = np.where(shift_sp >= 1)
-            cols = cols - t_before
-            rows = rows + rows * 2
-            ax2.scatter(cols, rows, marker="|", alpha=1, color="grey")
-            ax.set_title("Code %s" % (code), fontsize=8)
-            all_ax.append(ax)
-            all_ax2.append(ax2)
-        avg_events = []
-        for event in ["target_on", "target_off", "fix_spot_off", "correct_response"]:
-            trials_event = data.code_samples[
-                target_t_idx,
-                np.where(
-                    data.code_numbers[target_t_idx] == task_constants.EVENTS_B2[event]
-                )[1],
-            ]
-            avg_events.append(np.mean(trials_event - trials_s_on))
-        num_trials = shift_sp.shape[0]
         for ax, ax2 in zip(all_ax, all_ax2):
             for ev in avg_events:
                 ax.vlines(
