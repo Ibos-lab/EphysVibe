@@ -24,8 +24,11 @@ def compute_csd(
     n_channels = lfp.shape[0]
     for channel in range(0 + step, n_channels - step):
         csd.append(
-            (-2 * lfp[channel] + lfp[channel - step] + lfp[channel + step])
-            / ((step * inter_channel_distance) ** 2)
+            -0.4  # conductance of primate gray matter (S/m) (Godlove D., 2014)
+            * (
+                (-2 * lfp[channel] + lfp[channel - step] + lfp[channel + step])
+                / ((step * inter_channel_distance) ** 2)
+            )
         )
 
     return np.array(csd)
