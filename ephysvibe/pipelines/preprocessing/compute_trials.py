@@ -5,10 +5,10 @@ import os
 import json
 from typing import List, Tuple, Dict
 import numpy as np
-from ..spike_sorting import utils_oe, config, data_structure, pre_treat_oe
+from ...spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
-from ..structures.bhv_data import BhvData
-from ..pipelines import pipe_config
+from ...structures.bhv_data import BhvData
+from .. import pipe_config
 from collections import defaultdict
 
 
@@ -122,18 +122,26 @@ def main(
         start_trials,
         end_trials,
         ds_samples,
-        start_time,
+        idx_start_time,
         eyes_ds,
-        areas_ch,
         bhv,
     ) = pre_treat_oe.pre_treat_oe(
         events=events,
         bhv=bhv,
         c_samples=c_samples,
-        areas_ch=areas_ch,
-        total_ch=total_ch,
-        continuous_path=continuous_path,
     )
+    # check if eyes
+    start_ch, n_eyes = areas_ch.pop("eyes", False)
+    eyes_ds = np.array([])
+    if n_eyes:
+        eyes_ds = utils_oe.load_eyes(
+            continuous_path,
+            shape_0=len(c_samples),
+            shape_1=total_ch,
+            start_ch=start_ch,
+            n_eyes=n_eyes,
+            idx_start_time=idx_start_time,
+        )
     # to ms
     ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
     start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
@@ -171,7 +179,7 @@ def main(
         )
         lfp_ds = utils_oe.compute_lfp(
             continuous_path,
-            start_time,
+            idx_start_time,
             shape_0=shape_0,
             shape_1=total_ch,
             start_ch=areas_ch[area][0],

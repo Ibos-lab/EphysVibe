@@ -44,6 +44,7 @@ class BhvData:
         test_stimuli: np.ndarray,
         sample_time: np.ndarray,
         test_time: np.ndarray,
+        code_samples: np.ndarray = np.array([np.nan]),
     ):
         """_summary_
 
@@ -75,6 +76,7 @@ class BhvData:
             eye_ml (np.ndarray):
             condition (np.ndarray): condition in the txt file. shape: (trials).
             code_numbers (np.ndarray): code of the events.  shape: (trials, events).
+            code_samples
             code_times (np.ndarray): exact time when each event ocurred during the trial. shape: (trials, events).
             stim_match (np.ndarray):
             samp_pos (np.ndarray): position of the sample stimulus. shape: (trials, 2).
@@ -87,6 +89,7 @@ class BhvData:
         self.block = block
         self.sacc_code = sacc_code
         self.code_numbers = code_numbers
+        self.code_samples = code_samples
         self.code_times = code_times
         self.condition = condition
         self.eye_ml = eye_ml
@@ -217,6 +220,7 @@ class BhvData:
             block = group["block"][:]
             sacc_code = group["sacc_code"][:]
             code_numbers = group["code_numbers"][:]
+            code_samples = group["code_samples"][:]
             code_times = group["code_times"][:]
             condition = group["condition"][:]
             eye_ml = group["eye_ml"][:]
@@ -255,6 +259,7 @@ class BhvData:
             "block": block,
             "sacc_code": sacc_code,
             "code_numbers": code_numbers,
+            "code_samples": code_samples,
             "code_times": code_times,
             "condition": condition,
             "eye_ml": eye_ml,
@@ -296,72 +301,36 @@ class BhvData:
         with h5py.File(save_path, "w") as f:
 
             group = f.create_group("data")
+            group.create_dataset("block", self.block.shape, data=self.block)
+            group.create_dataset("iti", self.iti.shape, data=self.iti)
+            group.create_dataset("position", self.position.shape, data=self.position)
             group.create_dataset(
-                "block",
-                self.block.shape,
-                data=self.block,
+                "reward_plus", self.reward_plus.shape, data=self.reward_plus
             )
             group.create_dataset(
-                "iti",
-                self.iti.shape,
-                data=self.iti,
+                "trial_error", self.trial_error.shape, data=self.trial_error
             )
             group.create_dataset(
-                "position",
-                self.position.shape,
-                data=self.position,
+                "delay_time", self.delay_time.shape, data=self.delay_time
             )
-            group.create_dataset(
-                "reward_plus",
-                self.reward_plus.shape,
-                data=self.reward_plus,
-            )
-            group.create_dataset(
-                "trial_error",
-                self.trial_error.shape,
-                data=self.trial_error,
-            )
-            group.create_dataset(
-                "delay_time",
-                self.delay_time.shape,
-                data=self.delay_time,
-            )
-            group.create_dataset(
-                "fix_time",
-                self.fix_time.shape,
-                data=self.fix_time,
-            )
+            group.create_dataset("fix_time", self.fix_time.shape, data=self.fix_time)
             group.create_dataset(
                 "fix_window_radius",
                 self.fix_window_radius.shape,
                 data=self.fix_window_radius,
             )
+            group.create_dataset("idletime3", self.idletime3.shape, data=self.idletime3)
             group.create_dataset(
-                "idletime3",
-                self.idletime3.shape,
-                data=self.idletime3,
+                "rand_delay_time", self.rand_delay_time.shape, data=self.rand_delay_time
             )
             group.create_dataset(
-                "rand_delay_time",
-                self.rand_delay_time.shape,
-                data=self.rand_delay_time,
+                "reward_dur", self.reward_dur.shape, data=self.reward_dur
             )
             group.create_dataset(
-                "reward_dur",
-                self.reward_dur.shape,
-                data=self.reward_dur,
-            )
-            group.create_dataset(
-                "wait_for_fix",
-                self.wait_for_fix.shape,
-                data=self.wait_for_fix,
+                "wait_for_fix", self.wait_for_fix.shape, data=self.wait_for_fix
             )
             # sacc
-            group.create_dataset(
-                "sacc_code",
-                self.sacc_code.shape,
-                data=self.sacc_code,
-            )
+            group.create_dataset("sacc_code", self.sacc_code.shape, data=self.sacc_code)
             group.create_dataset(
                 "fix_post_sacc_blank",
                 self.fix_post_sacc_blank.shape,
@@ -372,11 +341,7 @@ class BhvData:
                 self.max_reaction_time.shape,
                 data=self.max_reaction_time,
             )
-            group.create_dataset(
-                "stay_time",
-                self.stay_time.shape,
-                data=self.stay_time,
-            )
+            group.create_dataset("stay_time", self.stay_time.shape, data=self.stay_time)
             group.create_dataset(
                 "fix_fp_t_time",
                 self.fix_fp_t_time.shape,
@@ -392,85 +357,40 @@ class BhvData:
                 self.fix_fp_pre_t_time.shape,
                 data=self.fix_fp_pre_t_time,
             )
+            group.create_dataset("fix_close", self.fix_close.shape, data=self.fix_close)
+            group.create_dataset("fix_far", self.fix_far.shape, data=self.fix_far)
+            group.create_dataset("closeexc", self.closeexc.shape, data=self.closeexc)
             group.create_dataset(
-                "fix_close",
-                self.fix_close.shape,
-                data=self.fix_close,
+                "excentricity", self.excentricity.shape, data=self.excentricity
             )
-            group.create_dataset(
-                "fix_far",
-                self.fix_far.shape,
-                data=self.fix_far,
-            )
-            group.create_dataset(
-                "closeexc",
-                self.closeexc.shape,
-                data=self.closeexc,
-            )
-            group.create_dataset(
-                "excentricity",
-                self.excentricity.shape,
-                data=self.excentricity,
-            )
-            group.create_dataset(
-                "farexc",
-                self.farexc.shape,
-                data=self.farexc,
-            )
+            group.create_dataset("farexc", self.farexc.shape, data=self.farexc)
             # dmts
+            group.create_dataset("eye_ml", self.eye_ml.shape, data=self.eye_ml)
+            group.create_dataset("condition", self.condition.shape, data=self.condition)
             group.create_dataset(
-                "eye_ml",
-                self.eye_ml.shape,
-                data=self.eye_ml,
+                "code_numbers", self.code_numbers.shape, data=self.code_numbers
             )
             group.create_dataset(
-                "condition",
-                self.condition.shape,
-                data=self.condition,
+                "code_samples", self.code_samples.shape, data=self.code_samples
             )
             group.create_dataset(
-                "code_numbers",
-                self.code_numbers.shape,
-                data=self.code_numbers,
+                "code_times", self.code_times.shape, data=self.code_times
             )
             group.create_dataset(
-                "code_times",
-                self.code_times.shape,
-                data=self.code_times,
+                "stim_match", self.stim_match.shape, data=self.stim_match
+            )
+            group.create_dataset("samp_pos", self.samp_pos.shape, data=self.samp_pos)
+            group.create_dataset(
+                "stim_total", self.stim_total.shape, data=self.stim_total
             )
             group.create_dataset(
-                "stim_match",
-                self.stim_match.shape,
-                data=self.stim_match,
+                "test_distractor", self.test_distractor.shape, data=self.test_distractor
             )
             group.create_dataset(
-                "samp_pos",
-                self.samp_pos.shape,
-                data=self.samp_pos,
+                "test_stimuli", self.test_stimuli.shape, data=self.test_stimuli
             )
             group.create_dataset(
-                "stim_total",
-                self.stim_total.shape,
-                data=self.stim_total,
+                "sample_time", self.sample_time.shape, data=self.sample_time
             )
-            group.create_dataset(
-                "test_distractor",
-                self.test_distractor.shape,
-                data=self.test_distractor,
-            )
-            group.create_dataset(
-                "test_stimuli",
-                self.test_stimuli.shape,
-                data=self.test_stimuli,
-            )
-            group.create_dataset(
-                "sample_time",
-                self.sample_time.shape,
-                data=self.sample_time,
-            )
-            group.create_dataset(
-                "test_time",
-                self.test_time.shape,
-                data=self.test_time,
-            )
+            group.create_dataset("test_time", self.test_time.shape, data=self.test_time)
         f.close()

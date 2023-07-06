@@ -67,7 +67,7 @@ def load_eyes(
     shape_1: int,
     start_ch: int,
     n_eyes: int,
-    start_time: int = 0,
+    idx_start_time: int = 0,
 ) -> np.ndarray:
     """Load eyes .dat file.
 
@@ -75,7 +75,7 @@ def load_eyes(
         continuous_path (List): list containing the splited continuous path
         shape_0 (int): number of rows
         shape_1 (int): number of columns
-        start_time (int, optional): sample where to start taking the signal. Defaults to 0.
+        idx_start_time (int, optional): sample where to start taking the signal. Defaults to 0.
 
     Returns:
         np.ndarray: array containing the downsampled eyes values
@@ -91,12 +91,12 @@ def load_eyes(
     eyes_ds = np.zeros(
         (
             n_eyes,
-            int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1),
+            int(np.floor((cont.shape[1] - idx_start_time) / config.DOWNSAMPLE) + 1),
         )
     )
     for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
         logging.info("Downsampling eyes")
-        dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
+        dat = np.array(np.asarray(cont[i_data, idx_start_time:]), order="C")
         eyes_ds[i] = signal_downsample(
             dat,
             config.DOWNSAMPLE,
@@ -215,17 +215,21 @@ def select_samples(
 ) -> Tuple[np.ndarray, np.ndarray]:
     # Select the samples of continuous data from t sec before the first event occurs
     # This is done to reduce the data
-    start_time = np.where(c_samples == e_samples[0])[0]
-    start_time = (
-        start_time[0] if start_time.shape[0] > 0 else 0
+    idx_start_time = np.where(c_samples == e_samples[0])[0]
+    idx_start_time = (
+        idx_start_time[0] if idx_start_time.shape[0] > 0 else 0
     )  # check if not empty, else we select all data
-    start_time = (
-        start_time - fs * t_before_event if start_time - fs * t_before_event > 0 else 0
-    )  # check if start_time - fs*t >0, else we select all data
-    # select samples from start_time and donwsample
-    ds_samples = signal_downsample(c_samples, downsample, idx_start=start_time, axis=0)
+    idx_start_time = (
+        idx_start_time - fs * t_before_event
+        if idx_start_time - fs * t_before_event > 0
+        else 0
+    )  # check if idx_start_time - fs*t >0, else we select all data
+    # select samples from idx_start_time and donwsample
+    ds_samples = signal_downsample(
+        c_samples, downsample, idx_start=idx_start_time, axis=0
+    )
 
-    return ds_samples, start_time
+    return ds_samples, idx_start_time
 
 
 def reconstruct_8bits_words(
@@ -250,7 +254,7 @@ def reconstruct_8bits_words(
     return full_word
 
 
-def select_trials_bhv(bhv: BhvData, n_trials: int):
+def select_trials_bhv(bhv: BhvData, n_trials: int) -> BhvData:
     bhv_trials = bhv.block.shape[0]
     new_bhv = vars(bhv).copy()
     for key, val in new_bhv.items():
@@ -262,11 +266,11 @@ def select_trials_bhv(bhv: BhvData, n_trials: int):
 
 
 def check_strobes(
-    bhv: BhvData, full_word: np.ndarray, real_strobes: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
+    code_numbers: np.ndarray, full_word: np.ndarray, real_strobes: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, int]:
     # Check if strobe and codes number match
-    bhv_codes = []
-    bhv_codes = bhv.code_numbers.reshape(-1)
+    len_idx = np.nan
+    bhv_codes = code_numbers.reshape(-1)
     bhv_codes = bhv_codes[~np.isnan(bhv_codes)]
     if full_word.shape[0] != real_strobes.shape[0]:
         logging.warning("Strobe and codes number shapes do not match")
@@ -298,8 +302,8 @@ def check_strobes(
             )
             bhv_codes = bhv_codes[: full_word.shape[0]]
             idx = np.where(bhv_codes == 18)[0]
-            bhv = select_trials_bhv(bhv, len(idx))
-            # bhv_codes = bhv_codes[: idx[-1] + 1]
+            # bhv = select_trials_bhv(bhv, len(idx))
+            len_idx = len(idx)
             full_word = full_word[: idx[-1] + 1]
             real_strobes = real_strobes[: idx[-1] + 1]
     else:
@@ -309,12 +313,12 @@ def check_strobes(
         else:
             logging.info("ML and OE codes are the same")
 
-    return full_word, real_strobes, bhv
+    return full_word, real_strobes, len_idx
 
 
 def find_events_codes(
-    events: Dict, bhv: BhvData
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    events: Dict, code_numbers: BhvData
+) -> Tuple[np.ndarray, np.ndarray, int]:
     # Reconstruct 8 bit words
     logging.info("Reconstructing 8 bit words")
     idx_real_strobes = np.where(
@@ -329,12 +333,14 @@ def find_events_codes(
         idx_real_strobes, e_channel=events["channel"], e_state=events["state"]
     )
     # Check if strobe and codes number match
-    full_word, idx_real_strobes, bhv = check_strobes(bhv, full_word, idx_real_strobes)
+    full_word, idx_real_strobes, len_idx = check_strobes(
+        code_numbers, full_word, idx_real_strobes
+    )
     real_strobes = events["samples"][idx_real_strobes]
     # ! check if time == in oe and ML
-    start_trials = real_strobes[full_word == config.START_CODE]
-    end_trials = real_strobes[full_word == config.END_CODE]
-    return (full_word, real_strobes, start_trials, end_trials, bhv)
+    # start_trials = real_strobes[full_word == config.START_CODE]
+    # end_trials = real_strobes[full_word == config.END_CODE]
+    return full_word, real_strobes, len_idx
 
 
 def compute_lfp(
