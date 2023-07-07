@@ -62,7 +62,7 @@ def plot_activity_location(
                 code
                 in rf_t_test[
                     (rf_t_test["array_position"] == i_n) & (rf_t_test["p"] < 0.05)
-                ]["rf"].values
+                ]["code"].values
             ):
                 ax.set_facecolor("bisque")
         all_ax.append(ax)
