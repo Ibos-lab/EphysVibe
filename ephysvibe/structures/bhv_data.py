@@ -211,7 +211,8 @@ class BhvData:
         }
         return cls(**data)
 
-    def from_python_hdf5(load_path: Path):
+    @classmethod
+    def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
         # load the data
         with h5py.File(load_path, "r") as f:
@@ -293,7 +294,7 @@ class BhvData:
             "test_time": test_time,
             "wait_for_fix": wait_for_fix,
         }
-        return bhv_data
+        return cls(**bhv_data)
 
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""

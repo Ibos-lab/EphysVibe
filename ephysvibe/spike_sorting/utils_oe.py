@@ -269,7 +269,7 @@ def check_strobes(
     code_numbers: np.ndarray, full_word: np.ndarray, real_strobes: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, int]:
     # Check if strobe and codes number match
-    len_idx = np.nan
+    len_idx = None
     bhv_codes = code_numbers.reshape(-1)
     bhv_codes = bhv_codes[~np.isnan(bhv_codes)]
     if full_word.shape[0] != real_strobes.shape[0]:
