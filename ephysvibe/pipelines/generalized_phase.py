@@ -72,16 +72,24 @@ def main(
     logging.info("Computing gp")
     for i_seg in seg:
         # spike data = freq > 500 Hz
+
+        seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels]
+        avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
+        seg_hp = seg_hp - avg_lfp
         seg_hp = raw_ch.filter_continuous(
-            cont[i_seg : i_seg + raw_step + raw_1sec, :32], fs=30000, fc_hp=500, axis=0
+            seg_hp, fs=30000, fc_hp=500, axis=0
         )  # High pass filter
         ## subsample
         seg_hp = seg_hp[idx_ds_sp, :32].T
         ## detect spikes
         seg_sp = raw_ch.detect_spikes(seg_hp)
 
+        # LFP
+        seg_lp = cont[i_seg : i_seg + raw_step, :n_channels]
+        avg_lfp = np.median(seg_lp, axis=1).reshape(-1, 1)
+        seg_lp = seg_lp - avg_lfp
         seg_lp = raw_ch.filter_continuous(
-            cont[i_seg : i_seg + raw_step, :n_channels], fs=30000, fc_lp=300, axis=0
+            seg_lp, fs=30000, fc_lp=300, axis=0
         )  # Low pass filter
         b, a = butter(4, passband, "bandpass")
         x_lfp = filtfilt(

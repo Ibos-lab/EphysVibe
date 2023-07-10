@@ -40,7 +40,7 @@ def detect_spikes(x: np.ndarray, win: int = 1000) -> np.ndarray:
         # std in sliding win
         std = np.std(rolling_window(x[ch], window=win, step=1), axis=1)
         # find values > than 3 times std
-        idx = (x[ch, : len(std)] >= 3 * std).astype(int)  #
+        idx = (x[ch, : len(std)] <= -3 * std).astype(int)  #
         idx[0] = 0
         # find intervals with values above threshold
         diff = np.diff(idx)
@@ -51,7 +51,8 @@ def detect_spikes(x: np.ndarray, win: int = 1000) -> np.ndarray:
             # select values between start and end of values above the threshold
             sp_idx = x[ch, i_start : i_end + 1]
             # the spike is the larger value among the selected points
-            sp_ch_seg.append(np.argmax(sp_idx) + i_start)
+            if np.any(sp_idx >= -25):
+                sp_ch_seg.append(np.argmin(sp_idx) + i_start)
         sp_seg[ch][sp_ch_seg] = 1  # fill in with one where there are spikes
     return sp_seg
 
