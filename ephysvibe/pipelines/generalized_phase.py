@@ -74,7 +74,10 @@ def main(
         # spike data = freq > 500 Hz
 
         seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels]
+        avg_lfp_ch = np.median(seg_hp, axis=0).reshape(1, -1)
+        seg_hp = seg_hp - avg_lfp_ch
         avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
+
         seg_hp = seg_hp - avg_lfp
         seg_hp = raw_ch.filter_continuous(
             seg_hp, fs=30000, fc_hp=500, axis=0
