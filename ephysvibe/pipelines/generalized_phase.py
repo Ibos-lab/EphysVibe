@@ -96,7 +96,7 @@ def main(
         )  # Low pass filter
         b, a = butter(4, passband, "bandpass")
         x_lfp = filtfilt(
-            b, a, seg_lp, padtype="odd", padlen=3 * (max(len(b), len(a)) - 1), axis=0
+            b, a, seg_lp, padtype="odd", padlen=3 * (max(len(b), len(a)) - 1), axis=1
         )
         x_lfp = x_lfp[idx_ds_lfp, :n_channels].T
         # compute gp
