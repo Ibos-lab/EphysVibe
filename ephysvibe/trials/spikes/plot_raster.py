@@ -35,9 +35,10 @@ def plot_activity_location(
             sp_samples[target_t_idx, i_n],
             -(trials_s_on - t_before).astype(int),
             axis=1,
-        )[
-            :, :2300
-        ]  # align trials on event
+        )  # align trials on event
+        # select trials with at least one spike
+
+        shift_sp = shift_sp[np.nansum(shift_sp, axis=1) > 0][:, :2300]
         mean_sp = shift_sp.mean(axis=0)  # mean of all trials
         conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
         conv_max = max(conv)
