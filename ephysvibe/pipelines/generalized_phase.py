@@ -51,7 +51,7 @@ def main(
     fs = 1000
     dt = 1 / fs
     order = 4
-    lp_f = 50
+    lp_f = 40
     hp_f = 5
     passband = [hp_f / (fs / 2), lp_f / (fs / 2)]
     # Compute GP
