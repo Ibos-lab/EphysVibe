@@ -95,6 +95,6 @@ def filter_continuous(x, fs, fc_hp=None, fc_lp=None, axis=1):
         sos = butter(6, fc_hp, "hp", fs=fs, output="sos")
     else:
         sos = butter(6, fc_lp, "lp", fs=fs, output="sos")
-    x_hp = sosfilt(sos, x)
+    x_hp = sosfilt(sos, x, axis=axis)
 
     return x_hp

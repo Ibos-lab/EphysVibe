@@ -62,6 +62,7 @@ def compute_generalized_phase(x, dt):
     x0 = fft(x, npts, axis=1)
     h = np.zeros((nch, npts))
     # ! improve:
+    #
     if npts > 0 and np.mod(npts, 2) == 0:
         h[:, 0 : npts // 2] = 1
         h[:, 1 : npts // 2 - 1] = 2

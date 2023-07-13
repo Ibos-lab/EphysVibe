@@ -74,13 +74,13 @@ def main(
         # spike data = freq > 500 Hz
 
         seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels]
-        avg_lfp_ch = np.median(seg_hp, axis=0).reshape(1, -1)
-        seg_hp = seg_hp - avg_lfp_ch
+        # avg_lfp_ch = np.median(seg_hp, axis=0).reshape(1, -1)
+        # seg_hp = seg_hp - avg_lfp_ch
         avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
 
         seg_hp = seg_hp - avg_lfp
         seg_hp = raw_ch.filter_continuous(
-            seg_hp, fs=30000, fc_hp=500, axis=0
+            seg_hp, fs=30000, fc_hp=500, axis=1  #! axis=1
         )  # High pass filter
         ## subsample
         seg_hp = seg_hp[idx_ds_sp, :32].T
@@ -91,10 +91,10 @@ def main(
         seg_lp = cont[i_seg : i_seg + raw_step, :n_channels]
         avg_lfp = np.median(seg_lp, axis=1).reshape(-1, 1)
         seg_lp = seg_lp - avg_lfp
-        seg_lp = raw_ch.filter_continuous(
-            seg_lp, fs=30000, fc_lp=300, axis=0
-        )  # Low pass filter
-        b, a = butter(4, passband, "bandpass")
+        # seg_lp = raw_ch.filter_continuous(
+        #     seg_lp, fs=30000, fc_lp=300, axis=0
+        # )  # Low pass filter
+        b, a = butter(order, passband, "bandpass")
         x_lfp = filtfilt(
             b, a, seg_lp, padtype="odd", padlen=3 * (max(len(b), len(a)) - 1), axis=1
         )
@@ -116,7 +116,6 @@ def main(
                     ch_phase_spikes.append([np.nan])
             phase_spikes.append(ch_phase_spikes)
         seg_phase_spikes.append(phase_spikes)
-
     # Reorganise list
     ps = []
     for lfp_ch in range(0, n_channels):
