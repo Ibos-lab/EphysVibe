@@ -1,6 +1,6 @@
 import numpy as np
 from phylib.io.traces import get_ephys_reader
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfiltfilt
 import logging
 
 
@@ -92,9 +92,9 @@ def filter_continuous(x, fs, fc_hp=None, fc_lp=None, axis=1):
 
     # perform a High pass filter - butterworth filter of order 6 at 1Hz
     if not (fc_hp is None):
-        sos = butter(6, fc_hp, "hp", fs=fs, output="sos")
+        sos = butter(4, fc_hp, "hp", fs=fs, output="sos")
     else:
-        sos = butter(6, fc_lp, "lp", fs=fs, output="sos")
-    x_hp = sosfilt(sos, x, axis=axis)
+        sos = butter(4, fc_lp, "lp", fs=fs, output="sos")
+    x_hp = sosfiltfilt(sos, x, axis=axis, padtype="odd", padlen=3 * (len(sos) - 1))
 
     return x_hp

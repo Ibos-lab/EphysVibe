@@ -11,7 +11,7 @@ from scipy.signal import hilbert, butter, sosfilt, filtfilt
 
 from scipy.fft import fft, fftfreq, ifft
 import numpy.core.numeric as _nx
-
+import mne
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -53,7 +53,8 @@ def main(
     order = 4
     lp_f = 40
     hp_f = 5
-    passband = [hp_f / (fs / 2), lp_f / (fs / 2)]
+    passband = [hp_f, lp_f]
+
     # Compute GP
     session_duration = (cont.shape[0] / 30000) / 60
     if session_duration < 60:
@@ -69,36 +70,34 @@ def main(
     idx_ds_sp = np.arange(0, raw_step + raw_1sec, 30)
     idx_ds_lfp = np.arange(0, raw_step, 30)
     n_channels = 32
+
     logging.info("Computing gp")
     for i_seg in seg:
-        # spike data = freq > 500 Hz
-
-        seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels]
-        # avg_lfp_ch = np.median(seg_hp, axis=0).reshape(1, -1)
-        # seg_hp = seg_hp - avg_lfp_ch
-        avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
-
-        seg_hp = seg_hp - avg_lfp
-        seg_hp = raw_ch.filter_continuous(
-            seg_hp, fs=30000, fc_hp=500, axis=1  #! axis=1
+        seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels].astype(float).T
+        avg_lfp_ch = np.median(seg_hp, axis=1).reshape(-1, 1)
+        seg_hp = seg_hp - avg_lfp_ch
+        # avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
+        seg_hp = mne.filter.filter_data(
+            seg_hp, sfreq=30000, l_freq=500, h_freq=None, method="fir"
         )  # High pass filter
         ## subsample
-        seg_hp = seg_hp[idx_ds_sp, :32].T
+        seg_hp = seg_hp[:, idx_ds_sp]
         ## detect spikes
-        seg_sp = raw_ch.detect_spikes(seg_hp)
-
+        seg_sp = raw_ch.detect_spikes(seg_hp, win=1000)
         # LFP
-        seg_lp = cont[i_seg : i_seg + raw_step, :n_channels]
-        avg_lfp = np.median(seg_lp, axis=1).reshape(-1, 1)
-        seg_lp = seg_lp - avg_lfp
-        # seg_lp = raw_ch.filter_continuous(
-        #     seg_lp, fs=30000, fc_lp=300, axis=0
-        # )  # Low pass filter
-        b, a = butter(order, passband, "bandpass")
+        seg_lp = (
+            cont[i_seg : i_seg + raw_step, :n_channels].astype(float).T
+        )  # Low pass filter
+        avg_lfp_ch = np.median(seg_lp, axis=1).reshape(-1, 1)
+        seg_lp = seg_lp - avg_lfp_ch
+        seg_lp = mne.filter.filter_data(
+            seg_lp, sfreq=30000, l_freq=None, h_freq=300, method="fir"
+        )
+        seg_lp = seg_lp[:, idx_ds_lfp]
+        b, a = butter(order, passband, "bandpass", fs=1000)
         x_lfp = filtfilt(
             b, a, seg_lp, padtype="odd", padlen=3 * (max(len(b), len(a)) - 1), axis=1
         )
-        x_lfp = x_lfp[idx_ds_lfp, :n_channels].T
         # compute gp
         xgp, wt = circular_stats.compute_generalized_phase(x_lfp, dt)
         phase_lfp = np.angle(xgp.astype(complex))
