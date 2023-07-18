@@ -57,12 +57,12 @@ def main(
 
     # Compute GP
     session_duration = (cont.shape[0] / 30000) / 60
-    if session_duration < 60:
+    if session_duration <= 60:
         logging.error("Session duration should be at least 60 min")
         raise ValueError
 
     minute_min = 20 * 60 * 1000 * 30
-    minute_max = minute_min + (20 * 60 * 1000 * 30)
+    minute_max = minute_min + (40 * 60 * 1000 * 30)
     raw_step = 300000
     raw_1sec = 30000
     seg = np.arange(0, int((minute_max - minute_min)), raw_step) + minute_min
@@ -78,7 +78,7 @@ def main(
         seg_hp = seg_hp - avg_lfp_ch
         # avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
         seg_hp = mne.filter.filter_data(
-            seg_hp, sfreq=30000, l_freq=500, h_freq=None, method="fir"
+            seg_hp, sfreq=30000, l_freq=500, h_freq=None, method="fir", verbose=False
         )  # High pass filter
         ## subsample
         seg_hp = seg_hp[:, idx_ds_sp]
@@ -91,7 +91,7 @@ def main(
         avg_lfp_ch = np.median(seg_lp, axis=1).reshape(-1, 1)
         seg_lp = seg_lp - avg_lfp_ch
         seg_lp = mne.filter.filter_data(
-            seg_lp, sfreq=30000, l_freq=None, h_freq=300, method="fir"
+            seg_lp, sfreq=30000, l_freq=None, h_freq=300, method="fir", verbose=False
         )
         seg_lp = seg_lp[:, idx_ds_lfp]
         b, a = butter(order, passband, "bandpass", fs=1000)
