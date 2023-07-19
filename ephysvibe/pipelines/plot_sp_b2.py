@@ -77,7 +77,8 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         else:
             i_cluster = i_mua
             i_mua += 1
-            code_samples = data.code_samples
+
+        code_samples = data.code_samples
         code_numbers = data.code_numbers
         sp_samples = data.sp_samples
         e_code_align = task_constants.EVENTS_B2[e_align]
