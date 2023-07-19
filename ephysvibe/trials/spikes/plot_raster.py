@@ -66,6 +66,12 @@ def plot_activity_location(
                 ]["code"].values
             ):
                 ax.set_facecolor("bisque")
+            if code in rf_t_test[(rf_t_test["array_position"] == i_n)]["code"].values:
+                vm_index = rf_t_test[
+                    (rf_t_test["array_position"] == i_n) & (rf_t_test["code"] == code)
+                ]["vm_index"].values[0]
+                ax.set_title("Code %s  vm_index: %.2f" % (code, vm_index), fontsize=8)
+
         all_ax.append(ax)
         all_ax2.append(ax2)
     return all_ax, all_ax2, all_max_conv, max_num_trials

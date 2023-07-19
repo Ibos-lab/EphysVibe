@@ -74,9 +74,9 @@ def main(
     logging.info("Computing gp")
     for i_seg in seg:
         seg_hp = cont[i_seg : i_seg + raw_step + raw_1sec, :n_channels].astype(float).T
-        avg_lfp_ch = np.median(seg_hp, axis=1).reshape(-1, 1)
-        seg_hp = seg_hp - avg_lfp_ch
-        # avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
+        # avg_lfp_ch = np.median(seg_hp, axis=1).reshape(-1, 1)
+        # seg_hp = seg_hp - avg_lfp_ch
+        # # avg_lfp = np.median(seg_hp, axis=1).reshape(-1, 1)
         seg_hp = mne.filter.filter_data(
             seg_hp, sfreq=30000, l_freq=500, h_freq=None, method="fir", verbose=False
         )  # High pass filter
@@ -88,8 +88,8 @@ def main(
         seg_lp = (
             cont[i_seg : i_seg + raw_step, :n_channels].astype(float).T
         )  # Low pass filter
-        avg_lfp_ch = np.median(seg_lp, axis=1).reshape(-1, 1)
-        seg_lp = seg_lp - avg_lfp_ch
+        # avg_lfp_ch = np.median(seg_lp, axis=1).reshape(-1, 1)
+        # seg_lp = seg_lp - avg_lfp_ch
         seg_lp = mne.filter.filter_data(
             seg_lp, sfreq=30000, l_freq=None, h_freq=300, method="fir", verbose=False
         )

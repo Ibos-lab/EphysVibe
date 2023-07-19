@@ -59,17 +59,17 @@ def compute_generalized_phase(x, dt):
     # Handle input
     [nch, npts] = x.shape
     # Analytic signal representation (single sided Fourier representation)
-    x0 = fft(x, npts, axis=1)
+    x0 = fft(x, npts, axis=1)  # x(t) = A*cos(2pi*f*t)
     h = np.zeros((nch, npts))
     # ! improve:
-    #
+    # Add a phase
     if npts > 0 and np.mod(npts, 2) == 0:
         h[:, 0 : npts // 2] = 1
         h[:, 1 : npts // 2 - 1] = 2
     else:
         h[:, 0] = 1
         h[:, 1 : npts // 2] = 2
-    x0 = ifft(x0 * h, axis=1)
+    x0 = ifft(x0 * h, axis=1)  # x(t) = Ae^(i2pi*f*t) = A(cos(2pi*f*t)+isen(2pi*f*t))
     ph = np.angle(x0)
     md = np.abs(x0)
 
@@ -86,7 +86,7 @@ def compute_generalized_phase(x, dt):
             ang = i_sign_if * np.angle(x0[i])
             x0[i] = modulus * np.exp(1j * ang)
             ph[i] = np.angle(x0[i])
-            md = abs(x0[i])
+            md[i] = abs(x0[i])
             wt[i, 0:-1] = np.angle(x0[i, 1:] * np.conj(x0[i, :-1])) / (2 * np.pi * dt)
 
     # # check if nan channels
