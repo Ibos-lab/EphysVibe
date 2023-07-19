@@ -120,7 +120,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             plt.setp(ax2.get_yticklabels(), visible=False)
 
         fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
-        fig.suptitle("%s: %s %d" % (s_path[-2], cluster, i_cluster), x=0)
+        fig.suptitle(
+            "%s: %s %d - Depth: %d"
+            % (s_path[-2], cluster, i_cluster, data.clusterdepth[i_n]),
+            x=0,
+        )
         fig.text(
             0.5,
             0.5,

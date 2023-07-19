@@ -168,7 +168,12 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             horizontalalignment="center",
             verticalalignment="center",
         )
-        fig.suptitle("%s: %s %d" % (s_path[-2], cluster, i_cluster), x=0.05, y=0.99)
+        fig.suptitle(
+            "%s: %s %d - Depth: %d"
+            % (s_path[-2], cluster, i_cluster, data.clusterdepth[i_n]),
+            x=0.05,
+            y=0.99,
+        )
         logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
         fig.savefig(
             "/".join(
