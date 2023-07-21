@@ -114,7 +114,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                         ),
                     )
                 ]["trial_idx"].values
-                # Select trials with at least 5 spikes
+                # Select trials with at least 2 spikes
                 bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) >= 2 * (
                     shift_sp[sample_idx].shape[1] / 1000
                 )
