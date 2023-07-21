@@ -294,6 +294,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             plt.setp(ax2.get_yticklabels(), visible=False)
         fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
         fig.suptitle("%s: %s %d" % (s_path[-2], cluster, i_cluster), x=0)
+        fig.text(
+            0,
+            0,
+            s="Depth: %d" % data.clusterdepth[i_n],
+            horizontalalignment="center",
+            verticalalignment="center",
+        )
         # ----- end plot ----
         logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
         plt.savefig(

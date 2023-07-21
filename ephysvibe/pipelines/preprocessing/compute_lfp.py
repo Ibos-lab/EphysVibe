@@ -11,7 +11,7 @@ from ...structures.bhv_data import BhvData
 from ...structures.lfp_data import LfpData
 from .. import pipe_config
 from collections import defaultdict
-
+import gc
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -190,6 +190,7 @@ def main(
         logging.info("Data successfully saved")
         del data
         del lfp_ds
+        gc.collect()
 
 
 if __name__ == "__main__":
