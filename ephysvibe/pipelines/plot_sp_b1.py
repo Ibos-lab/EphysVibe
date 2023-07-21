@@ -114,6 +114,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                         ),
                     )
                 ]["trial_idx"].values
+                # Select trials with at least 5 spikes
+                bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) >= 2 * (
+                    shift_sp[sample_idx].shape[1] / 1000
+                )
+                mean_sp = shift_sp[sample_idx][bool_shift_sp].mean(axis=0)
                 mean_sp = shift_sp[sample_idx].mean(axis=0)
                 conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
                 max_conv = np.max(conv) if np.max(conv) > max_conv else max_conv
