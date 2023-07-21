@@ -100,10 +100,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         target_codes,
         n_spikes_sec=5,
     )
+    # check if filepath exist
     p_threshold = 0.05
     th_involved = test_involved[
         test_involved["p"] < p_threshold
     ]  # results below threshold
+    if th_involved.shape[0] == 0:
+        raise ValueError("Non involved neurons")
     # Search neurons RF
     sp_samples = data.sp_samples
     code_samples = data.code_samples
@@ -121,10 +124,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         st_m,
         end_m,
     )
+
     p_threshold = 0.05
     th_rf = rf_test[
         np.logical_and(rf_test["p"] < p_threshold, rf_test["larger"] == True)
     ]  # results below threshold
+    if th_rf.shape[0] == 0:
+        raise ValueError("No rf")
     # Compute visuomotor index
     fs_ds = config.FS / config.DOWNSAMPLE
     kernel = firing_rate.define_kernel(
