@@ -15,6 +15,7 @@ from ..structures.trials_data import TrialsData
 from typing import Dict
 from collections import defaultdict
 import pandas as pd
+import gc
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
@@ -267,12 +268,23 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             )
             # Add legend
             plt.legend(loc="upper right", bbox_to_anchor=(0, 0), prop={"size": 7})
+            idx_max = np.argmax(fr_max_visual)
+            fr_max_n_visual = fr_max_visual[idx_max]
+            ang_max_n_visual = fr_angle[idx_max]
+            idx_max = np.argmax(fr_max_motor)
+            fr_max_n_motor = fr_max_motor[idx_max]
+            ang_max_n_motor = fr_angle[idx_max]
+
             rf_coordinates["i_neuron"] += [i_n]
             rf_coordinates["event"] += [event]
             rf_coordinates["rad"] += [rad]
             rf_coordinates["ang"] += [ang]
+            rf_coordinates["fr_max_visual"] += [fr_max_n_visual]
+            rf_coordinates["ang_max_visual"] += [ang_max_n_visual]
+            rf_coordinates["fr_max_motor"] += [fr_max_n_motor]
+            rf_coordinates["ang_max_motor"] += [ang_max_n_motor]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
-            rf_coordinates["date"] += [ss_path[:19]]
+            rf_coordinates["date"] += [ang]
         ## ------------------ end spider
         avg_events = [-500, 0, 100, 1100, 1500]
         # num_trials = sp_samples.shape[0]
@@ -319,6 +331,9 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         ),
         index=False,
     )
+    del rf_coordinates
+    plt.close(fig)
+    gc.collect()
     logging.info("-- end --")
 
 
