@@ -1,6 +1,5 @@
 # plot spiking activity task b1
 import os
-import sys
 import argparse
 from pathlib import Path
 import logging
