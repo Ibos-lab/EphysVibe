@@ -284,7 +284,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["fr_max_motor"] += [fr_max_n_motor]
             rf_coordinates["ang_max_motor"] += [ang_max_n_motor]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
-            rf_coordinates["date"] += [ang]
+            rf_coordinates["date"] += [s_path[-1][:19]]
         ## ------------------ end spider
         avg_events = [-500, 0, 100, 1100, 1500]
         # num_trials = sp_samples.shape[0]
