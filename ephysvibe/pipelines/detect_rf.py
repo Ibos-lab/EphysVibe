@@ -328,10 +328,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
     rf_coordinates.to_csv(
-        "/".join(
-            [os.path.normpath(output_dir)]
-            + [ss_path + "_" + cluster + "_" + str(i_cluster) + "rf_coordinates.csv"]
-        ),
+        "/".join([os.path.normpath(output_dir)] + [ss_path + "_rf_coordinates.csv"]),
         index=False,
     )
     del rf_coordinates
