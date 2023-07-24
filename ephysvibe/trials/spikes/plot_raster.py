@@ -228,16 +228,21 @@ def get_rf(
         ]  # Select trials with at least one spike
         # Average fr of all trials
         if event == "visual":  # visuel
-            mean_sp_code = shift_sp_r[:, :dur_v].mean(axis=0)
-            mean_sp_opposite = shift_sp_l[:, :dur_v].mean(axis=0)
+            mean_sp_code = np.nanmean(shift_sp_r[:, :dur_v], axis=0)
+            mean_sp_opposite = np.nanmean(shift_sp_l[:, :dur_v], axis=0)
         elif event == "anticipation":  # motor
-            mean_sp_code = shift_sp_r[:, st_m:end_m].mean(axis=0)
-            mean_sp_opposite = shift_sp_l[:, st_m:end_m].mean(axis=0)
+            mean_sp_code = np.nanmean(shift_sp_r[:, st_m:end_m], axis=0)
+            mean_sp_opposite = np.nanmean(shift_sp_l[:, st_m:end_m], axis=0)
         else:  # i_vm_idx <= -vm_threshold: # visuomotor
-            mean_sp_code = shift_sp_r[:, :1100].mean(axis=0)
-            mean_sp_opposite = shift_sp_l[:, :1100].mean(axis=0)
+            mean_sp_code = np.nanmean(shift_sp_r[:, :1100], axis=0)
+            mean_sp_opposite = np.nanmean(shift_sp_l[:, :1100], axis=0)
         p = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
-        larger = mean_sp_code.mean() > mean_sp_opposite.mean()
+        larger = (
+            np.nanmean(
+                mean_sp_code,
+            )
+            > mean_sp_opposite.mean()
+        )
         test_rf["code"] += [code]
         test_rf["array_position"] += [i_neuron]
         test_rf["p"] += [p]
@@ -267,6 +272,7 @@ def get_vm_index(
     for _, row in th_rf.iterrows():
         i_neuron = row["array_position"]
         code = row["code"]
+        # event = row['event']
         target_t_idx = target_codes[code][
             "trial_idx"
         ]  # select trials with the same stimulus
@@ -318,14 +324,8 @@ def get_max_fr(
     test_vm,
     fs_ds,
 ):
-    (
-        fr_max_visual,
-        fr_max_motor,
-        fr_angle,
-        fr_max_trial,
-        v_significant,
-        m_significant,
-    ) = ([], [], [], [], [], [])
+    fr_max_visual, fr_max_motor, fr_angle, fr_max_trial = [], [], [], []
+    v_significant, m_significant = [], []
     for code in target_codes.keys():
         target_t_idx = target_codes[code][
             "trial_idx"
@@ -338,12 +338,12 @@ def get_max_fr(
         )  # align trials on event
         # select trials with at least one spike
         shift_sp = shift_sp[np.nansum(shift_sp, axis=1) > 0]
-        mean_sp = shift_sp.mean(axis=0)  # mean of all trials
+        mean_sp = np.nanmean(shift_sp, axis=0)  # mean of all trials
         conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
-        fr_max_visual.append(max(conv[win_size : win_size + dur_v]))
+        fr_max_visual.append(np.nanmax(conv[win_size : win_size + dur_v]))
         fr_angle.append(target_codes[code]["angle_codes"])
-        fr_max_motor.append(max(conv[win_size + 800 : win_size + 1100]))
-        fr_max_trial.append(max(conv[win_size : win_size + 1100]))
+        fr_max_motor.append(np.nanmax(conv[win_size + 800 : win_size + 1100]))
+        fr_max_trial.append(np.nanmax(conv[win_size : win_size + 1100]))
         if (
             code
             in test_vm[

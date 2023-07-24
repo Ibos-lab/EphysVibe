@@ -158,8 +158,8 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     no_dup_vm = test_vm[test_vm.columns[:-3]].drop_duplicates()
     # ------- plot ------------
     color = {
-        "visual": ["salmon", "darkred", "--"],
-        "motor": ["royalblue", "navy", "-."],
+        "visual": ["salmon", "darkred", "-"],
+        "motor": ["royalblue", "navy", ":"],
     }
     # kernel parameters
     t_before = 500
@@ -249,10 +249,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             )
             ax.fill(fr_angle_rad, norm_fr_max, alpha=0.1, color=color[event][0])
             # plot resultant
-            r_vector = np.mean(
+            r_vector = np.nanmean(
                 (np.array(norm_fr_max[:-1]) * np.cos(fr_angle_rad[:-1]))[significant]
             )
-            im_vector = np.mean(
+            im_vector = np.nanmean(
                 (np.array(norm_fr_max[:-1]) * np.sin(fr_angle_rad[:-1]))[significant]
             )
             ang = np.angle([r_vector + 1j * (im_vector)])[0]
@@ -262,27 +262,30 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             ax.plot(
                 [0, ang],
                 [0, rad],
-                linewidth=1,
+                linewidth=1.5,
                 linestyle=color[event][2],
                 color=color[event][1],
             )
             # Add legend
-            plt.legend(loc="upper right", bbox_to_anchor=(0, 0), prop={"size": 7})
-            idx_max = np.argmax(fr_max_visual)
-            fr_max_n_visual = fr_max_visual[idx_max]
-            ang_max_n_visual = fr_angle[idx_max]
-            idx_max = np.argmax(fr_max_motor)
-            fr_max_n_motor = fr_max_motor[idx_max]
-            ang_max_n_motor = fr_angle[idx_max]
 
-            rf_coordinates["i_neuron"] += [i_n]
+            plt.legend(loc="upper right", bbox_to_anchor=(0, 0), prop={"size": 7})
+            if not np.isnan(rad):
+                idx_max = np.nanargmax(fr_max)
+                fr_max_n = fr_max[idx_max]
+                ang_max_n = fr_angle[idx_max]
+
+            else:
+                fr_max_n = np.nan
+                ang_max_n = np.nan
+
+            rf_coordinates["i_array"] += [i_n]
+            rf_coordinates["neuron_type"] += [cluster]
+            rf_coordinates["i_neuron"] += [i_cluster]
             rf_coordinates["event"] += [event]
             rf_coordinates["rad"] += [rad]
             rf_coordinates["ang"] += [ang]
-            rf_coordinates["fr_max_visual"] += [fr_max_n_visual]
-            rf_coordinates["ang_max_visual"] += [ang_max_n_visual]
-            rf_coordinates["fr_max_motor"] += [fr_max_n_motor]
-            rf_coordinates["ang_max_motor"] += [ang_max_n_motor]
+            rf_coordinates["fr_max"] += [fr_max_n]
+            rf_coordinates["ang_max"] += [ang_max_n]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
             rf_coordinates["date"] += [s_path[-1][:19]]
         ## ------------------ end spider
