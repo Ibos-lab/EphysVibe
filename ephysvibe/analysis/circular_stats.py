@@ -172,6 +172,17 @@ def mean_direction(alpha, w=None, ci=None, d=None, axis=None, axial_correction=1
         return mu  # , CI(mu - t, mu + t)
 
 
+def mean_vector(radius, angle):
+
+    r_vector = np.nanmean((np.array(radius) * np.cos(angle)))
+    im_vector = np.nanmean((np.array(radius) * np.sin(angle)))
+    ang = np.angle([r_vector + 1j * (im_vector)])[0]
+    if ang < 0:
+        ang = ang + 2 * np.pi
+    rad = np.abs([r_vector + 1j * (im_vector)])[0]
+    return rad, ang
+
+
 def center(*args, **kwargs):
     """
     Centers the data on its circular mean.

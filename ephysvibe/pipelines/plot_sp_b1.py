@@ -113,12 +113,14 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                         ),
                     )
                 ]["trial_idx"].values
-                # Select trials with at least 2 spikes/sec
-                bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) >= 2 * (
-                    shift_sp[sample_idx].shape[1] / 1000
+                # Select trials with at least 5 spikes/sec
+                bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) >= np.floor(
+                    2 * (shift_sp[sample_idx].shape[1] / 1000)
                 )
-                mean_sp = shift_sp[sample_idx][bool_shift_sp].mean(axis=0)
-                mean_sp = shift_sp[sample_idx].mean(axis=0)
+                mean_sp = np.zeros(shift_sp.shape[1])
+                if np.sum(bool_shift_sp) > 3:
+                    mean_sp = shift_sp[sample_idx][bool_shift_sp].mean(axis=0)
+                # mean_sp = shift_sp[sample_idx].mean(axis=0)
                 conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
                 max_conv = np.max(conv) if np.max(conv) > max_conv else max_conv
                 time = np.arange(0, len(conv)) - t_before

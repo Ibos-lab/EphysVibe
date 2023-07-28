@@ -126,6 +126,7 @@ def get_responding_neurons(
     for _, row in neurons_info.iterrows():
         i_neuron = row["array_position"]
         code = row["code"]
+
         for i_st, i_end, i_epoch in zip(
             start_time, end_time, epochs["name"]
         ):  # iterate by event
@@ -140,16 +141,15 @@ def get_responding_neurons(
                 -(trials_event_time - before_trial).astype(int),
                 axis=1,
             )  # align trials with (target_on - before_trial)
-            # select trials with at least one spike
-            shift_sp = shift_sp[np.nansum(shift_sp, axis=1) > 0]
-            # check number of spikes, at least 5/sec
-            if np.any(
-                np.sum(
-                    shift_sp[:, before_trial : epochs["end_time"][-1] + before_trial],
-                    axis=1,
-                )
-                >= n_spikes_sec * (epochs["end_time"][-1] / 1000)
-            ):  # if at least n_spikes_sec, compute and save t-test in pd.DataFrame
+            # select trials with at least  5sp/sec
+            shift_sp = shift_sp[
+                np.nansum(shift_sp[:, before_trial : before_trial + 1100], axis=1)
+                > n_spikes_sec * 1100 / 1000
+            ]
+            # check number of trials
+            if (
+                shift_sp.shape[0] > 1
+            ):  # if at least 2 trials, compute and save t-test in pd.DataFrame
                 # mean fr during event
                 mean_sp = shift_sp[:, i_st:i_end].mean(
                     axis=0
@@ -163,6 +163,7 @@ def get_responding_neurons(
             else:
                 p = np.nan
                 message = "less than %s spikes/sec" % n_spikes_sec
+
             test_involved["code"] += [code]
             test_involved["laterality"] += [row["laterality"]]
             test_involved["cluster"] += [row["cluster"]]
@@ -188,6 +189,7 @@ def get_rf(
     dur_v: int,
     st_m: int,
     end_m: int,
+    n_spikes_sec: np.ndarray = 5,
 ) -> pd.DataFrame:
     test_rf: Dict[str, list] = defaultdict(list)
     for _, row in th_involved.iterrows():
@@ -207,12 +209,14 @@ def get_rf(
         trials_event_time = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        shift_sp_r = TrialsData.indep_roll(
+        sp_code = TrialsData.indep_roll(
             sp_samples[target_t_idx, i_neuron], -(trials_event_time).astype(int), axis=1
-        )  # align trials with event onset
-        shift_sp_r = shift_sp_r[
-            np.nansum(shift_sp_r, axis=1) > 0
-        ]  # Select trials with at least one spike
+        )[
+            :, :1100
+        ]  # align trials with event onset
+        sp_code = sp_code[
+            np.nansum(sp_code, axis=1) > n_spikes_sec * 1100 / 1000
+        ]  # Select trials with at least  5 spikes/sec
         # opposite_code
         target_t_idx = target_codes[opposite_code][
             "trial_idx"
@@ -220,29 +224,38 @@ def get_rf(
         trials_event_time = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        shift_sp_l = TrialsData.indep_roll(
+        sp_oppos = TrialsData.indep_roll(
             sp_samples[target_t_idx, i_neuron], -(trials_event_time).astype(int), axis=1
-        )  # align trials with event onset
-        shift_sp_l = shift_sp_l[
-            np.nansum(shift_sp_l, axis=1) > 0
-        ]  # Select trials with at least one spike
+        )[
+            :, :1100
+        ]  # align trials with event onset
+        sp_oppos = sp_oppos[
+            np.nansum(sp_oppos, axis=1) > n_spikes_sec * 1100 / 1000
+        ]  # Select trials with at least 5 spikes/sec
         # Average fr of all trials
-        if event == "visual":  # visuel
-            mean_sp_code = np.nanmean(shift_sp_r[:, :dur_v], axis=0)
-            mean_sp_opposite = np.nanmean(shift_sp_l[:, :dur_v], axis=0)
-        elif event == "anticipation":  # motor
-            mean_sp_code = np.nanmean(shift_sp_r[:, st_m:end_m], axis=0)
-            mean_sp_opposite = np.nanmean(shift_sp_l[:, st_m:end_m], axis=0)
-        else:  # i_vm_idx <= -vm_threshold: # visuomotor
-            mean_sp_code = np.nanmean(shift_sp_r[:, :1100], axis=0)
-            mean_sp_opposite = np.nanmean(shift_sp_l[:, :1100], axis=0)
-        p = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
-        larger = (
-            np.nanmean(
-                mean_sp_code,
-            )
-            > mean_sp_opposite.mean()
-        )
+        # events = ['visual','anticipation','visuomotor']
+        # ev_sp_code = [sp_code[:, :dur_v], sp_code[:, st_m:end_m], sp_code]
+        # ev_sp_opp= [sp_oppos[:, :dur_v], sp_oppos[:, st_m:end_m], sp_oppos]
+        # for event, i_sp_cod,i_sp_op in zip(events,ev_sp_code,ev_sp_opp):
+        if sp_code.shape[0] > 1 and sp_oppos.shape[0] > 1:  # check if at least 2 trials
+            if event == "visual":  # visuel
+                mean_sp_code = np.nanmean(sp_code[:, :dur_v], axis=0)
+                mean_sp_opposite = np.nanmean(sp_oppos[:, :dur_v], axis=0)
+            elif event == "anticipation":  # motor
+                mean_sp_code = np.nanmean(sp_code[:, st_m:end_m], axis=0)
+                mean_sp_opposite = np.nanmean(sp_oppos[:, st_m:end_m], axis=0)
+            else:  # i_vm_idx <= -vm_threshold: # visuomotor
+                mean_sp_code = np.nanmean(sp_code[:, :1100], axis=0)
+                mean_sp_opposite = np.nanmean(sp_oppos[:, :1100], axis=0)
+            p = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
+            larger = np.nanmean(mean_sp_code) > np.nanmean(mean_sp_opposite)
+        elif sp_code.shape[0] > 1 and sp_oppos.shape[0] < 1:
+            p = -np.inf
+            larger = True
+        else:
+            p = np.nan
+            larger = False
+
         test_rf["code"] += [code]
         test_rf["array_position"] += [i_neuron]
         test_rf["p"] += [p]
@@ -311,6 +324,66 @@ def get_vm_index(
     return test_vm
 
 
+def get_laterality_idx(
+    th_involved: pd.DataFrame,
+    sp_samples: np.ndarray,
+    ipsi: np.ndarray,
+    contra: np.ndarray,
+    target_codes: Dict,
+    code_samples: np.ndarray,
+    align_event: int,
+    code_numbers: np.ndarray,
+    dur_v: int,
+    st_m: int,
+    end_m: int,
+    kernel: np.ndarray,
+    fs_ds: int,
+) -> pd.DataFrame:
+    lat_index_df: Dict[str, list] = defaultdict(list)
+    n_involved = th_involved["array_position"].unique()
+    contra_idx = np.concatenate(pd.DataFrame(target_codes).iloc[1][contra].values)
+    ipsi_idx = np.concatenate(pd.DataFrame(target_codes).iloc[1][ipsi].values)
+    for i_neuron in n_involved:
+        # contra
+        trials_event_time = code_samples[
+            contra_idx, np.where(code_numbers[contra_idx] == align_event)[1]
+        ]  # moment when the target_on ocurrs in each trial
+        sp_contra = TrialsData.indep_roll(
+            sp_samples[contra_idx, i_neuron], -(trials_event_time).astype(int), axis=1
+        )  # align trials with event onset
+        sp_contra = sp_contra[
+            np.nansum(sp_contra, axis=1) > 0
+        ]  # Select trials with at least one spike
+        # ipsi
+        trials_event_time = code_samples[
+            ipsi_idx, np.where(code_numbers[ipsi_idx] == align_event)[1]
+        ]  # moment when the target_on ocurrs in each trial
+        sp_ipsi = TrialsData.indep_roll(
+            sp_samples[ipsi_idx, i_neuron], -(trials_event_time).astype(int), axis=1
+        )  # align trials with event onset
+        sp_ipsi = sp_ipsi[
+            np.nansum(sp_ipsi, axis=1) > 0
+        ]  # Select trials with at least one spike
+        # Average fr of all trials
+        mean_sp_contra = np.nanmean(sp_contra[:, :1100], axis=0)
+        mean_sp_ipsi = np.nanmean(sp_ipsi[:, :1100], axis=0)
+        # convolution
+        conv_contra = np.convolve(mean_sp_contra, kernel, mode="same") * fs_ds
+        conv_ipsi = np.convolve(mean_sp_ipsi, kernel, mode="same") * fs_ds
+        min_value = np.concatenate([conv_contra, conv_ipsi]).min()
+        conv_contra = np.nanmean(conv_contra - min_value)
+        conv_ipsi = np.nanmean(conv_ipsi - min_value)
+        p = stats.ttest_ind(mean_sp_contra, mean_sp_ipsi)[1]
+        lat_index = (conv_contra - conv_ipsi) / (conv_contra + conv_ipsi)
+
+        lat_index_df["array_position"] += [i_neuron]
+        lat_index_df["lat_index"] += [lat_index]
+        lat_index_df["p_lat"] += [p]
+
+    lat_index_df = pd.DataFrame(lat_index_df)
+    return lat_index_df
+
+
 def get_max_fr(
     target_codes,
     sp_samples,
@@ -324,7 +397,7 @@ def get_max_fr(
     test_vm,
     fs_ds,
 ):
-    fr_max_visual, fr_max_motor, fr_angle, fr_max_trial = [], [], [], []
+    fr_max_visual, fr_max_motor, fr_angle, fr_max_codes = [], [], [], []
     v_significant, m_significant = [], []
     for code in target_codes.keys():
         target_t_idx = target_codes[code][
@@ -343,7 +416,7 @@ def get_max_fr(
         fr_max_visual.append(np.nanmax(conv[win_size : win_size + dur_v]))
         fr_angle.append(target_codes[code]["angle_codes"])
         fr_max_motor.append(np.nanmax(conv[win_size + 800 : win_size + 1100]))
-        fr_max_trial.append(np.nanmax(conv[win_size : win_size + 1100]))
+        fr_max_codes.append(np.nanmax(conv[win_size : win_size + 1100]))
         if (
             code
             in test_vm[
@@ -364,10 +437,10 @@ def get_max_fr(
         else:
             m_significant.append(False)
     return (
-        fr_max_visual,
-        fr_max_motor,
-        fr_angle,
-        fr_max_trial,
-        v_significant,
-        m_significant,
+        np.array(fr_max_visual),
+        np.array(fr_max_motor),
+        np.array(fr_angle),
+        np.array(fr_max_codes),
+        np.array(v_significant),
+        np.array(m_significant),
     )

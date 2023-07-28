@@ -5,10 +5,10 @@ from pathlib import Path
 import logging
 import numpy as np
 from ..trials.spikes import firing_rate, sp_constants
-from ..task import def_task
 from ..spike_sorting import config
 from ..task import task_constants
 from ..trials.spikes import plot_raster
+from ..analysis import circular_stats
 import warnings
 from matplotlib import pyplot as plt
 from ..structures.trials_data import TrialsData
@@ -76,7 +76,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     )
     # Search neurons responding to the task
     fix_t = 200
-    dur_v = 250
+    dur_v = 200
     st_m = 800
     end_m = 1100
     epochs = {
@@ -99,7 +99,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         sp_samples,
         align_event,
         target_codes,
-        n_spikes_sec=5,
+        n_spikes_sec=1,
     )
     # check if filepath exist
     p_threshold = 0.05
@@ -124,9 +124,9 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         dur_v,
         st_m,
         end_m,
+        n_spikes_sec=1,
     )
 
-    p_threshold = 0.05
     th_rf = rf_test[
         np.logical_and(rf_test["p"] < p_threshold, rf_test["larger"] == True)
     ]  # results below threshold
@@ -206,7 +206,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             fr_max_visual,
             fr_max_motor,
             fr_angle,
-            fr_max_trial,
+            fr_max_codes,
             v_significant,
             m_significant,
         ) = plot_raster.get_max_fr(
@@ -222,17 +222,55 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             test_vm,
             fs_ds,
         )
-        fr_max_trial = max(fr_max_trial)
+        codes_sig = np.logical_or(m_significant, v_significant)
+        fr_code_max = max(fr_max_codes)
+        vm_index = np.nan
+        if np.any(~np.isnan(fr_max_codes[codes_sig])):
+
+            idx_max_all = np.nanargmax(fr_max_codes[codes_sig])
+            ang_max_all = fr_angle[codes_sig][idx_max_all]
+            idx_code = np.where(pd.DataFrame(target_codes).iloc[3] == ang_max_all)[0][0]
+            code = list(target_codes.keys())[idx_code]
+            neu_test_vm = test_vm[test_vm["array_position"] == i_n]
+            if code in neu_test_vm["code"].values:
+                vm_index = neu_test_vm[neu_test_vm["code"] == code]["vm_index"].values[
+                    0
+                ]
         ax = plt.subplot2grid((3, 3), (1, 1), polar=True)
-        fr_angle_rad = ((np.array(fr_angle) * 2 * np.pi) / 360).tolist()
-        fr_angle_rad += fr_angle_rad[:1]
+        fr_angle_rad = (np.array(fr_angle) * 2 * np.pi) / 360
+        fr_angle_rad = np.concatenate([fr_angle_rad, fr_angle_rad[:1]])
+
         for fr_max, event, significant in zip(
             [fr_max_visual, fr_max_motor],
             ["visual", "motor"],
             [v_significant, m_significant],
         ):
-            norm_fr_max = (np.array(fr_max) / fr_max_trial).tolist()
-            norm_fr_max += norm_fr_max[:1]
+            norm_fr_max = np.array(fr_max) / fr_code_max
+            # compute mean vector only visual or motor
+            if np.any(significant):
+                rad, ang = circular_stats.mean_vector(
+                    radius=norm_fr_max[significant],
+                    angle=fr_angle_rad[:-1][significant],
+                )
+                idx_max = np.nanargmax(fr_max)
+                fr_max_n = fr_max[idx_max]
+                ang_max_n = fr_angle[idx_max]
+
+            else:
+                rad, ang = np.nan, np.nan
+                fr_max_n = np.nan
+                ang_max_n = np.nan
+
+            # compute mean vector of all significant positions/codes
+            if np.any(codes_sig):
+                rad_all, ang_all = circular_stats.mean_vector(
+                    radius=fr_max_codes[codes_sig] / fr_code_max,
+                    angle=fr_angle_rad[:-1][codes_sig],
+                )
+            else:
+                rad_all, ang_all = np.nan, np.nan
+            # plot max fr
+            norm_fr_max = np.concatenate([norm_fr_max, norm_fr_max[:1]])
             ax.set_rlabel_position(90)
             plt.yticks(
                 [0.25, 0.5, 0.75, 1], ["0.25", "0.5", "0.75", "1"], color="grey", size=7
@@ -248,37 +286,17 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                 label=event,
             )
             ax.fill(fr_angle_rad, norm_fr_max, alpha=0.1, color=color[event][0])
-            # plot resultant
-            r_vector = np.nanmean(
-                (np.array(norm_fr_max[:-1]) * np.cos(fr_angle_rad[:-1]))[significant]
-            )
-            im_vector = np.nanmean(
-                (np.array(norm_fr_max[:-1]) * np.sin(fr_angle_rad[:-1]))[significant]
-            )
-            ang = np.angle([r_vector + 1j * (im_vector)])[0]
-            if ang < 0:
-                ang = ang + 2 * np.pi
-            rad = np.abs([r_vector + 1j * (im_vector)])[0]
+            # plot mean vector
             ax.plot(
                 [0, ang],
                 [0, rad],
-                linewidth=1.5,
+                linewidth=1,
                 linestyle=color[event][2],
                 color=color[event][1],
             )
-            # Add legend
-
             plt.legend(loc="upper right", bbox_to_anchor=(0, 0), prop={"size": 7})
-            if not np.isnan(rad):
-                idx_max = np.nanargmax(fr_max)
-                fr_max_n = fr_max[idx_max]
-                ang_max_n = fr_angle[idx_max]
-
-            else:
-                fr_max_n = np.nan
-                ang_max_n = np.nan
-
-            rf_coordinates["i_array"] += [i_n]
+            # add results to df
+            rf_coordinates["array_position"] += [i_n]
             rf_coordinates["neuron_type"] += [cluster]
             rf_coordinates["i_neuron"] += [i_cluster]
             rf_coordinates["event"] += [event]
@@ -286,7 +304,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["ang"] += [ang]
             rf_coordinates["fr_max"] += [fr_max_n]
             rf_coordinates["ang_max"] += [ang_max_n]
+            rf_coordinates["rad_all"] += [rad_all]
+            rf_coordinates["ang_all"] += [ang_all]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
+            rf_coordinates["vm_index"] += [vm_index]
             rf_coordinates["date"] += [s_path[-1][:19]]
         ## ------------------ end spider
         avg_events = [-500, 0, 100, 1100, 1500]
@@ -327,6 +348,25 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
+    # Compute laterality index
+    lat_index_df = plot_raster.get_laterality_idx(
+        rf_coordinates,
+        sp_samples,
+        ipsi,
+        contra,
+        target_codes,
+        code_samples,
+        align_event,
+        code_numbers,
+        dur_v,
+        st_m,
+        end_m,
+        kernel,
+        fs_ds,
+    )
+    rf_coordinates = rf_coordinates.merge(
+        lat_index_df, left_on="array_position", right_on="array_position"
+    )
     rf_coordinates.to_csv(
         "/".join([os.path.normpath(output_dir)] + [ss_path + "_rf_coordinates.csv"]),
         index=False,
