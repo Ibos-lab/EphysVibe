@@ -45,6 +45,8 @@ class BhvData:
         sample_time: np.ndarray,
         test_time: np.ndarray,
         code_samples: np.ndarray = np.array([np.nan]),
+        start_trials: np.ndarray = np.array([np.nan]),
+        end_trials: np.ndarray = np.array([np.nan]),
     ):
         """_summary_
 
@@ -90,6 +92,8 @@ class BhvData:
         self.sacc_code = sacc_code
         self.code_numbers = code_numbers
         self.code_samples = code_samples
+        self.start_trials = start_trials
+        self.end_trials = end_trials
         self.code_times = code_times
         self.condition = condition
         self.eye_ml = eye_ml
@@ -222,6 +226,8 @@ class BhvData:
             sacc_code = group["sacc_code"][:]
             code_numbers = group["code_numbers"][:]
             code_samples = group["code_samples"][:]
+            start_trials = group["start_trials"][:]
+            end_trials = group["end_trials"][:]
             code_times = group["code_times"][:]
             condition = group["condition"][:]
             eye_ml = group["eye_ml"][:]
@@ -261,6 +267,8 @@ class BhvData:
             "sacc_code": sacc_code,
             "code_numbers": code_numbers,
             "code_samples": code_samples,
+            "start_trials": start_trials,
+            "end_trials": end_trials,
             "code_times": code_times,
             "condition": condition,
             "eye_ml": eye_ml,
@@ -373,6 +381,12 @@ class BhvData:
             )
             group.create_dataset(
                 "code_samples", self.code_samples.shape, data=self.code_samples
+            )
+            group.create_dataset(
+                "start_trials", self.start_trials.shape, data=self.start_trials
+            )
+            group.create_dataset(
+                "end_trials", self.end_trials.shape, data=self.end_trials
             )
             group.create_dataset(
                 "code_times", self.code_times.shape, data=self.code_times

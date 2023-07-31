@@ -10,7 +10,7 @@ import glob
 from ...structures.bhv_data import BhvData
 from .. import pipe_config
 from collections import defaultdict
-
+from ...structures.spike_data import SpikeData
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -79,9 +79,7 @@ def main(
     logging.info("-- Start --")
     # define paths
     s_path = os.path.normpath(ks_path).split(os.sep)
-    time_path = "/".join(
-        s_path + ["continuous/Acquisition_Board-100.Rhythm Data/sample_numbers.npy"]
-    )
+    time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
     bhv_path = "/".join(s_path[:-2] + ["*/*/*_bhv.h5"])
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
@@ -110,7 +108,7 @@ def main(
     bhv = BhvData.from_python_hdf5(bhv_path[0])
     # load timestamps and events
     logging.info("Loading continuous/sample_numbers data")
-    c_samples = np.load(time_path)
+    c_samples = np.load(time_path + "sample_numbers.npy")
     # events = utils_oe.load_event_files(event_path)
     # shape_0 = len(c_samples)
     # (
@@ -139,18 +137,17 @@ def main(
     # start_ch, n_eyes = areas_ch.pop("eyes", False)
     # eyes_ds = np.array([])
 
-    start_trials = bhv.code_samples[bhv.code_numbers == config.START_CODE]
-    end_trials = bhv.code_samples[bhv.code_numbers == config.END_CODE]
-
+    start_trials = bhv.start_trials
+    end_trials = bhv.end_trials
     # to ms
     # ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
-    start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
-    end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
+    # start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
+    # end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
     # real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
-        spike_path = "/".join(s_path[:-1] + ["KS" + area.upper()])
+        spike_path = "/".join([time_path] + ["KS" + area.upper()])
         if not os.path.exists(spike_path):
             logging.error("spike_path: %s does not exist" % spike_path)
             raise FileExistsError
@@ -178,17 +175,54 @@ def main(
             int
         )
 
-        data = data_structure.restructure(
+        (
+            sp_samples,
+            # code_numbers,
+            # code_samples,
+            # eyes_values,
+            # lfp_values,
+        ) = data_structure.sort_data_trial(
+            clusters=cluster_info,
+            spike_sample=spike_sample,
             start_trials=start_trials,
             end_trials=end_trials,
-            cluster_info=cluster_info,
-            spike_sample=spike_sample,
-            real_strobes=bhv.code_samples,
+            # real_strobes=real_strobes,
             # ds_samples=ds_samples,
             spike_clusters=spike_clusters,
-            full_word=bhv.code_numbers,
-            bhv=bhv,
+            # full_word=full_word,
+            # lfp_ds=lfp_ds,
+            # eyes_ds=eyes_ds,
         )
+        # esto se checkea cuando se genera real_strobes
+        # # check if code_numbers == bhv.code_numbers
+        # if np.nansum(code_numbers - bhv.code_numbers[: code_numbers.shape[0]]) != 0:
+        #     logging.error("bhv.code_numbers != code_numbers")
+        #     raise ValueError
+
+        data = SpikeData(
+            sp_samples=sp_samples,
+            # eyes_values=eyes_values,
+            trial_error=bhv.trial_error,
+            code_samples=bhv.code_samples,
+            code_numbers=bhv.code_numbers,
+            block=bhv.block,
+            clusters_id=cluster_info["cluster_id"].values,
+            clusters_ch=cluster_info["ch"].values,
+            clustersgroup=cluster_info["group"].values,
+            clusterdepth=cluster_info["depth"].values,
+            start_trials=start_trials,
+        )
+
+        # data = data_structure.restructure(
+        #     start_trials=start_trials,
+        #     end_trials=end_trials,
+        #     cluster_info=cluster_info,
+        #     spike_sample=spike_sample,
+        #     real_strobes=bhv.code_samples,
+        #     spike_clusters=spike_clusters,
+        #     full_word=bhv.code_numbers,
+        #     bhv=bhv,
+        # )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
         file_name = (
@@ -209,7 +243,6 @@ def main(
         data.to_python_hdf5("/".join([path] + [file_name]))
         logging.info("Data successfully saved")
         del data
-        del lfp_ds
 
 
 if __name__ == "__main__":

@@ -98,9 +98,8 @@ def sort_data_trial(
         sp_trial = spike_sample[sp_mask] - start_trials[trial_i]
         id_clusters = spike_clusters[sp_mask]  # to which neuron correspond each spike
         # fill with zeros
-        # sp_samples[trial_i, :, : np.sum(lfp_mask)] = np.zeros(
-        #     (sp_samples.shape[1], np.sum(lfp_mask))
-        # )
+        len_trial = int(end_trials[trial_i] - start_trials[trial_i])
+        sp_samples[trial_i, :, :len_trial] = np.zeros((sp_samples.shape[1], len_trial))
         # # select code numbers
         # code_numbers.append(
         #     full_word[events_mask].tolist()
@@ -183,11 +182,8 @@ def restructure(
     cluster_info,
     spike_sample,
     real_strobes,
-    ds_samples,
     spike_clusters,
     full_word,
-    lfp_ds,
-    eyes_ds,
     bhv,
 ):
 
@@ -216,15 +212,14 @@ def restructure(
     #     raise ValueError
 
     data = TrialsData(
-        **vars(bhv),
         sp_samples=sp_samples,
         # eyes_values=eyes_values,
         # lfp_values=lfp_values,
-        # code_samples=code_samples,
+        code_samples=code_samples,
         clusters_id=cluster_info["cluster_id"].values,
         clusters_ch=cluster_info["ch"].values,
         clustersgroup=cluster_info["group"].values,
         clusterdepth=cluster_info["depth"].values,
-        start_trials=start_trials
+        start_trials=start_trials,
     )
     return data

@@ -49,21 +49,39 @@ def main(
     events = utils_oe.load_event_files(event_data_files)
 
     # reconstruct 8 bit words
-    _, real_strobes, len_idx = utils_oe.find_events_codes(
+    _, real_strobes, len_idx, start_trials, end_trials = utils_oe.find_events_codes(
         events, code_numbers=bhv.code_numbers
     )
     if len_idx is not None:
         bhv = utils_oe.select_trials_bhv(bhv, len_idx)
     # to ms
+
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
-    bhv.code_samples = real_strobes
+    start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
+    end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
+    bhv.start_trials = start_trials
+    bhv.end_trials = end_trials
+    n_trials, n_codes = bhv.code_numbers.shape
+    code_samples = np.full((n_trials, n_codes), np.nan)
+
+    for i_trial in range(n_trials):
+
+        events_mask = np.logical_and(
+            real_strobes >= start_trials[i_trial],
+            real_strobes <= end_trials[i_trial],
+        )
+        code_samples[i_trial, : np.sum(events_mask)] = (
+            real_strobes[events_mask] - start_trials[i_trial]
+        )
+
+    bhv.code_samples = code_samples
 
     if output_dir is None:
         output_dir = os.path.normpath(bhv_data_file)[:-4] + "_bhv.h5"
     else:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        output_dir = output_dir + s_path[-1][:-4] + "_bhv.h5"
+        output_dir = os.path.normpath(output_dir) + "/" + s_path[-1][:-4] + "_bhv.h5"
 
     logging.info("Saving data")
     bhv.to_python_hdf5(output_dir)
