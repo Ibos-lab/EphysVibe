@@ -228,7 +228,6 @@ def select_samples(
     ds_samples = signal_downsample(
         c_samples, downsample, idx_start=idx_start_time, axis=0
     )
-
     return ds_samples, idx_start_time
 
 

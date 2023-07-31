@@ -66,7 +66,7 @@ def sort_data_trial(
     # eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    start_trials = start_trials - 1000  # , [ds_samples[-1]])
+    # , [ds_samples[-1]])
     n_trials, n_neurons, n_ts = (
         len(start_trials),
         len(clusters),
