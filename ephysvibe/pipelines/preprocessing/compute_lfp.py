@@ -62,6 +62,7 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
 
 def main(
     continuous_path: Path,
+    bhv_path: Path,
     output_dir: Path,
     areas: list,
     start_ch: list,

@@ -41,7 +41,10 @@ def main(
     # Select info about the recording from the path
     s_path = os.path.normpath(bhv_data_file).split(os.sep)
     event_data_files = "/".join(s_path[:-1] + [event_path])
-
+    n_exp = s_path[-3][-1]
+    n_record = s_path[-2][-1]
+    subject = s_path[-6]
+    date_time = s_path[-5]
     # load bhv data
     logging.info("Loading bhv data")
     bhv = BhvData.from_matlab_mat(bhv_data_file)
@@ -79,12 +82,13 @@ def main(
 
     bhv.code_samples = code_samples
 
+    file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
     if output_dir is None:
-        output_dir = os.path.normpath(bhv_data_file)[:-4] + "_bhv.h5"
+        output_dir = "/".join(s_path[:-1] + [file_name])
     else:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        output_dir = os.path.normpath(output_dir) + "/" + s_path[-1][:-4] + "_bhv.h5"
+        output_dir = os.path.normpath(output_dir) + "/" + file_name
 
     logging.info("Saving data")
     bhv.to_python_hdf5(output_dir)
