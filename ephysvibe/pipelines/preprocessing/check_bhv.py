@@ -49,9 +49,11 @@ def main(
     events = utils_oe.load_event_files(event_data_files)
 
     # reconstruct 8 bit words
-    _, real_strobes, len_idx, start_trials, end_trials = utils_oe.find_events_codes(
+    _, real_strobes, len_idx, idx_start, idx_end = utils_oe.find_events_codes(
         events, code_numbers=bhv.code_numbers
     )
+    start_trials = real_strobes[idx_start]
+    end_trials = real_strobes[idx_end]
     if len_idx is not None:
         bhv = utils_oe.select_trials_bhv(bhv, len_idx)
     # to ms
@@ -60,7 +62,8 @@ def main(
     start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
     end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
     bhv.start_trials = start_trials
-    bhv.end_trials = end_trials
+    bhv.idx_start = idx_start
+    bhv.idx_end = idx_end
     n_trials, n_codes = bhv.code_numbers.shape
     code_samples = np.full((n_trials, n_codes), np.nan)
 

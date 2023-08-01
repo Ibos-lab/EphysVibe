@@ -337,10 +337,16 @@ def find_events_codes(
     )
     real_strobes = events["samples"][idx_real_strobes]
     # ! check if time == in oe and ML
-    start_trials = real_strobes[full_word == config.START_CODE]
-    end_trials = real_strobes[full_word == config.END_CODE]
+    idx_start = np.where(full_word == config.START_CODE)[0]
+    idx_end = np.where(full_word == config.START_CODE)[0]
 
-    return full_word, real_strobes, len_idx, start_trials, end_trials
+    return (
+        full_word,
+        real_strobes,
+        len_idx,
+        idx_start,
+        idx_end,
+    )
 
 
 def compute_lfp(

@@ -46,7 +46,8 @@ class BhvData:
         test_time: np.ndarray,
         code_samples: np.ndarray = np.array([np.nan]),
         start_trials: np.ndarray = np.array([np.nan]),
-        end_trials: np.ndarray = np.array([np.nan]),
+        idx_start: np.ndarray = np.array([np.nan]),
+        idx_end: np.ndarray = np.array([np.nan]),
     ):
         """_summary_
 
@@ -93,7 +94,8 @@ class BhvData:
         self.code_numbers = code_numbers
         self.code_samples = code_samples
         self.start_trials = start_trials
-        self.end_trials = end_trials
+        self.idx_start = idx_start
+        self.idx_end = idx_end
         self.code_times = code_times
         self.condition = condition
         self.eye_ml = eye_ml
@@ -227,7 +229,8 @@ class BhvData:
             code_numbers = group["code_numbers"][:]
             code_samples = group["code_samples"][:]
             start_trials = group["start_trials"][:]
-            end_trials = group["end_trials"][:]
+            idx_start = group["idx_start"][:]
+            idx_end = group["idx_end"][:]
             code_times = group["code_times"][:]
             condition = group["condition"][:]
             eye_ml = group["eye_ml"][:]
@@ -268,7 +271,8 @@ class BhvData:
             "code_numbers": code_numbers,
             "code_samples": code_samples,
             "start_trials": start_trials,
-            "end_trials": end_trials,
+            "idx_start": idx_start,
+            "idx_end": idx_end,
             "code_times": code_times,
             "condition": condition,
             "eye_ml": eye_ml,
@@ -385,9 +389,8 @@ class BhvData:
             group.create_dataset(
                 "start_trials", self.start_trials.shape, data=self.start_trials
             )
-            group.create_dataset(
-                "end_trials", self.end_trials.shape, data=self.end_trials
-            )
+            group.create_dataset("idx_start", self.idx_start.shape, data=self.idx_start)
+            group.create_dataset("idx_end", self.idx_end.shape, data=self.idx_end)
             group.create_dataset(
                 "code_times", self.code_times.shape, data=self.code_times
             )

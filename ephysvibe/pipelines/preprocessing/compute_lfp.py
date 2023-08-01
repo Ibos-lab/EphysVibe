@@ -119,7 +119,7 @@ def main(
     events = utils_oe.load_event_files(event_path)
     shape_0 = len(c_samples)
     start_trials = bhv.start_trials
-    ds_samples, idx_start = utils_oe.select_samples(
+    ds_samples, idx_start_samp = utils_oe.select_samples(
         c_samples=c_samples,
         e_samples=events["samples"],
         fs=config.FS,
@@ -136,7 +136,7 @@ def main(
             shape_1=total_ch,
             start_ch=start_ch,
             n_eyes=n_eyes,
-            idx_start_time=idx_start,
+            idx_start_time=idx_start_samp,
         )
     # to ms
     ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
@@ -147,7 +147,7 @@ def main(
 
         lfp_ds = utils_oe.compute_lfp(
             continuous_path,
-            idx_start,
+            idx_start_samp,
             shape_0=shape_0,
             shape_1=total_ch,
             start_ch=areas_ch[area][0],
@@ -157,8 +157,7 @@ def main(
             block=bhv.block,
             eyes_values=eyes_ds,
             lfp_values=lfp_ds,
-            start_trials=start_trials,
-            ds_samples=ds_samples,
+            idx_start=bhv.idx_start,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [subject] + [area])

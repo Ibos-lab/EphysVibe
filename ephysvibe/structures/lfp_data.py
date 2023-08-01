@@ -10,8 +10,7 @@ class LfpData:
         block: np.ndarray,
         eyes_values: np.ndarray,
         lfp_values: np.ndarray,
-        ds_samples: np.ndarray,
-        start_trials: np.ndarray = np.array([np.nan]),
+        idx_start: np.ndarray = np.array([np.nan]),
     ):
         """Initialize the class.
 
@@ -26,15 +25,14 @@ class LfpData:
                                         multi unit activity.
             clusterdepth (np.ndarray): array of shape (neurons,1) containing the de depth of each neuron/mua.
             code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
-            start_trials (np.ndarray): array of shape (trials) containing the timestamp of the start of each trial (downsampled).
+            idx_start (np.ndarray): array of shape (trials) containing the timestamp of the start of each trial (downsampled).
         """
-
         # sp
         self.block = block
         self.eyes_values = eyes_values
         self.lfp_values = lfp_values
-        self.start_trials = start_trials
-        self.ds_samples = ds_samples
+        self.idx_start = idx_start
+
         self.check_shapes()
 
     def check_shapes(self):
@@ -52,9 +50,9 @@ class LfpData:
                 data=self.block,
             )
             group.create_dataset(
-                "start_trials",
-                self.start_trials.shape,
-                data=self.start_trials,
+                "idx_start",
+                self.idx_start.shape,
+                data=self.idx_start,
                 compression="gzip",
             )
             group.create_dataset(
@@ -69,12 +67,6 @@ class LfpData:
                 data=self.lfp_values,
                 compression="gzip",
             )
-            group.create_dataset(
-                "ds_samples",
-                self.ds_samples.shape,
-                data=self.ds_samples,
-                compression="gzip",
-            )
 
         f.close()
 
@@ -84,11 +76,10 @@ class LfpData:
         with h5py.File(load_path, "r") as f:
             #  get data
             group = f["data"]
-
             block = group["block"][:]
             eyes_values = group["eyes_values"][:]
-            start_trials = group["start_trials"][:]
-            ds_samples = group["ds_samples"][:]
+            idx_start = group["idx_start"][:]
+
             lfp_values = group["lfp_values"][:]
 
         # create class object and return
@@ -96,8 +87,7 @@ class LfpData:
             "block": block,
             "eyes_values": eyes_values,
             "lfp_values": lfp_values,
-            "start_trials": start_trials,
-            "ds_samples": ds_samples,
+            "idx_start": idx_start,
         }
         return cls(**trials_data)
 
