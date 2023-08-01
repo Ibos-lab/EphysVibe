@@ -338,7 +338,7 @@ def find_events_codes(
     real_strobes = events["samples"][idx_real_strobes]
     # ! check if time == in oe and ML
     idx_start = np.where(full_word == config.START_CODE)[0]
-    idx_end = np.where(full_word == config.START_CODE)[0]
+    idx_end = np.where(full_word == config.END_CODE)[0]
 
     return (
         full_word,

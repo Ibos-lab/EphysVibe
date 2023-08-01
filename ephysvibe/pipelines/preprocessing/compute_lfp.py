@@ -119,6 +119,7 @@ def main(
     events = utils_oe.load_event_files(event_path)
     shape_0 = len(c_samples)
     start_trials = bhv.start_trials
+
     ds_samples, idx_start_samp = utils_oe.select_samples(
         c_samples=c_samples,
         e_samples=events["samples"],
@@ -140,7 +141,9 @@ def main(
         )
     # to ms
     ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
-
+    idx_start = []
+    for i_start in start_trials:
+        idx_start.append(np.where(ds_samples == i_start)[0][0])
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
@@ -157,7 +160,7 @@ def main(
             block=bhv.block,
             eyes_values=eyes_ds,
             lfp_values=lfp_ds,
-            idx_start=bhv.idx_start,
+            idx_start=np.array(idx_start),
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
