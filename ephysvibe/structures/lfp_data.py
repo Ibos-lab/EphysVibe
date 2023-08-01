@@ -10,6 +10,7 @@ class LfpData:
         block: np.ndarray,
         eyes_values: np.ndarray,
         lfp_values: np.ndarray,
+        ds_samples: np.ndarray,
         start_trials: np.ndarray = np.array([np.nan]),
     ):
         """Initialize the class.
@@ -33,6 +34,7 @@ class LfpData:
         self.eyes_values = eyes_values
         self.lfp_values = lfp_values
         self.start_trials = start_trials
+        self.ds_samples = ds_samples
         self.check_shapes()
 
     def check_shapes(self):
@@ -43,14 +45,12 @@ class LfpData:
         # save the data
         with h5py.File(save_path, "w") as f:
             group = f.create_group("data")
-
             group.create_dataset(
                 "block",
                 self.block.shape,
                 compression="gzip",
                 data=self.block,
             )
-
             group.create_dataset(
                 "start_trials",
                 self.start_trials.shape,
@@ -69,6 +69,13 @@ class LfpData:
                 data=self.lfp_values,
                 compression="gzip",
             )
+            group.create_dataset(
+                "ds_samples",
+                self.ds_samples.shape,
+                data=self.ds_samples,
+                compression="gzip",
+            )
+
         f.close()
 
     @classmethod
@@ -81,7 +88,7 @@ class LfpData:
             block = group["block"][:]
             eyes_values = group["eyes_values"][:]
             start_trials = group["start_trials"][:]
-
+            ds_samples = group["ds_samples"][:]
             lfp_values = group["lfp_values"][:]
 
         # create class object and return
@@ -90,6 +97,7 @@ class LfpData:
             "eyes_values": eyes_values,
             "lfp_values": lfp_values,
             "start_trials": start_trials,
+            "ds_samples": ds_samples,
         }
         return cls(**trials_data)
 

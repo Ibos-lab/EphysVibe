@@ -158,6 +158,7 @@ def main(
             eyes_values=eyes_ds,
             lfp_values=lfp_ds,
             start_trials=start_trials,
+            ds_samples=ds_samples,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
