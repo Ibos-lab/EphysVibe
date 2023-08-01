@@ -8,6 +8,7 @@ import numpy as np
 from ...spike_sorting import utils_oe, config, data_structure, pre_treat_oe
 import glob
 from ...structures.bhv_data import BhvData
+from ...structures.lfp_data import LfpData
 from .. import pipe_config
 from collections import defaultdict
 
@@ -152,12 +153,11 @@ def main(
             start_ch=areas_ch[area][0],
             n_ch=areas_ch[area][1],
         )
-        data = data_structure.restructure(
-            start_trials=start_trials,
-            ds_samples=ds_samples,
-            lfp_ds=lfp_ds,
-            eyes_ds=eyes_ds,
+        data = LfpData(
             block=bhv.block,
+            eyes_values=eyes_ds,
+            lfp_values=lfp_ds,
+            start_trials=start_trials,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
