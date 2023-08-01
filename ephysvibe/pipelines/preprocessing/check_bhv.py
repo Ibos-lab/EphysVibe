@@ -62,6 +62,7 @@ def main(
     start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
     end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
     bhv.start_trials = start_trials
+    bhv.end_trials = end_trials
 
     n_trials, n_codes = bhv.code_numbers.shape
     code_samples = np.full((n_trials, n_codes), np.nan)

@@ -127,13 +127,11 @@ def sort_data_trial(
     #     [cs_i + [np.nan] * (length - len(cs_i)) for cs_i in trial_code_samples]
     # )
 
-    return (
-        sp_samples,
-        # code_numbers,
-        # trial_code_samples,
-        # eyes_values,
-        # lfp_values,
-    )
+    return sp_samples
+    # code_numbers,
+    # trial_code_samples,
+    # eyes_values,
+    # lfp_values,
 
 
 def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):

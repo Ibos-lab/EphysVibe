@@ -372,6 +372,7 @@ def compute_lfp(
         dtype="int16",
         shape=(shape_0, shape_1),
     ).T
+    filt = False
     # define lowpass and high pass butterworth filter
     hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
     lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
@@ -381,8 +382,9 @@ def compute_lfp(
     )
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
-        dat = sosfilt(hp_sos, dat)
-        dat = sosfilt(lp_sos, dat)
+        if filt:
+            dat = sosfilt(hp_sos, dat)
+            dat = sosfilt(lp_sos, dat)
         lfp_ds[i] = signal_downsample(dat, config.DOWNSAMPLE, idx_start=0, axis=0)
         del dat
     del cont
