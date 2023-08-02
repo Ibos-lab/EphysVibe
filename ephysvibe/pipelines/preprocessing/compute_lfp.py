@@ -115,8 +115,10 @@ def main(
         raise ValueError
 
     logging.info("Loading bhv data")
+    logging.info(bhv_path[0])
     bhv = BhvData.from_python_hdf5(bhv_path[0])
     # load timestamps and events
+    logging.info("Loading timestamps and events")
     c_samples = np.load(time_path)
     events = utils_oe.load_event_files(event_path)
     shape_0 = len(c_samples)
