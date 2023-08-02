@@ -98,8 +98,7 @@ def main(
     # check n_areas and n_channels
     logging.info(areas)
     if areas == None:
-        areas_ch = pipe_config.AREAS
-        logging.info(areas_ch)
+        areas_ch = pipe_config.AREAS.copy()
 
     else:
         if n_ch == None or start_ch == None:
@@ -134,7 +133,6 @@ def main(
         downsample=config.DOWNSAMPLE,
     )
     # check if eyes
-    logging.info("check if eyes")
     logging.info(areas_ch)
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     eyes_ds = np.array([])
@@ -156,6 +154,7 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
+        logging.info(area)
         logging.info("compute_lfp")
         lfp_ds = utils_oe.compute_lfp(
             continuous_path,
