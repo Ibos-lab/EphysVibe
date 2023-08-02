@@ -123,7 +123,7 @@ def main(
     events = utils_oe.load_event_files(event_path)
     shape_0 = len(c_samples)
     start_trials = bhv.start_trials
-
+    logging.info("select_samples")
     ds_samples, idx_start_samp = utils_oe.select_samples(
         c_samples=c_samples,
         e_samples=events["samples"],
@@ -135,6 +135,7 @@ def main(
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     eyes_ds = np.array([])
     if n_eyes:
+        logging.info("load_eyes")
         eyes_ds = utils_oe.load_eyes(
             continuous_path,
             shape_0=len(c_samples),
@@ -151,7 +152,7 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
-
+        logging.info("compute_lfp")
         lfp_ds = utils_oe.compute_lfp(
             continuous_path,
             idx_start_samp,
