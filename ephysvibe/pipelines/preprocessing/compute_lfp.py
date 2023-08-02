@@ -107,7 +107,8 @@ def main(
             areas_ch[n_area] = [start_ch[n], n_ch[n]]
     total_ch = pipe_config.TOTAL_CH
     # load bhv data
-    bhv_path = os.path.normpath(str(directory) + "/*" + subject + "_bhv.h5")
+    file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
+    bhv_path = os.path.normpath(bhv_path) + "/" + file_name
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
@@ -196,6 +197,11 @@ if __name__ == "__main__":
         "continuous_path", help="Path to the continuous file (.dat)", type=Path
     )
     parser.add_argument(
+        "bhv_path",
+        help="Path to session struct folder containing the bhv files",
+        type=Path,
+    )
+    parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
@@ -207,7 +213,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         main(
-            args.continuous_path, args.output_dir, args.areas, args.start_ch, args.n_ch
+            args.continuous_path,
+            args.bhv_path,
+            args.output_dir,
+            args.areas,
+            args.start_ch,
+            args.n_ch,
         )
     except FileExistsError:
         logging.error("path does not exist")
