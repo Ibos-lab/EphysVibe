@@ -63,7 +63,7 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
 def main(
     continuous_path: Path,
     bhv_path: Path,
-    output_dir: Path,
+    output_dir: Path = "./output",
     areas: list = None,
     start_ch: list = None,
     n_ch: list = None,
@@ -96,7 +96,6 @@ def main(
     subject = s_path[-8]
     date_time = s_path[-7]
     # check n_areas and n_channels
-    logging.info(areas)
     if areas == None:
         areas_ch = pipe_config.AREAS.copy()
 

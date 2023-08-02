@@ -21,8 +21,9 @@ logging.basicConfig(
 
 def main(
     ks_path: Path,
-    output_dir: Path,
-    areas: list,
+    bhv_path: Path,
+    output_dir: Path = "./output",
+    areas: list = None,
 ) -> None:
     """Compute trials.
 
@@ -40,7 +41,7 @@ def main(
     # define paths
     s_path = os.path.normpath(ks_path).split(os.sep)
     time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
-    bhv_path = "/".join(s_path[:-2] + ["*/*/*_bhv.h5"])
+    bhv_path = "/".join(s_path[:-2] + ["*/*/*_bhv.h5"])  # ! change location
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
@@ -145,7 +146,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("ks_path", help="Path to KS folders", type=Path)
+    parser.add_argument("ks_path", help="Path to KS folders location", type=Path)
+    parser.add_argument(
+        "bhv_path",
+        help="Path to session struct folder containing the bhv files",
+        type=Path,
+    )
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
