@@ -64,9 +64,9 @@ def main(
     continuous_path: Path,
     bhv_path: Path,
     output_dir: Path,
-    areas: list,
-    start_ch: list,
-    n_ch: list,
+    areas: list = None,
+    start_ch: list = None,
+    n_ch: list = None,
 ) -> None:
     """Compute trials.
 
