@@ -133,6 +133,7 @@ def main(
     )
     # check if eyes
     logging.info("check if eyes")
+    logging.info(areas_ch)
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     eyes_ds = np.array([])
     if n_eyes:
