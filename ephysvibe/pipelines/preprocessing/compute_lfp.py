@@ -132,6 +132,7 @@ def main(
         downsample=config.DOWNSAMPLE,
     )
     # check if eyes
+    logging.info("check if eyes")
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     eyes_ds = np.array([])
     if n_eyes:

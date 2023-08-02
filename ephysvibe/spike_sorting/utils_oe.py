@@ -225,9 +225,11 @@ def select_samples(
         else 0
     )  # check if idx_start_time - fs*t >0, else we select all data
     # select samples from idx_start_time and donwsample
+    logging.info("signal_downsample")
     ds_samples = signal_downsample(
         c_samples, downsample, idx_start=idx_start_time, axis=0
     )
+    logging.info("end signal_downsample")
     return ds_samples, idx_start_time
 
 
