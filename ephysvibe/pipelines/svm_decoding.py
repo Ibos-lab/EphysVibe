@@ -395,8 +395,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("fr_paths", help="Path to txt file", type=Path)
-
+    parser.add_argument("sp_paths", help="Path to txt file", type=Path)
+    parser.add_argument("bhv_paths", help="Path to txt file", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
@@ -415,7 +415,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         main(
-            args.fr_paths,
+            args.sp_paths,
+            args.bhv_paths,
             args.output_dir,
             args.in_out,
             args.cgroup,
