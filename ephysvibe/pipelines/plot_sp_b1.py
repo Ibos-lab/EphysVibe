@@ -10,7 +10,8 @@ from ..spike_sorting import config
 from ..task import task_constants
 import warnings
 from matplotlib import pyplot as plt
-from ..structures.trials_data import TrialsData
+from ..structures.spike_data import SpikeData
+from ..structures.bhv_data import BhvData
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
@@ -20,7 +21,7 @@ logging.basicConfig(
 )
 
 
-def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
+def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before: int):
     """Compute and plot firing rate during task b1.
 
     Args:
@@ -30,7 +31,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         e_align (int): event to which align the spikes.
         cgroup (str): "good" for individual units, "mua" for multiunits.
     """
-    s_path = os.path.normpath(filepath).split(os.sep)
+    s_path = os.path.normpath(sp_path).split(os.sep)
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
 
@@ -39,10 +40,15 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         os.makedirs(output_dir)
 
     # check if filepath exist
-    if not os.path.exists(filepath):
+    if not os.path.exists(sp_path):
+        raise FileExistsError
+    if not os.path.exists(bhv_path):
         raise FileExistsError
     logging.info("-- Start --")
-    data = TrialsData.from_python_hdf5(filepath)
+    logging.info(sp_path)
+    logging.info(bhv_path)
+    data = SpikeData.from_python_hdf5(sp_path)
+    bhv = BhvData.from_python_hdf5(bhv_path)
     # Select trials and create task frame
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
     if np.isnan(data.neuron_cond):
@@ -50,8 +56,8 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     else:
         neuron_cond = data.neuron_cond
     task = def_task.create_task_frame(
-        condition=data.condition[trial_idx],
-        test_stimuli=data.test_stimuli[trial_idx],
+        condition=bhv.condition[trial_idx],
+        test_stimuli=bhv.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
         neuron_cond=neuron_cond,
     )
@@ -93,7 +99,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             i_cluster = i_mua
             i_mua += 1
         neuron_sp = trials_sp[:, i_n, :]
-        shift_sp = TrialsData.indep_roll(
+        shift_sp = SpikeData.indep_roll(
             neuron_sp, -(trials_s_on - t_before).astype(int), axis=1
         )[:, :1600]
         # Iterate by sample and condition
@@ -197,7 +203,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("filepath", help="Path to the sorted file (.npy)", type=Path)
+    parser.add_argument("sp_path", help="Path to the sorted file (.npy)", type=Path)
+    parser.add_argument("bhv_path", help="Path to the sorted file (.npy)", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
@@ -217,6 +224,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     try:
-        main(args.filepath, args.output_dir, args.e_align, args.t_before)
+        main(args.sp_path, args.bhv_path, args.output_dir, args.e_align, args.t_before)
     except FileExistsError:
         logging.error("filepath does not exist")
