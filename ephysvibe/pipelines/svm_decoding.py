@@ -303,7 +303,7 @@ def main(
         ]
         scores = [asc.get() for asc in async_scores]
 
-    s_path = os.path.normpath(paths[0]).split(os.sep)
+    s_path = os.path.normpath(paths_sp[0]).split(os.sep)
     n_neurons = 0
     for rec in range(len(frs_avg)):
         n_neurons += frs_avg[rec].shape[1]
