@@ -57,8 +57,8 @@ def load_fr_samples(
     else:
         neuron_cond = data.neuron_cond
     task = def_task.create_task_frame(
-        condition=SpikeData.condition[trial_idx],
-        test_stimuli=SpikeData.test_stimuli[trial_idx],
+        condition=bhv.condition[trial_idx],
+        test_stimuli=bhv.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
         neuron_cond=neuron_cond,
     )
