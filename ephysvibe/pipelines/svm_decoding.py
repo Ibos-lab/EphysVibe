@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 from ..task import def_task, task_constants
-from ..structures.trials_data import TrialsData
+from ..structures.spike_data import SpikeData
+from ..structures.bhv_data import BhvData
 from collections import defaultdict
 from typing import Dict
 import logging
@@ -35,7 +36,8 @@ def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
 
 
 def load_fr_samples(
-    filepath,
+    sp_path,
+    bhv_path,
     cgroup,
     win,
     step,
@@ -44,8 +46,10 @@ def load_fr_samples(
     t_before=200,
     to_decode="samples",
 ):
-    logging.info(filepath)
-    data = TrialsData.from_python_hdf5(filepath)
+    logging.info(sp_path)
+    logging.info(bhv_path)
+    data = SpikeData.from_python_hdf5(sp_path)
+    bhv = BhvData.from_python_hdf5(bhv_path)
 
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
     if np.any(np.isnan(data.neuron_cond)):
@@ -53,8 +57,8 @@ def load_fr_samples(
     else:
         neuron_cond = data.neuron_cond
     task = def_task.create_task_frame(
-        condition=data.condition[trial_idx],
-        test_stimuli=data.test_stimuli[trial_idx],
+        condition=SpikeData.condition[trial_idx],
+        test_stimuli=SpikeData.test_stimuli[trial_idx],
         samples_cond=task_constants.SAMPLES_COND,
         neuron_cond=neuron_cond,
     )
@@ -128,7 +132,7 @@ def load_fr_samples(
             ]
             shifts = -(trials_s_on - t_before).astype(int)
             shifts = shifts[:, np.newaxis]
-            shift_sp = TrialsData.indep_roll(
+            shift_sp = SpikeData.indep_roll(
                 data.sp_samples[trial_idx[trial_idx_n]][:, neurons], shifts, axis=2
             )[:, :, :1600]
             sp_avg = moving_average(shift_sp, win=win, step=step)
@@ -210,7 +214,8 @@ def plot_accuracy(scores, win_steps, neuron_max_shift, x_lim_min, x_lim_max, n_n
 
 
 def main(
-    fr_paths: Path,
+    sp_paths: Path,
+    bhv_paths: Path,
     output_dir: Path,
     in_out: int,
     cgroup: str,
@@ -223,16 +228,21 @@ def main(
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    # check if fr_paths exist
-    if not os.path.exists(fr_paths):
+    # check if paths exist
+    if not os.path.exists(sp_paths):
         raise FileExistsError
-    file1 = open(fr_paths, "r")
-    Lines = file1.readlines()
-
-    # load all pfc files
-    paths = []
-    for line in Lines:
-        paths.append(line.strip())
+    if not os.path.exists(bhv_paths):
+        raise FileExistsError
+    file1 = open(bhv_paths, "r")
+    lines_bhv = file1.readlines()
+    file1 = open(sp_paths, "r")
+    lines_sp = file1.readlines()
+    # load all files
+    paths_bhv, paths_sp = [], []
+    for line in lines_bhv:
+        paths_bhv.append(line.strip())
+    for line in lines_sp:
+        paths_sp.append(line.strip())
 
     step = 10
     fix_duration = 200
@@ -244,7 +254,8 @@ def main(
             pool.apply_async(
                 load_fr_samples,
                 args=(
-                    paths[n],
+                    paths_sp[n],
+                    paths_bhv[n],
                     cgroup,
                     win_size,
                     step,
@@ -254,7 +265,7 @@ def main(
                     to_decode,
                 ),
             )
-            for n in np.arange(len(paths))
+            for n in np.arange(len(paths_sp))
         ]
         for asc in async_fr:
             tasks_all.append(asc.get()[0])
