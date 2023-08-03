@@ -40,18 +40,20 @@ def main(
     logging.info("-- Start --")
     # define paths
     s_path = os.path.normpath(ks_path).split(os.sep)
-    time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
-    bhv_path = "/".join(s_path[:-2] + ["*/*/*_bhv.h5"])  # ! change location
+    # time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
+
+    # Select info about the recording from the path
+    n_exp = s_path[-4][-1]
+    n_record = s_path[-3][-1]
+    subject = s_path[-7]
+    date_time = s_path[-6]
+    # load bhv data
+    file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
+    bhv_path = os.path.normpath(bhv_path) + "/" + file_name
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
         raise ValueError
-
-    # Select info about the recording from the path
-    n_exp = s_path[-2][-1]
-    n_record = s_path[-1][-1]
-    subject = s_path[-5]
-    date_time = s_path[-4]
     # check n_areas and n_channels
     if areas == None:
         areas_ch = ["lip", "v4", "pfc"]
@@ -60,7 +62,7 @@ def main(
     bhv = BhvData.from_python_hdf5(bhv_path[0])
     # load timestamps and events
     logging.info("Loading continuous/sample_numbers data")
-    c_samples = np.load(time_path + "sample_numbers.npy")
+    c_samples = np.load(ks_path + "sample_numbers.npy")
 
     logging.info("Selecting OE samples")
 
@@ -72,7 +74,7 @@ def main(
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
-        spike_path = "/".join([time_path] + ["KS" + area.upper()])
+        spike_path = "/".join([ks_path] + ["KS" + area.upper()])
         if not os.path.exists(spike_path):
             logging.error("spike_path: %s does not exist" % spike_path)
             raise FileExistsError
@@ -158,6 +160,6 @@ if __name__ == "__main__":
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
     args = parser.parse_args()
     try:
-        main(args.ks_path, args.output_dir, args.areas)
+        main(args.ks_path, args.bhv_path, args.output_dir, args.areas)
     except FileExistsError:
         logging.error("path does not exist")
