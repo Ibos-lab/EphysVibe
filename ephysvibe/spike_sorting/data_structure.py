@@ -3,7 +3,7 @@ import os
 import logging
 import re
 import h5py
-from ..structures.trials_data import TrialsData
+
 from collections import defaultdict
 
 
@@ -66,7 +66,7 @@ def sort_data_trial(
     # eyes_ds,
 ):
     clusters_id = clusters["cluster_id"].values
-    # , [ds_samples[-1]])
+
     n_trials, n_neurons, n_ts = (
         len(start_trials),
         len(clusters),
@@ -74,11 +74,6 @@ def sort_data_trial(
     )
     #  Define arrays
     sp_samples = np.full((n_trials, n_neurons, n_ts), np.nan)
-    # code_numbers = []
-    # trial_code_samples = []
-    # lfp_values = np.full((n_trials, lfp_ds.shape[0], n_ts), np.nan)
-    # samples = np.full((n_trials, n_ts), np.nan)
-    # eyes_values = np.full((n_trials, eyes_ds.shape[0], n_ts), np.nan)
     logging.info("Sorting data by trial")
     for trial_i in range(n_trials):  # iterate over trials
         # define trial masks
@@ -86,52 +81,19 @@ def sort_data_trial(
             spike_sample >= start_trials[trial_i],
             spike_sample <= end_trials[trial_i],
         )
-        # events_mask = np.logical_and(
-        #     code_samples >= start_trials[trial_i],
-        #     code_samples <= end_trials[trial_i],
-        # )
-        # lfp_mask = np.logical_and(
-        #     ds_samples >= start_trials[trial_i],
-        #     ds_samples <= end_trials[trial_i],
-        # )
         # select spikes
         sp_trial = spike_sample[sp_mask] - start_trials[trial_i]
         id_clusters = spike_clusters[sp_mask]  # to which neuron correspond each spike
         # fill with zeros
         len_trial = int(end_trials[trial_i] - start_trials[trial_i])
         sp_samples[trial_i, :, :len_trial] = np.zeros((sp_samples.shape[1], len_trial))
-        # # select code numbers
-        # code_numbers.append(
-        #     full_word[events_mask].tolist()
-        # )  # all trials have to start & end with the same codes
-        # # select code times
-        # trial_code_samples.append(
-        #     (code_samples[events_mask] - start_trials[trial_i]).tolist()
-        # )
-        # select lfp
-        # lfp_values[trial_i, :, : np.sum(lfp_mask)] = lfp_ds[:, lfp_mask]
-        # # select timestamps
-        # # samples[trial_i, : np.sum(lfp_mask)] = ds_samples[lfp_mask]
-        # # select eyes
-        # eyes_values[trial_i, :, : np.sum(lfp_mask)] = eyes_ds[:, lfp_mask]
+
         for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
             sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
-    # # complete with nan
-    # length = max(map(len, code_numbers))
-    # code_numbers = np.array(
-    #     [cn_i + [np.nan] * (length - len(cn_i)) for cn_i in code_numbers]
-    # )
-    # trial_code_samples = np.array(
-    #     [cs_i + [np.nan] * (length - len(cs_i)) for cs_i in trial_code_samples]
-    # )
 
     return sp_samples
-    # code_numbers,
-    # trial_code_samples,
-    # eyes_values,
-    # lfp_values,
 
 
 def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
@@ -172,52 +134,3 @@ def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
 #     data = {"sp_data": sp_data, "bhv": bhv_trial}
 
 #     return data
-
-
-def restructure(
-    start_trials,
-    end_trials,
-    cluster_info,
-    spike_sample,
-    real_strobes,
-    spike_clusters,
-    full_word,
-    bhv,
-):
-
-    (
-        sp_samples,
-        # code_numbers,
-        # code_samples,
-        # eyes_values,
-        # lfp_values,
-    ) = sort_data_trial(
-        clusters=cluster_info,
-        spike_sample=spike_sample,
-        start_trials=start_trials,
-        end_trials=end_trials,
-        # real_strobes=real_strobes,
-        # ds_samples=ds_samples,
-        spike_clusters=spike_clusters,
-        # full_word=full_word,
-        # lfp_ds=lfp_ds,
-        # eyes_ds=eyes_ds,
-    )
-    # esto se checkea cuando se genera real_strobes
-    # # check if code_numbers == bhv.code_numbers
-    # if np.nansum(code_numbers - bhv.code_numbers[: code_numbers.shape[0]]) != 0:
-    #     logging.error("bhv.code_numbers != code_numbers")
-    #     raise ValueError
-
-    data = TrialsData(
-        sp_samples=sp_samples,
-        # eyes_values=eyes_values,
-        # lfp_values=lfp_values,
-        code_samples=code_samples,
-        clusters_id=cluster_info["cluster_id"].values,
-        clusters_ch=cluster_info["ch"].values,
-        clustersgroup=cluster_info["group"].values,
-        clusterdepth=cluster_info["depth"].values,
-        start_trials=start_trials,
-    )
-    return data
