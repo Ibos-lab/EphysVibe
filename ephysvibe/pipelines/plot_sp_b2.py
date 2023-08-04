@@ -9,7 +9,8 @@ import pandas as pd
 from ..trials.spikes import firing_rate, sp_constants, plot_raster
 from ..spike_sorting import config
 from ..task import task_constants
-from ephysvibe.structures.trials_data import TrialsData
+from ..structures.spike_data import SpikeData
+from ..structures.bhv_data import BhvData
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -20,18 +21,20 @@ logging.basicConfig(
 )
 
 
-def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
-    s_path = os.path.normpath(filepath).split(os.sep)
+def main(sp_path: Path, output_dir: Path, e_align: str, t_before: int):
+    s_path = os.path.normpath(sp_path).split(os.sep)
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # check if filepath exist
-    if not os.path.exists(filepath):
+    if not os.path.exists(sp_path):
         raise FileExistsError
+
     logging.info("-- Start --")
-    data = TrialsData.from_python_hdf5(filepath)
+    data = SpikeData.from_python_hdf5(sp_path)
+
     # Select trials and create task frame
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 2))[0]
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
@@ -151,9 +154,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "file_path", help="Path to the continuous file (.dat)", type=Path
-    )
+    parser.add_argument("sp_path", help="Path to the spikes file (sp.h5)", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
@@ -173,6 +174,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     try:
-        main(args.file_path, args.output_dir, args.e_align, args.t_before)
+        main(args.sp_path, args.output_dir, args.e_align, args.t_before)
     except FileExistsError:
         logging.error("filepath does not exist")

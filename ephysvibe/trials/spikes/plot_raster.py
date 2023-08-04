@@ -2,7 +2,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
 from typing import Dict, Optional
-from ephysvibe.structures.trials_data import TrialsData
+from ephysvibe.structures.spike_data import SpikeData
+from ephysvibe.structures.bhv_data import BhvData
 from collections import defaultdict
 from scipy import stats
 
@@ -30,7 +31,7 @@ def plot_activity_location(
             target_t_idx,
             np.where(code_numbers[target_t_idx] == e_code_align)[1],
         ]  # moment e_align occurs in each trial
-        shift_sp = TrialsData.indep_roll(
+        shift_sp = SpikeData.indep_roll(
             sp_samples[target_t_idx, i_n],
             -(trials_s_on - t_before).astype(int),
             axis=1,
@@ -136,7 +137,7 @@ def get_responding_neurons(
             trials_event_time = code_samples[
                 target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
             ]  # moment when the target_on ocurrs in each trial
-            shift_sp = TrialsData.indep_roll(
+            shift_sp = SpikeData.indep_roll(
                 sp_samples[target_t_idx, i_neuron],
                 -(trials_event_time - before_trial).astype(int),
                 axis=1,
@@ -209,7 +210,7 @@ def get_rf(
         trials_event_time = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        sp_code = TrialsData.indep_roll(
+        sp_code = SpikeData.indep_roll(
             sp_samples[target_t_idx, i_neuron], -(trials_event_time).astype(int), axis=1
         )[
             :, :1100
@@ -224,7 +225,7 @@ def get_rf(
         trials_event_time = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        sp_oppos = TrialsData.indep_roll(
+        sp_oppos = SpikeData.indep_roll(
             sp_samples[target_t_idx, i_neuron], -(trials_event_time).astype(int), axis=1
         )[
             :, :1100
@@ -293,7 +294,7 @@ def get_vm_index(
         trials_event_time = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        shift_sp = TrialsData.indep_roll(
+        shift_sp = SpikeData.indep_roll(
             sp_samples[target_t_idx, i_neuron],
             -(trials_event_time - fix_t).astype(int),
             axis=1,
@@ -348,7 +349,7 @@ def get_laterality_idx(
         trials_event_time = code_samples[
             contra_idx, np.where(code_numbers[contra_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        sp_contra = TrialsData.indep_roll(
+        sp_contra = SpikeData.indep_roll(
             sp_samples[contra_idx, i_neuron], -(trials_event_time).astype(int), axis=1
         )  # align trials with event onset
         sp_contra = sp_contra[
@@ -358,7 +359,7 @@ def get_laterality_idx(
         trials_event_time = code_samples[
             ipsi_idx, np.where(code_numbers[ipsi_idx] == align_event)[1]
         ]  # moment when the target_on ocurrs in each trial
-        sp_ipsi = TrialsData.indep_roll(
+        sp_ipsi = SpikeData.indep_roll(
             sp_samples[ipsi_idx, i_neuron], -(trials_event_time).astype(int), axis=1
         )  # align trials with event onset
         sp_ipsi = sp_ipsi[
@@ -406,7 +407,7 @@ def get_max_fr(
         trials_s_on = code_samples[
             target_t_idx, np.where(code_numbers[target_t_idx] == e_code_align)[1]
         ]
-        shift_sp = TrialsData.indep_roll(
+        shift_sp = SpikeData.indep_roll(
             sp_samples[target_t_idx, i_n], -(trials_s_on - win_size).astype(int), axis=1
         )  # align trials on event
         # select trials with at least one spike

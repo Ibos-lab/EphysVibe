@@ -203,8 +203,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("sp_path", help="Path to the sorted file (.npy)", type=Path)
-    parser.add_argument("bhv_path", help="Path to the sorted file (.npy)", type=Path)
+    parser.add_argument("sp_path", help="Path to the spikes file (sp.h5)", type=Path)
+    parser.add_argument("bhv_path", help="Path to the bhv file (bhv.h5)", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
