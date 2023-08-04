@@ -11,6 +11,7 @@ import re
 from scipy.signal import butter, sosfilt
 from . import config
 from ..structures.bhv_data import BhvData
+import mne
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -356,6 +357,9 @@ def compute_lfp(
     shape_1: int,
     start_ch: int = 0,
     n_ch: int = 0,
+    f_lp: int = None,
+    f_hp: int = None,
+    filt: bool = True,
 ) -> np.ndarray:
     """Compute lfp and downsample.
 
@@ -372,10 +376,10 @@ def compute_lfp(
         dtype="int16",
         shape=(shape_0, shape_1),
     ).T
-    filt = False
+
     # define lowpass and high pass butterworth filter
-    hp_sos = butter(config.HP_ORDER, config.HP_FC, "hp", fs=config.FS, output="sos")
-    lp_sos = butter(config.LP_ORDER, config.LP_FC, "lp", fs=config.FS, output="sos")
+    # hp_sos = butter(config.HP_ORDER, f_hp, "hp", fs=config.FS, output="sos")
+    # lp_sos = butter(config.LP_ORDER, f_lp, "lp", fs=config.FS, output="sos")
 
     lfp_ds = np.zeros(
         (n_ch, int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1))
@@ -383,8 +387,14 @@ def compute_lfp(
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         if filt:
-            dat = sosfilt(hp_sos, dat)
-            dat = sosfilt(lp_sos, dat)
+            dat = mne.filter.filter_data(
+                dat,
+                sfreq=config.FS,
+                l_freq=f_lp,
+                h_freq=f_hp,
+                method="fir",
+                verbose=False,
+            )
         lfp_ds[i] = signal_downsample(dat, config.DOWNSAMPLE, idx_start=0, axis=0)
         del dat
     del cont

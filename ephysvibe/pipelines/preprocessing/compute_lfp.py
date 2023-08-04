@@ -67,6 +67,9 @@ def main(
     areas: list = None,
     start_ch: list = None,
     n_ch: list = None,
+    f_lp: int = 250,
+    f_hp: int = 3,
+    filt: bool = True,
 ) -> None:
     """Compute trials.
 
@@ -162,6 +165,9 @@ def main(
             shape_1=total_ch,
             start_ch=areas_ch[area][0],
             n_ch=areas_ch[area][1],
+            f_lp=f_lp,
+            f_hp=f_hp,
+            filt=filt,
         )
         data = LfpData(
             block=bhv.block,
@@ -214,7 +220,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=int
     )
-    parser.add_argument("--n_ch", "-n", nargs="*", default=None, help="n_ch", type=int)
+    parser.add_argument("--n_ch", "-n", nargs="*", default=None, type=int)
+    parser.add_argument("--f_lp", "-l", nargs="*", default=250, type=int)
+    parser.add_argument("--f_hp", "-h", nargs="*", default=3, type=int)
+    parser.add_argument("--filt", "-f", nargs="*", default=True, type=bool)
 
     args = parser.parse_args()
     try:
@@ -225,6 +234,9 @@ if __name__ == "__main__":
             args.areas,
             args.start_ch,
             args.n_ch,
+            args.f_lp,
+            args.f_hp,
+            args.filt,
         )
     except FileExistsError:
         logging.error("path does not exist")
