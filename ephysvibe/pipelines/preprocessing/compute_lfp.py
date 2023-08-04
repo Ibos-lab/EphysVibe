@@ -37,9 +37,9 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
     directory = "/".join(s_path[:-3])
-    time_path = "/".join(s_path + ["sample_numbers.npy"])
+    time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
     event_path = "/".join(
-        s_path[:-2] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
+        s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
     # check if paths exist
     if not os.path.exists(directory):
@@ -94,10 +94,10 @@ def main(
         logging.error("continuous_path should contain at least 8 /")
         raise NotADirectoryError
     # Select info about the recording from the path
-    n_exp = s_path[-4][-1]
-    n_record = s_path[-3][-1]
-    subject = s_path[-7]
-    date_time = s_path[-6]
+    n_exp = s_path[-5][-1]
+    n_record = s_path[-4][-1]
+    subject = s_path[-8]
+    date_time = s_path[-7]
     # check n_areas and n_channels
     if areas == None:
         areas_ch = pipe_config.AREAS.copy()
@@ -135,7 +135,6 @@ def main(
         downsample=config.DOWNSAMPLE,
     )
     # check if eyes
-    logging.info(areas_ch)
     start_ch, n_eyes = areas_ch.pop("eyes", False)
     eyes_ds = np.array([])
     if n_eyes:
@@ -216,7 +215,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "bhv_path",
-        help="Path to session struct folder containing the bhv files",
+        help="Path to folder containing the bhv files",
         type=Path,
     )
     parser.add_argument(
