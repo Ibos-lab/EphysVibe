@@ -388,7 +388,7 @@ def compute_lfp(
         dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
         if filt:
             dat = mne.filter.filter_data(
-                dat,
+                dat.astype(float),
                 sfreq=config.FS,
                 l_freq=f_lp,
                 h_freq=f_hp,
