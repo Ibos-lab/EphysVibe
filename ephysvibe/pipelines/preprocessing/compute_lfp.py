@@ -176,7 +176,13 @@ def main(
             idx_start=np.array(idx_start),
         )
         output_d = os.path.normpath(output_dir)
-        path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
+        path = "/".join(
+            [output_d]
+            + ["session_struct"]
+            + [subject]
+            + [area]
+            + [str(f_lp) + "_" + str(f_hp)]
+        )
         file_name = (
             date_time
             + "_"
