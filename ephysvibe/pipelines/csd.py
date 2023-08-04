@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 from ..task import def_task, task_constants
-from ..structures.trials_data import TrialsData
+from ..structures.spike_data import SpikeData
+from ..structures.lfp_data import LfpData
 from ..analysis import layers
 from typing import Dict
 import logging
