@@ -139,19 +139,20 @@ def main(
     eyes_ds = np.array([])
     if n_eyes:
         logging.info("load_eyes")
-        eyes_ds = utils_oe.load_eyes(
-            continuous_path,
-            shape_0=len(c_samples),
-            shape_1=total_ch,
-            start_ch=start_ch,
-            n_eyes=n_eyes,
-            idx_start_time=idx_start_samp,
-        )
+        # eyes_ds = utils_oe.load_eyes(
+        #     continuous_path,
+        #     shape_0=len(c_samples),
+        #     shape_1=total_ch,
+        #     start_ch=start_ch,
+        #     n_eyes=n_eyes,
+        #     idx_start_time=idx_start_samp,
+        # )
     # to ms
     ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
     idx_start = []
     for i_start in start_trials:
-        idx_start.append(np.where(ds_samples == i_start)[0][0])
+        idx_s = np.where(ds_samples == i_start)[0][0]
+        idx_start.append(idx_s)
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
