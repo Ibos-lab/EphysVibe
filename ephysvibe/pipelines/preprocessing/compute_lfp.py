@@ -37,9 +37,9 @@ def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
     directory = "/".join(s_path[:-3])
-    time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
+    time_path = "/".join(s_path + ["sample_numbers.npy"])
     event_path = "/".join(
-        s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
+        s_path[:-2] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
     )
     # check if paths exist
     if not os.path.exists(directory):
@@ -94,10 +94,10 @@ def main(
         logging.error("continuous_path should contain at least 8 /")
         raise NotADirectoryError
     # Select info about the recording from the path
-    n_exp = s_path[-5][-1]
-    n_record = s_path[-4][-1]
-    subject = s_path[-8]
-    date_time = s_path[-7]
+    n_exp = s_path[-4][-1]
+    n_record = s_path[-3][-1]
+    subject = s_path[-7]
+    date_time = s_path[-6]
     # check n_areas and n_channels
     if areas == None:
         areas_ch = pipe_config.AREAS.copy()
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--n_ch", "-n", nargs="*", default=None, type=int)
     parser.add_argument("--f_lp", "-l", nargs="*", default=250, type=int)
-    parser.add_argument("--f_hp", "-h", nargs="*", default=3, type=int)
+    parser.add_argument("--f_hp", "-t", nargs="*", default=3, type=int)
     parser.add_argument("--filt", "-f", nargs="*", default=True, type=bool)
 
     args = parser.parse_args()
