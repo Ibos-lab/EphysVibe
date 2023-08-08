@@ -12,6 +12,8 @@ from scipy.signal import butter, sosfilt
 from . import config
 from ..structures.bhv_data import BhvData
 import mne
+import dask.array as da
+import itertools
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -82,30 +84,37 @@ def load_eyes(
         np.ndarray: array containing the downsampled eyes values
     """
     # load eyes data
-    cont = np.memmap(
-        continuous_path,
-        mode="r",
-        dtype="int16",
-        shape=(shape_0, shape_1),
-    ).T
-    # downsample signal
-    eyes_ds = np.zeros(
-        (
-            n_eyes,
-            int(np.floor((cont.shape[1] - idx_start_time) / config.DOWNSAMPLE) + 1),
+    cont = da.from_array(
+        np.memmap(
+            continuous_path,
+            mode="r",
+            dtype="int16",
+            shape=(shape_1, shape_0),
+            order="F",
         )
     )
-    for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
-        logging.info("Downsampling eyes")
-        dat = np.array(np.asarray(cont[i_data, idx_start_time:]), order="C")
-        eyes_ds[i] = signal_downsample(
-            dat,
-            config.DOWNSAMPLE,
-            idx_start=0,
-            axis=0,
-        )
-        del dat
-    del cont
+    # downsample signal
+    eyes_ds = cont[
+        start_ch : start_ch + n_eyes,
+        np.arange(idx_start_time, shape_0, config.DOWNSAMPLE),
+    ]
+    # eyes_ds = np.zeros(
+    #     (
+    #         n_eyes,
+    #         int(np.floor((cont.shape[1] - idx_start_time) / config.DOWNSAMPLE) + 1),
+    #     )
+    # )
+    # for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
+    #     logging.info("Downsampling eyes")
+    #     dat = np.array(np.asarray(cont[i_data, idx_start_time:]), order="C")
+    #     eyes_ds[i] = signal_downsample(
+    #         dat,
+    #         config.DOWNSAMPLE,
+    #         idx_start=0,
+    #         axis=0,
+    #     )
+    #     del dat
+    # del cont
     return eyes_ds
 
 
@@ -370,22 +379,29 @@ def compute_lfp(
         np.ndarray: lfps.
     """
     logging.info("Computing LFPs")
+    # cont = np.memmap(
+    #     continuous_path,
+    #     mode="r",
+    #     dtype="int16",
+    #     shape=(shape_0, shape_1),
+    # ).T
     cont = np.memmap(
         continuous_path,
         mode="r",
         dtype="int16",
-        shape=(shape_0, shape_1),
-    ).T
-
+        shape=(shape_1, shape_0),
+        order="F",
+    )
     # define lowpass and high pass butterworth filter
     # hp_sos = butter(config.HP_ORDER, f_hp, "hp", fs=config.FS, output="sos")
     # lp_sos = butter(config.LP_ORDER, f_lp, "lp", fs=config.FS, output="sos")
 
     lfp_ds = np.zeros(
-        (n_ch, int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1))
+        (n_ch, int(np.floor((cont.shape[0] - start_time) / config.DOWNSAMPLE) + 1))
     )
+
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
-        dat = np.array(np.asarray(cont[i_data, start_time:]), order="C")
+        dat = np.asarray(cont[i_data, start_time:])
         if filt:
             dat = mne.filter.filter_data(
                 dat.astype(float),

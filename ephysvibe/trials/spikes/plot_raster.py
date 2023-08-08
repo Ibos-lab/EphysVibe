@@ -127,7 +127,6 @@ def get_responding_neurons(
     for _, row in neurons_info.iterrows():
         i_neuron = row["array_position"]
         code = row["code"]
-
         for i_st, i_end, i_epoch in zip(
             start_time, end_time, epochs["name"]
         ):  # iterate by event
@@ -159,7 +158,7 @@ def get_responding_neurons(
                 mean_sp_fix = shift_sp[:, :before_trial].mean(
                     axis=0
                 )  # Average fr of all trials
-                p = stats.ttest_ind(mean_sp, mean_sp_fix)[1]
+                p = stats.ttest_ind(mean_sp, mean_sp_fix, equal_var=False)[1]
                 message = ""
             else:
                 p = np.nan
@@ -190,7 +189,7 @@ def get_rf(
     dur_v: int,
     st_m: int,
     end_m: int,
-    n_spikes_sec: np.ndarray = 5,
+    n_spikes_sec: np.ndarray = 2,
 ) -> pd.DataFrame:
     test_rf: Dict[str, list] = defaultdict(list)
     for _, row in th_involved.iterrows():
@@ -248,7 +247,7 @@ def get_rf(
             else:  # i_vm_idx <= -vm_threshold: # visuomotor
                 mean_sp_code = np.nanmean(sp_code[:, :1100], axis=0)
                 mean_sp_opposite = np.nanmean(sp_oppos[:, :1100], axis=0)
-            p = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
+            p = stats.ttest_ind(mean_sp_code, mean_sp_opposite, equal_var=False)[1]
             larger = np.nanmean(mean_sp_code) > np.nanmean(mean_sp_opposite)
         elif sp_code.shape[0] > 1 and sp_oppos.shape[0] < 1:
             p = -np.inf
@@ -302,6 +301,15 @@ def get_vm_index(
         shift_sp = shift_sp[
             np.nansum(shift_sp, axis=1) > 0
         ]  # select trials with at least one spike
+        # visual response
+        # shift_sp_visual = shift_sp[:, fix_t:fix_t+dur_v]
+        # motor response
+        # shift_sp_motor = shift_sp[:, fix_t+st_m:fix_t+end_m]
+        # fix response
+        # mean_sp_fix = shift_sp[:, :fix_t].mean()
+        # compute index
+        # m_mean = np.abs(shift_sp_motor.mean() - mean_sp_fix)
+        # v_mean = np.abs(shift_sp_visual.mean() - mean_sp_fix)
         conv = (
             np.convolve(
                 shift_sp[:, : fix_t + end_m + 100].mean(axis=0), kernel, mode="same"

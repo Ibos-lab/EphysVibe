@@ -153,6 +153,7 @@ def main(
     for i_start in start_trials:
         idx_s = np.where(ds_samples == i_start)[0][0]
         idx_start.append(idx_s)
+
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist

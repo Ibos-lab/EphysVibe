@@ -11,7 +11,7 @@ from ..trials.spikes import plot_raster
 from ..analysis import circular_stats
 import warnings
 from matplotlib import pyplot as plt
-from ..structures.trials_data import TrialsData
+from ..structures.spike_data import SpikeData
 from typing import Dict
 from collections import defaultdict
 import pandas as pd
@@ -36,10 +36,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     if not os.path.exists(filepath):
         raise FileExistsError
     logging.info("-- Start --")
-    data = TrialsData.from_python_hdf5(filepath)
+    data = SpikeData.from_python_hdf5(filepath)
     # Select trials and create task frame
     trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 2))[0]
     logging.info("Number of clusters: %d" % len(data.clustersgroup))
+
     # Define target codes
     position_codes = {
         # code: [[MonkeyLogic axis], [plot axis]]
@@ -76,13 +77,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     )
     # Search neurons responding to the task
     fix_t = 200
-    dur_v = 200
-    st_m = 800
+    dur_v = 250
+    st_m = 500  # 800
     end_m = 1100
     epochs = {
-        "name": ["visual", "delay", "anticipation"],
-        "start_time": [0, 350, st_m],
-        "end_time": [dur_v, 750, end_m],
+        "name": ["visual", "anticipation"],
+        "start_time": [0, st_m],
+        "end_time": [dur_v, end_m],
     }
     before_trial = fix_t
     neuron_type = data.clustersgroup
@@ -99,7 +100,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         sp_samples,
         align_event,
         target_codes,
-        n_spikes_sec=1,
+        n_spikes_sec=5,
     )
     # check if filepath exist
     p_threshold = 0.05
@@ -127,9 +128,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         n_spikes_sec=1,
     )
 
+    p_threshold = 0.05
+
     th_rf = rf_test[
         np.logical_and(rf_test["p"] < p_threshold, rf_test["larger"] == True)
     ]  # results below threshold
+    significant_units = th_rf["array_position"].unique()
+    # results below threshold
     if th_rf.shape[0] == 0:
         raise ValueError("No rf")
     # Compute visuomotor index
@@ -158,7 +163,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     no_dup_vm = test_vm[test_vm.columns[:-3]].drop_duplicates()
     # ------- plot ------------
     color = {
-        "visual": ["salmon", "darkred", "-"],
+        "visual": ["salmon", "darkred", "--"],
         "motor": ["royalblue", "navy", ":"],
     }
     # kernel parameters
