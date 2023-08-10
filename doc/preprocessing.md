@@ -1,6 +1,6 @@
 ## Steps for preprocessing
 ### 1 bhv to mat
-- Converts MonkeyLogic (ML) file from .bhv to .mat using [bhv_to_mat.m](/EphysVibe/matlab/)
+- Converts MonkeyLogic (ML) file from .bhv to .mat using [bhv_to_mat.m](https://github.com/camilosada/EphysVibe/blob/master/matlab/bhv_to_mat.m)
 - Input: path to .bhv file
 - Output: .mat file
 ### 2 Check bhv
@@ -9,14 +9,14 @@
 - Output: bhv.h5
 - Example: 
 
-`python -m ephysvibe.pipelines.preprocessing.check_bhv `
+`python -m ephysvibe.pipelines.preprocessing.check_bhv [path_mat] [-o output_path]`
 ### 3 Compute spikes
 - Gets spikes from kilosort files using [compute_spikes.py](https://github.com/camilosada/EphysVibe/blob/master/ephysvibe/pipelines/preprocessing/compute_spikes.py)
 - Input: continuous.dat file, path to the bhv.h5
 - Output: sp.h5
 - Example: 
 
-`python -m ephysvibe.pipelines.preprocessing.compute_spk []`
+`python -m ephysvibe.pipelines.preprocessing.compute_spk [path_continuous] [path_bhv] [-o output_path] `
 ### 4 Compute lfp
 - Computes local field potentials from raw data using [compute_lfp.py](https://github.com/camilosada/EphysVibe/blob/master/ephysvibe/pipelines/preprocessing/compute_lfp.py)
 - Input: continuous.dat file, path to the bhv.h5
