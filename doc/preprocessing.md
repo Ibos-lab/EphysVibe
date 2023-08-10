@@ -1,6 +1,6 @@
 ## Steps for preprocessing
 ### 1 bhv to mat
-- Converts MonkeyLogic (ML) file from .bhv to .mat using [bhv_to_mat.m](/EphysVibe/matlab/bhv_to_mat.m)
+- Converts MonkeyLogic (ML) file from .bhv to .mat using [bhv_to_mat.m](/EphysVibe/matlab/)
 - Input: .bhv file
 - Output: .mat file
 ### 2 Check bhv
@@ -26,7 +26,7 @@
 `python -m ephysvibe.pipelines.preprocessing.compute_lfp [path_continuous] [path_bhv] [-o output_path] [-a areas] [-s start_ch] [-n n_ch]`
 
 
-![flow](img/flow.svg)
+![flow](/EphysVibe/img/flow.svg)
 
 
 ## Information within each structure
