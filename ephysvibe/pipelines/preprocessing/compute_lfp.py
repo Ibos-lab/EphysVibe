@@ -20,46 +20,6 @@ logging.basicConfig(
 )
 
 
-def define_paths(continuous_path: Path) -> Tuple[List, str, str, str, str]:
-    """Define paths using the input path.
-
-    Args:
-        continuous_path (Path): path to the continuous file (.dat) from OE
-
-    Returns:
-        Tuple[List, str, str, str, str]:
-            - s_path (List): list containing the splited continuous path
-            - directory (str): path to the directory (to the date/time of the session)
-            - time_path (str): path to the sample_numbers file
-            - event_path (str): path to the events folder
-            - areas_path (str): path to the json file containing info about the channels in each area
-    """
-    # define paths
-    s_path = os.path.normpath(continuous_path).split(os.sep)
-    directory = "/".join(s_path[:-3])
-    time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
-    event_path = "/".join(
-        s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
-    )
-    # check if paths exist
-    if not os.path.exists(directory):
-        logging.error("directory: %s does not exist" % directory)
-        raise FileExistsError
-    if not os.path.exists(time_path):
-        logging.error("time_path: %s does not exist" % time_path)
-        raise FileExistsError
-    if not os.path.exists(event_path):
-        logging.error("event_path: %s does not exist" % event_path)
-        raise FileExistsError
-
-    return (
-        s_path,
-        directory,
-        time_path,
-        event_path,
-    )
-
-
 def main(
     continuous_path: Path,
     bhv_path: Path,
@@ -84,12 +44,19 @@ def main(
         logging.error("continuous_path %s does not exist" % continuous_path)
         raise FileExistsError
     logging.info("-- Start --")
-    (
-        s_path,
-        directory,
-        time_path,
-        event_path,
-    ) = define_paths(continuous_path)
+    # define paths
+    s_path = os.path.normpath(continuous_path).split(os.sep)
+    time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
+    event_path = "/".join(
+        s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
+    )
+    # check if paths exist
+    if not os.path.exists(time_path):
+        logging.error("time_path: %s does not exist" % time_path)
+        raise FileExistsError
+    if not os.path.exists(event_path):
+        logging.error("event_path: %s does not exist" % event_path)
+        raise FileExistsError
     if len(s_path) < 8:
         logging.error("continuous_path should contain at least 8 /")
         raise NotADirectoryError
@@ -115,7 +82,6 @@ def main(
     if len(bhv_path) == 0:
         logging.info("Bhv file not found")
         raise ValueError
-
     logging.info("Loading bhv data")
     logging.info(bhv_path[0])
     bhv = BhvData.from_python_hdf5(bhv_path[0])
@@ -152,7 +118,6 @@ def main(
     for i_start in start_trials:
         idx_s = np.where(ds_samples == i_start)[0][0]
         idx_start.append(idx_s)
-
     # Iterate by nodes/areas
     for area in areas_ch:
         # define spikes paths and check if path exist
