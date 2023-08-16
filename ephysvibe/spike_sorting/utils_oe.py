@@ -391,7 +391,7 @@ def compute_lfp(
     # lp_sos = butter(config.LP_ORDER, f_lp, "lp", fs=config.FS, output="sos")
 
     lfp_ds = np.zeros(
-        (n_ch, int(np.floor((cont.shape[0] - start_time) / config.DOWNSAMPLE) + 1))
+        (n_ch, int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1))
     )
 
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
