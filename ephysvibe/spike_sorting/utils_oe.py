@@ -84,37 +84,31 @@ def load_eyes(
         np.ndarray: array containing the downsampled eyes values
     """
     # load eyes data
-    cont = da.from_array(
-        np.memmap(
-            continuous_path,
-            mode="r",
-            dtype="int16",
-            shape=(shape_1, shape_0),
-            order="F",
-        )
+    cont = np.memmap(
+        continuous_path,
+        mode="r",
+        dtype="int16",
+        shape=(shape_1, shape_0),
+        order="F",
     )
     # downsample signal
-    eyes_ds = cont[
-        start_ch : start_ch + n_eyes,
-        np.arange(idx_start_time, shape_0, config.DOWNSAMPLE),
-    ]
-    # eyes_ds = np.zeros(
-    #     (
-    #         n_eyes,
-    #         int(np.floor((cont.shape[1] - idx_start_time) / config.DOWNSAMPLE) + 1),
-    #     )
-    # )
-    # for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
-    #     logging.info("Downsampling eyes")
-    #     dat = np.array(np.asarray(cont[i_data, idx_start_time:]), order="C")
-    #     eyes_ds[i] = signal_downsample(
-    #         dat,
-    #         config.DOWNSAMPLE,
-    #         idx_start=0,
-    #         axis=0,
-    #     )
-    #     del dat
-    # del cont
+    eyes_ds = np.zeros(
+        (
+            n_eyes,
+            int(np.floor((cont.shape[1] - idx_start_time) / config.DOWNSAMPLE) + 1),
+        )
+    )
+    for i, i_data in enumerate(range(start_ch, start_ch + n_eyes)):
+        logging.info("Downsampling eyes")
+        dat = np.array(np.asarray(cont[i_data, idx_start_time:]), order="C")
+        eyes_ds[i] = signal_downsample(
+            dat,
+            config.DOWNSAMPLE,
+            idx_start=0,
+            axis=0,
+        )
+        del dat
+    del cont
     return eyes_ds
 
 

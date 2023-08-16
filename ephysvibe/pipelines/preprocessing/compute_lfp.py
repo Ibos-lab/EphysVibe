@@ -101,7 +101,6 @@ def main(
     # check n_areas and n_channels
     if areas == None:
         areas_ch = pipe_config.AREAS.copy()
-
     else:
         if n_ch == None or start_ch == None:
             raise KeyError("n_ch or start_ch = None")

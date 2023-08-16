@@ -56,25 +56,18 @@ class LfpData:
                 data=self.idx_start,
                 compression="gzip",
             )
-            # group.create_dataset(
-            #     "eyes_values",
-            #     self.eyes_values.shape,
-            #     data=self.eyes_values,
-            #     compression="gzip",
-            # )
-            d = group.require_dataset(
+            group.create_dataset(
                 "eyes_values",
-                shape=self.eyes_values.shape,
-                dtype=self.eyes_values.dtype,
+                self.eyes_values.shape,
+                data=self.eyes_values,
+                compression="gzip",
             )
-            da.store(self.eyes_values, d)
             group.create_dataset(
                 "lfp_values",
                 self.lfp_values.shape,
                 data=self.lfp_values,
                 compression="gzip",
             )
-
         f.close()
 
     @classmethod

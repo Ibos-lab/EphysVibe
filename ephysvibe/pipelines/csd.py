@@ -3,13 +3,13 @@ from matplotlib import pyplot as plt
 import argparse
 from pathlib import Path
 from ..task import def_task, task_constants
-from ..structures.spike_data import SpikeData
+from ..structures.bhv_data import BhvData
 from ..structures.lfp_data import LfpData
 from ..analysis import layers
 from typing import Dict
 import logging
 import os
-
+from ..spike_sorting import config
 
 import seaborn as sns
 
@@ -36,52 +36,87 @@ def main(
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # Load data
-    data = TrialsData.from_python_hdf5(path)
+    data_lfp = LfpData.from_python_hdf5(path)
+    #! add path bhv
+    data_bhv = BhvData.from_python_hdf5(path)
     # Select correct trials in a specific block
-    trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == block))[0]
+    inside_rf = np.logical_or(
+        np.logical_or(
+            np.logical_or(data_bhv.sacc_code == 125, data_bhv.sacc_code == 126),
+            data_bhv.sacc_code == 127,
+        ),
+        data_bhv.sacc_code == 120,
+    )
+    trial_idx = np.where(
+        np.logical_and(
+            np.logical_and(data_bhv.trial_error == 0, data_bhv.block == 2), inside_rf
+        )
+    )[0]
     # Align trials to stimulus presentation
-    if block == 1:
-        event = task_constants.EVENTS_B1["sample_on"]
-    else:
-        event = task_constants.EVENTS_B2["target_on"]
-    trials_s_on = data.code_samples[
+    trials_s_on = data_bhv.code_samples[
         trial_idx,
-        np.where(data.code_numbers[trial_idx] == event)[1],
+        np.where(
+            data_bhv.code_numbers[trial_idx] == task_constants.EVENTS_B2["target_on"]
+        )[  #
+            1
+        ],
     ]
-    t_before = 500
+    t_before = 10
     shifts = -(trials_s_on - t_before).astype(int)
     shifts = shifts[:, np.newaxis]
-    shift_lfp = TrialsData.indep_roll(data.lfp_values[trial_idx], shifts, axis=2)
+    idx_start = data_lfp.idx_start[trial_idx] - t_before
+    idx_start = (
+        data_bhv.code_samples[trial_idx][
+            data_bhv.code_numbers[trial_idx] == task_constants.EVENTS_B2["target_on"]
+        ]
+        + idx_start
+    ).astype(int)
+    idx_end = (
+        data_bhv.code_samples[trial_idx][
+            data_bhv.code_numbers[trial_idx] == config.END_CODE
+        ]
+        + idx_start
+    ).astype(int)
+
+    n_trials = len(idx_end)
+    n_ch = 32
+    max_len = int(max(idx_end - idx_start))
+    lfp_trials = np.full((n_trials, n_ch, max_len), np.nan)
+    for i_tr in range(n_trials):
+        dur = int(idx_end[i_tr] - idx_start[i_tr])
+        lfp_trials[i_tr, :, :dur] = data_lfp.lfp_values[
+            :, idx_start[i_tr] : idx_end[i_tr]
+        ]
+
     # Compute CSD
     inter_channel_distance = 50
 
-    n_channels = shift_lfp.shape[1]
-    csd = layers.compute_csd(shift_lfp.mean(axis=0), inter_channel_distance, step=step)
+    csd = layers.compute_csd(
+        lfp_trials.mean(axis=0)[:, :1500], inter_channel_distance, step=step
+    )
 
-    max_depth = (
-        inter_channel_distance * (n_channels - data.clusters_ch[0])
-        + data.clusterdepth[0]
-    )
-    ch_depth = np.concatenate(
-        [
-            np.arange(
-                inter_channel_distance, data.clusterdepth[0], inter_channel_distance
-            ),
-            np.arange(data.clusterdepth[0], max_depth, inter_channel_distance),
-        ]
-    )
+    # max_depth = (
+    #     inter_channel_distance * (n_channels - data_lfp.clusters_ch[0])
+    #     + data_lfp.clusterdepth[0]
+    # )
+    # ch_depth = np.concatenate(
+    #     [
+    #         np.arange(
+    #             inter_channel_distance, data_lfp.clusterdepth[0], inter_channel_distance
+    #         ),
+    #         np.arange(data_lfp.clusterdepth[0], max_depth, inter_channel_distance),
+    #     ]
+    # )
     # save plot
     fig, ax = plt.subplots(figsize=(20, 5))
     start_plot = t_before - 50
-    sns.heatmap(csd[:, start_plot : start_plot + 250], cmap="viridis", ax=ax)
-    ax.vlines(
-        [t_before - start_plot], 0, n_channels - step * 2, colors="r", label="sample_on"
-    )
+    fig, ax = plt.subplots(figsize=(10, 5))
+    start_plot = 0  # t_before-50
+    sns.heatmap(csd[:, start_plot : start_plot + 500], cmap="viridis", ax=ax)
     fig.legend(fontsize=9, loc="upper center")
     ax.set_title("CSD")
     ax.set(xlabel="Time (ms)", ylabel="Channels")
-    ax.set_yticks(np.arange(0.5, n_channels - 2 * step + 0.5))
-    ax.set_yticklabels(ch_depth[step:-step].astype(int), rotation=0)
+
     s_path = os.path.normpath(path).split(os.sep)
     ss_path = s_path[-1][:-3]
 
