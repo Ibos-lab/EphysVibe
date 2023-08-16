@@ -60,7 +60,6 @@ def main(
     if len_idx is not None:
         bhv = utils_oe.select_trials_bhv(bhv, len_idx)
     # to ms
-
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
     end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
@@ -71,7 +70,6 @@ def main(
     code_samples = np.full((n_trials, n_codes), np.nan)
 
     for i_trial in range(n_trials):
-
         events_mask = np.logical_and(
             real_strobes >= start_trials[i_trial],
             real_strobes <= end_trials[i_trial],
