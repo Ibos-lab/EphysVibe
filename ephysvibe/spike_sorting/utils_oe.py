@@ -8,12 +8,9 @@ from open_ephys.analysis import Session
 import numpy as np
 import pandas as pd
 import re
-from scipy.signal import butter, sosfilt
 from . import config
 from ..structures.bhv_data import BhvData
 import mne
-import dask.array as da
-import itertools
 
 
 def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
@@ -51,7 +48,7 @@ def load_event_files(event_path: Path) -> Dict:
     Returns:
         Dict[np.ndarray, np.ndarray, np.ndarray]:
             - samples (np.ndarray): n sample at wich each event acurres
-            - channel (np.ndarray): channel that change of state at each sample
+            - channel (np.ndarray): channel that change state at each sample
             - state (np.ndarray): state of the channel:
                 - 1 switched to on
                 - 0 switched to off
@@ -300,7 +297,7 @@ def check_strobes(
 
             # find the last 18 in bhv_codes (last complete trial)
             logging.info(
-                "ML has %d more codes than OE",
+                "ML has %d more codes than OE but the existing ones match",
                 (bhv_codes.shape[0] - full_word.shape[0]),
             )
             bhv_codes = bhv_codes[: full_word.shape[0]]
@@ -340,7 +337,7 @@ def find_events_codes(
         code_numbers, full_word, idx_real_strobes
     )
     real_strobes = events["samples"][idx_real_strobes]
-    # ! check if time == in oe and ML
+
     idx_start = np.where(full_word == config.START_CODE)[0]
     idx_end = np.where(full_word == config.END_CODE)[0]
 
@@ -355,30 +352,33 @@ def find_events_codes(
 
 def compute_lfp(
     continuous_path: Path,
-    start_time: int,
     shape_0: int,
     shape_1: int,
+    start_time: int = 0,
     start_ch: int = 0,
     n_ch: int = 0,
     f_lp: int = None,
     f_hp: int = None,
     filt: bool = True,
 ) -> np.ndarray:
-    """Compute lfp and downsample.
+    """Filter and downsample lfp.
 
     Args:
-        c_values (np.ndarray): signal from which compute lfps.
+        continuous_path (Path): path to the continuous file.
+        shape_0 (int): number of timestamps.
+        shape_1 (int): number of channels.
+        start_time (int, optional): starting timestamp. Defaults to 0.
+        start_ch (int, optional): first channel. Defaults to 0.
+        n_ch (int, optional): number of channels. Defaults to 0.
+        f_lp (int, optional): low pass frequency. Defaults to None.
+        f_hp (int, optional): high pass frequency. Defaults to None.
+        filt (bool, optional): whether to filter lfps. Defaults to True.
 
     Returns:
-        np.ndarray: lfps.
+        np.ndarray: preprocessed signal.
     """
     logging.info("Computing LFPs")
-    # cont = np.memmap(
-    #     continuous_path,
-    #     mode="r",
-    #     dtype="int16",
-    #     shape=(shape_0, shape_1),
-    # ).T
+
     cont = np.memmap(
         continuous_path,
         mode="r",
@@ -386,14 +386,9 @@ def compute_lfp(
         shape=(shape_1, shape_0),
         order="F",
     )
-    # define lowpass and high pass butterworth filter
-    # hp_sos = butter(config.HP_ORDER, f_hp, "hp", fs=config.FS, output="sos")
-    # lp_sos = butter(config.LP_ORDER, f_lp, "lp", fs=config.FS, output="sos")
-
     lfp_ds = np.zeros(
         (n_ch, int(np.floor((cont.shape[1] - start_time) / config.DOWNSAMPLE) + 1))
     )
-
     for i, i_data in enumerate(range(start_ch, start_ch + n_ch)):
         dat = np.asarray(cont[i_data, start_time:])
         if filt:

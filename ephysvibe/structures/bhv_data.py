@@ -83,8 +83,8 @@ class BhvData:
             stim_match (np.ndarray):
             samp_pos (np.ndarray): position of the sample stimulus. shape: (trials, 2).
             stim_total (np.ndarray):
-            test_distractor (np.ndarray):
-            test_stimuli (np.ndarray):
+            test_distractor (np.ndarray): orientation, color
+            test_stimuli (np.ndarray): orientation, color
             sample_time (np.ndarray):
             test_time (np.ndarray):
         """

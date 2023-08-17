@@ -2,15 +2,9 @@ import argparse
 from pathlib import Path
 import logging
 import os
-import json
-from typing import List, Tuple, Dict
 import numpy as np
-from ...spike_sorting import utils_oe, config, data_structure, pre_treat_oe
-import glob
+from ...spike_sorting import utils_oe, config
 from ...structures.bhv_data import BhvData
-from .. import pipe_config
-from collections import defaultdict
-
 
 logging.basicConfig(
     format="%(asctime)s | %(message)s ",
@@ -21,17 +15,15 @@ logging.basicConfig(
 
 def main(
     bhv_data_file: Path,
-    output_dir: Path = None,
+    output_dir: Path = "./",
     event_path: Path = "events/Acquisition_Board-100.Rhythm Data/TTL",
 ) -> None:
-    """Compute trials.
+    """Check bhv and creates bhv structure.
 
     Args:
-        continuous_path (Path):  path to
-        output_dir (Path): output directory.
-        areas (list): list containing the areas to which to compute the trials data.
-        start_ch (list): list containing the index of the first channel for each area.
-        n_ch (list): list containing the number of channels for each area.
+        bhv_data_file (Path): path to the bhv file (matlab format).
+        output_dir (Path, optional): output directory. Defaults to "./".
+        event_path (Path, optional): path to event folder. Defaults to "events/Acquisition_Board-100.Rhythm Data/TTL".
     """
     if not os.path.exists(bhv_data_file):
         logging.error("bhv_data_file %s does not exist" % bhv_data_file)
@@ -50,7 +42,6 @@ def main(
     bhv = BhvData.from_matlab_mat(bhv_data_file)
     # load events
     events = utils_oe.load_event_files(event_data_files)
-
     # reconstruct 8 bit words
     _, real_strobes, len_idx, idx_start, idx_end = utils_oe.find_events_codes(
         events, code_numbers=bhv.code_numbers

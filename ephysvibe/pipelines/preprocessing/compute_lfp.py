@@ -2,10 +2,9 @@ import argparse
 from pathlib import Path
 import logging
 import os
-import json
-from typing import List, Tuple, Dict
+from typing import List, Dict
 import numpy as np
-from ...spike_sorting import utils_oe, config, data_structure, pre_treat_oe
+from ...spike_sorting import utils_oe, config
 import glob
 from ...structures.bhv_data import BhvData
 from ...structures.lfp_data import LfpData
@@ -24,6 +23,7 @@ def main(
     continuous_path: Path,
     bhv_path: Path,
     output_dir: Path = "./output",
+    event_path: Path = "events/Acquisition_Board-100.Rhythm Data/TTL",
     areas: list = None,
     start_ch: list = None,
     n_ch: list = None,
@@ -31,14 +31,19 @@ def main(
     f_hp: int = 3,
     filt: bool = True,
 ) -> None:
-    """Compute trials.
+    """Filter and downsample lfps.
 
     Args:
-        continuous_path (Path):  path to the continuous file (.dat) from OE.
-        output_dir (Path): output directory.
-        areas (list): list containing the areas to which to compute the trials data.
-        start_ch (list): list containing the index of the first channel for each area.
-        n_ch (list): list containing the number of channels for each area.
+        continuous_path (Path): path to the continuous file (.dat) from OE.
+        bhv_path (Path): path to the bhv.h5 file.
+        output_dir (Path, optional): output directory. Defaults to "./output".
+        event_path (Path, optional): path to event folder. Defaults to "events/Acquisition_Board-100.Rhythm Data/TTL".
+        areas (list, optional): list containing the areas to which to compute the trials data. Defaults to None.
+        start_ch (list, optional): list containing the index of the first channel for each area. Defaults to None.
+        n_ch (list, optional): list containing the number of channels for each area. Defaults to None.
+        f_lp (int, optional): low pass frequency. Defaults to 250.
+        f_hp (int, optional): high pass frequency. Defaults to 3.
+        filt (bool, optional): whether to filter lfps. Defaults to True.
     """
     if not os.path.exists(continuous_path):
         logging.error("continuous_path %s does not exist" % continuous_path)
@@ -47,9 +52,7 @@ def main(
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
     time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
-    event_path = "/".join(
-        s_path[:-3] + ["events"] + ["Acquisition_Board-100.Rhythm Data"] + ["TTL"]
-    )
+    event_path = "/".join(s_path[:-3] + [event_path])
     # check if paths exist
     if not os.path.exists(time_path):
         logging.error("time_path: %s does not exist" % time_path)

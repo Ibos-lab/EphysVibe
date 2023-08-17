@@ -39,7 +39,8 @@ def main(
         raise FileExistsError
     logging.info("-- Start --")
     # define paths
-    s_path = os.path.normpath(ks_path).split(os.sep)
+    ks_path = os.path.normpath(ks_path)
+    s_path = ks_path.split(os.sep)
     # time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
 
     # Select info about the recording from the path
@@ -56,7 +57,7 @@ def main(
         raise ValueError
     # check n_areas and n_channels
     if areas == None:
-        areas_ch = ["lip", "v4", "pfc"]
+        areas = ["lip", "v4", "pfc"]
     # load bhv data
     logging.info("Loading bhv data")
     bhv = BhvData.from_python_hdf5(bhv_path[0])
@@ -72,7 +73,7 @@ def main(
     end_trials = bhv.end_trials
 
     # Iterate by nodes/areas
-    for area in areas_ch:
+    for area in areas:
         # define spikes paths and check if path exist
         spike_path = "/".join([ks_path] + ["KS" + area.upper()])
         if not os.path.exists(spike_path):
