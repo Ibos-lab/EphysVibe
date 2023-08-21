@@ -76,98 +76,102 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         neuron_type, target_codes, ipsi, contra, neuron_idx=None
     )
     # Search neurons responding to the task
-    fix_t = 200
-    dur_v = 250
-    st_m = 500  # 800
-    end_m = 1100
-    epochs = {
-        "name": ["visual", "anticipation"],
-        "start_time": [0, st_m],
-        "end_time": [dur_v, end_m],
-    }
-    before_trial = fix_t
+    sp_samples = data.sp_samples
     neuron_type = data.clustersgroup
     code_samples = data.code_samples
     code_numbers = data.code_numbers
     sp_samples = data.sp_samples
-    align_event = task_constants.EVENTS_B2["target_on"]
-    test_involved = plot_raster.get_responding_neurons(
-        neurons_info,
-        epochs,
-        before_trial,
-        code_samples,
-        code_numbers,
-        sp_samples,
-        align_event,
-        target_codes,
-        n_spikes_sec=5,
-    )
-    # check if filepath exist
+    neuron_type = data.clustersgroup
+    ipsi = np.array(["124", "123", "122", "121"])
+    contra = np.array(["120", "127", "126", "125"])
+
+    fix_t = 200
+    dur_v = 200
+    st_m = 700  # 800
+    end_m = 1100
     p_threshold = 0.05
-    th_involved = test_involved[
-        test_involved["p"] < p_threshold
-    ]  # results below threshold
-    if th_involved.shape[0] == 0:
+    min_trials = 3
+    n_spikes_sec = 5
+
+    align_event = task_constants.EVENTS_B2["target_on"]
+    shifts = code_samples[:, 3]
+    shifts = shifts[:, np.newaxis]
+    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts - fix_t).astype(int), axis=2)[
+        :, :, : 1100 + fix_t
+    ]
+    neurons_info = plot_raster.get_neurons_info(
+        sp_shift,
+        fix_t,
+        neuron_type,
+        target_codes,
+        ipsi,
+        contra,
+        dur_v=dur_v,
+        st_m=st_m,
+        end_m=end_m,
+        neuron_idx=None,
+        min_trials=min_trials,
+        n_spikes_sec=n_spikes_sec,
+    )
+    neurons_info = neurons_info[
+        (neurons_info["p"] < 0.05) & (neurons_info["larger"] == True)
+    ]  # responding neurons
+
+    if neurons_info.shape[0] == 0:
         raise ValueError("Non involved neurons")
     # Search neurons RF
-    sp_samples = data.sp_samples
-    code_samples = data.code_samples
-    align_event = task_constants.EVENTS_B2["target_on"]
+    shifts = code_samples[:, 3]
+    shifts = shifts[:, np.newaxis]
+    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
+        :, :, :1100
+    ]
+
     rf_test = plot_raster.get_rf(
-        th_involved,
-        sp_samples,
+        neurons_info,
+        sp_shift,
         ipsi,
         contra,
         target_codes,
-        code_samples,
-        align_event,
-        code_numbers,
         dur_v,
         st_m,
         end_m,
-        n_spikes_sec=1,
+        n_spikes_sec=n_spikes_sec,
+        min_trials=min_trials,
     )
-
-    p_threshold = 0.05
 
     th_rf = rf_test[
         np.logical_and(rf_test["p"] < p_threshold, rf_test["larger"] == True)
     ]  # results below threshold
     significant_units = th_rf["array_position"].unique()
-    # results below threshold
-    if th_rf.shape[0] == 0:
-        raise ValueError("No rf")
-    # Compute visuomotor index
-    fs_ds = config.FS / config.DOWNSAMPLE
-    kernel = firing_rate.define_kernel(
-        sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
-    )
-    code_samples = data.code_samples
-    sp_samples = data.sp_samples
-    code_numbers = data.code_numbers
-    align_event = task_constants.EVENTS_B2["target_on"]
+    shifts = code_samples[:, 3]
+    shifts = shifts[:, np.newaxis]
+    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
+        :, :, :1100
+    ]
+    sp_shift_bl = SpikeData.indep_roll(
+        sp_samples, -(shifts - fix_t).astype(int), axis=2
+    )[:, :, : 1100 + fix_t]
     test_vm = plot_raster.get_vm_index(
         th_rf,
         target_codes,
-        code_samples,
-        code_numbers,
-        sp_samples,
+        sp_shift,
+        sp_shift_bl,
         align_event,
         fix_t,
         dur_v,
         st_m,
         end_m,
-        fs_ds,
-        kernel,
+        n_spikes_sec,
+        min_trials,
     )
-    no_dup_vm = test_vm[test_vm.columns[:-3]].drop_duplicates()
+    no_dup_vm = test_vm  #
     # ------- plot ------------
     color = {
         "visual": ["salmon", "darkred", "--"],
         "motor": ["royalblue", "navy", ":"],
     }
     # kernel parameters
-    t_before = 500
+    t_before = 200
     fs_ds = config.FS / config.DOWNSAMPLE
     kernel = firing_rate.define_kernel(
         sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
@@ -214,7 +218,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             fr_max_codes,
             v_significant,
             m_significant,
-        ) = plot_raster.get_max_fr(
+        ) = get_max_fr(
             target_codes,
             sp_samples,
             code_samples,
@@ -315,7 +319,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["vm_index"] += [vm_index]
             rf_coordinates["date"] += [s_path[-1][:19]]
         ## ------------------ end spider
-        avg_events = [-500, 0, 100, 1100, 1500]
+        avg_events = [-200, 0, 100, 1100, 1500]
         # num_trials = sp_samples.shape[0]
         for ax, ax2 in zip(all_ax, all_ax2):
             for ev in avg_events:
@@ -353,25 +357,25 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
-    # Compute laterality index
-    lat_index_df = plot_raster.get_laterality_idx(
-        rf_coordinates,
-        sp_samples,
-        ipsi,
-        contra,
-        target_codes,
-        code_samples,
-        align_event,
-        code_numbers,
-        dur_v,
-        st_m,
-        end_m,
-        kernel,
-        fs_ds,
-    )
-    rf_coordinates = rf_coordinates.merge(
-        lat_index_df, left_on="array_position", right_on="array_position"
-    )
+    # # Compute laterality index
+    # lat_index_df = plot_raster.get_laterality_idx(
+    #     rf_coordinates,
+    #     sp_samples,
+    #     ipsi,
+    #     contra,
+    #     target_codes,
+    #     code_samples,
+    #     align_event,
+    #     code_numbers,
+    #     dur_v,
+    #     st_m,
+    #     end_m,
+    #     kernel,
+    #     fs_ds,
+    # )
+    # rf_coordinates = rf_coordinates.merge(
+    #     lat_index_df, left_on="array_position", right_on="array_position"
+    # )
     rf_coordinates.to_csv(
         "/".join([os.path.normpath(output_dir)] + [ss_path + "_rf_coordinates.csv"]),
         index=False,
