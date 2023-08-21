@@ -218,7 +218,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             fr_max_codes,
             v_significant,
             m_significant,
-        ) = get_max_fr(
+        ) = plot_raster.get_max_fr(
             target_codes,
             sp_samples,
             code_samples,
