@@ -63,7 +63,7 @@ def main(
     bhv = BhvData.from_python_hdf5(bhv_path[0])
     # load timestamps and events
     logging.info("Loading continuous/sample_numbers data")
-    c_samples = np.load(ks_path + "sample_numbers.npy")
+    c_samples = np.load("/".join([ks_path] + ["sample_numbers.npy"]))
 
     logging.info("Selecting OE samples")
 
