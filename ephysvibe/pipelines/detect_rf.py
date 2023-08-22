@@ -69,12 +69,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             "position_codes": position_codes[key][1],
             "angle_codes": position_codes[key][2][0],
         }
-    neuron_type = data.clustersgroup
-    ipsi = np.array(["124", "123", "122", "121"])
-    contra = np.array(["120", "127", "126", "125"])
-    neurons_info = plot_raster.get_neurons_info(
-        neuron_type, target_codes, ipsi, contra, neuron_idx=None
-    )
+
     # Search neurons responding to the task
     sp_samples = data.sp_samples
     neuron_type = data.clustersgroup
@@ -116,7 +111,9 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     neurons_info = neurons_info[
         (neurons_info["p"] < 0.05) & (neurons_info["larger"] == True)
     ]  # responding neurons
-
+    if neurons_info.empty:
+        logging.error("No significant units")
+        raise ValueError
     if neurons_info.shape[0] == 0:
         raise ValueError("Non involved neurons")
     # Search neurons RF
@@ -142,7 +139,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     th_rf = rf_test[
         np.logical_and(rf_test["p"] < p_threshold, rf_test["larger"] == True)
     ]  # results below threshold
-    significant_units = th_rf["array_position"].unique()
+    if th_rf.empty:
+        logging.error("No significant units")
+        raise ValueError
+
     shifts = code_samples[:, 3]
     shifts = shifts[:, np.newaxis]
     sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
@@ -164,6 +164,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         n_spikes_sec,
         min_trials,
     )
+    if test_vm.empty:
+        logging.error("No significant units")
+        raise ValueError
+
     no_dup_vm = test_vm  #
     # ------- plot ------------
     color = {
