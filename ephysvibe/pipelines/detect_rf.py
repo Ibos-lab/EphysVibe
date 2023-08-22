@@ -172,7 +172,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     # ------- plot ------------
     color = {
         "visual": ["salmon", "darkred", "--"],
-        "motor": ["royalblue", "navy", ":"],
+        "anticipation": ["royalblue", "navy", ":"],
     }
     # kernel parameters
     t_before = 200
@@ -255,7 +255,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
         for fr_max, event, significant in zip(
             [fr_max_visual, fr_max_motor],
-            ["visual", "motor"],
+            ["visual", "anticipation"],
             [v_significant, m_significant],
         ):
             norm_fr_max = np.array(fr_max) / fr_code_max

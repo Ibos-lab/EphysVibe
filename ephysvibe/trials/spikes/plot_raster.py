@@ -461,7 +461,7 @@ def get_vm_index(
             if vm_index <= 0:
                 sig_type = "visual"
             else:
-                sig_type = "motor"
+                sig_type = "anticipation"
         # save results
         test_vm["code"] += [code]
         test_vm["array_position"] += [i_neuron]
