@@ -77,7 +77,7 @@ def main(
     else:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        output_dir = os.path.normpath(output_dir) + "/" + file_name
+        output_dir = "/".join([os.path.normpath(output_dir)] + ["bhv"] + [file_name])
 
     logging.info("Saving data")
     bhv.to_python_hdf5(output_dir)
