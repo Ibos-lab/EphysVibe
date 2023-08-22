@@ -28,7 +28,7 @@ logging.basicConfig(
 def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     s_path = os.path.normpath(filepath).split(os.sep)
     ss_path = s_path[-1][:-3]
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]])
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -112,10 +112,9 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         (neurons_info["p"] < 0.05) & (neurons_info["larger"] == True)
     ]  # responding neurons
     if neurons_info.empty:
-        logging.error("No significant units")
+        logging.warning("No significant units")
         raise ValueError
-    if neurons_info.shape[0] == 0:
-        raise ValueError("Non involved neurons")
+
     # Search neurons RF
     shifts = code_samples[:, 3]
     shifts = shifts[:, np.newaxis]
@@ -342,7 +341,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             ax2.set(xlabel="Time (s)", ylabel="trials")
             plt.setp(ax2.get_yticklabels(), visible=False)
         fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
-        fig.suptitle("%s: %s %d" % (s_path[-2], cluster, i_cluster), x=0)
+        fig.suptitle("%s: %s %d" % (s_path[-3], cluster, i_cluster), x=0)
         fig.text(
             0,
             0,
