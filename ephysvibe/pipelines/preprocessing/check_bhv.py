@@ -72,13 +72,11 @@ def main(
     bhv.code_samples = code_samples
 
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
-    if output_dir is None:
-        output_dir = "/".join(s_path[:-1] + ["bhv"] + [file_name])
-    else:
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        output_dir = "/".join([os.path.normpath(output_dir)] + ["bhv"] + [file_name])
 
+    output_dir = "/".join([os.path.normpath(output_dir)] + ["bhv"])
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_dir = "/".join([os.path.normpath(output_dir)] + [file_name])
     logging.info("Saving data")
     bhv.to_python_hdf5(output_dir)
     logging.info("Data successfully saved")
@@ -94,7 +92,7 @@ if __name__ == "__main__":
         "bhv_data_file", help="Path to the bhv file (matlab format)", type=Path
     )
     parser.add_argument(
-        "--output_dir", "-o", default=None, help="Output directory", type=Path
+        "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     args = parser.parse_args()
     try:
