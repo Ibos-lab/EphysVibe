@@ -122,7 +122,7 @@ def main(
             start_trials=start_trials,
         )
         output_d = os.path.normpath(output_dir)
-        path = "/".join([output_d] + ["session_struct"] + [subject] + [area])
+        path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])
         file_name = (
             date_time
             + "_"

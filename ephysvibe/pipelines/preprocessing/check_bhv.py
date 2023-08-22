@@ -73,7 +73,7 @@ def main(
 
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
     if output_dir is None:
-        output_dir = "/".join(s_path[:-1] + [file_name])
+        output_dir = "/".join(s_path[:-1] + ["bhv"] + [file_name])
     else:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
