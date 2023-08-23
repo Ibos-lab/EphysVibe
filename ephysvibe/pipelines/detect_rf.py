@@ -282,7 +282,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                 )[0]
                 code = np.array(list(target_codes.keys()))[idx_code]
                 vm_index_v_max = neu_test_vm[np.isin(neu_test_vm["code"].values, code)]
-                idx_max = np.argmax(vm_index_v_max["vm_index"])
+                idx_max = np.argmax(np.abs(vm_index_v_max["vm_index"]))
                 code_v_max = vm_index_v_max["code"].iloc[idx_max]
                 vm_index_v_max = vm_index_v_max["vm_index"].iloc[idx_max]
             if np.any(~np.isnan(fr_max_motor[m_significant])):
@@ -305,7 +305,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
                 )[0]
                 code = np.array(list(target_codes.keys()))[idx_code]
                 vm_index_p_max = neu_test_vm[np.isin(neu_test_vm["code"].values, code)]
-                idx_max = np.argmax(vm_index_p_max["vm_index"])
+                idx_max = np.argmax(np.abs(vm_index_p_max["vm_index"]))
                 code_p_max = vm_index_p_max["code"].iloc[idx_max]
                 vm_index_p_max = vm_index_p_max["vm_index"].iloc[idx_max]
 
