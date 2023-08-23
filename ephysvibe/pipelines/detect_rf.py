@@ -163,6 +163,10 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         n_spikes_sec,
         min_trials,
     )
+    test_vm = test_vm[
+        (np.logical_and(test_vm["p_v"] < 0.05, test_vm["v_larger"] == True))
+        | (np.logical_and(test_vm["p_p"] < 0.05, test_vm["p_larger"] == True))
+    ]
     if test_vm.empty:
         logging.error("No significant units")
         raise ValueError
@@ -236,18 +240,75 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
         codes_sig = np.logical_or(m_significant, v_significant)
         fr_code_max = max(fr_max_codes)
-        vm_index = np.nan
-        if np.any(~np.isnan(fr_max_codes[codes_sig])):
+        vm_index, vm_index_v_fr, vm_index_p_fr = np.nan, np.nan, np.nan
+        code_vm_index, code_index_v_fr, code_index_p_fr = np.nan, np.nan, np.nan
+        vm_index_v_max, vm_index_p_max, code_v_max, code_p_max = (
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+        )
 
+        if np.any(~np.isnan(fr_max_codes[codes_sig])):
+            neu_test_vm = test_vm[test_vm["array_position"] == i_n]
+
+            # select vm index of the code with the max fr
             idx_max_all = np.nanargmax(fr_max_codes[codes_sig])
             ang_max_all = fr_angle[codes_sig][idx_max_all]
             idx_code = np.where(pd.DataFrame(target_codes).iloc[3] == ang_max_all)[0][0]
             code = list(target_codes.keys())[idx_code]
-            neu_test_vm = test_vm[test_vm["array_position"] == i_n]
             if code in neu_test_vm["code"].values:
                 vm_index = neu_test_vm[neu_test_vm["code"] == code]["vm_index"].values[
                     0
                 ]
+                code_vm_index = code
+            if np.any(~np.isnan(fr_max_visual[v_significant])):
+                # select vm index max visual fr
+                idx_max_all = np.nanargmax(fr_max_visual[v_significant])
+                ang_max_all = fr_angle[v_significant][idx_max_all]
+                idx_code = np.where(pd.DataFrame(target_codes).iloc[3] == ang_max_all)[
+                    0
+                ][0]
+                code = list(target_codes.keys())[idx_code]
+                if code in neu_test_vm["code"].values:
+                    vm_index_v_fr = neu_test_vm[neu_test_vm["code"] == code][
+                        "vm_index"
+                    ].values[0]
+                    code_index_v_fr = code
+                # select max visual vm index
+                ang_max_all = fr_angle[v_significant]
+                idx_code = np.where(
+                    np.isin(pd.DataFrame(target_codes).iloc[3].values, ang_max_all)
+                )[0]
+                code = np.array(list(target_codes.keys()))[idx_code]
+                vm_index_v_max = neu_test_vm[np.isin(neu_test_vm["code"].values, code)]
+                idx_max = np.argmax(vm_index_v_max["vm_index"])
+                code_v_max = vm_index_v_max["code"].iloc[idx_max]
+                vm_index_v_max = vm_index_v_max["vm_index"].iloc[idx_max]
+            if np.any(~np.isnan(fr_max_motor[m_significant])):
+                # select vm index max anticipation fr
+                idx_max_all = np.nanargmax(fr_max_motor[m_significant])
+                ang_max_all = fr_angle[m_significant][idx_max_all]
+                idx_code = np.where(pd.DataFrame(target_codes).iloc[3] == ang_max_all)[
+                    0
+                ][0]
+                code = list(target_codes.keys())[idx_code]
+                if code in neu_test_vm["code"].values:
+                    vm_index_p_fr = neu_test_vm[neu_test_vm["code"] == code][
+                        "vm_index"
+                    ].values[0]
+                    code_index_p_fr = code
+                # select max visual vm index
+                ang_max_all = fr_angle[m_significant]
+                idx_code = np.where(
+                    np.isin(pd.DataFrame(target_codes).iloc[3].values, ang_max_all)
+                )[0]
+                code = np.array(list(target_codes.keys()))[idx_code]
+                vm_index_p_max = neu_test_vm[np.isin(neu_test_vm["code"].values, code)]
+                idx_max = np.argmax(vm_index_p_max["vm_index"])
+                code_p_max = vm_index_p_max["code"].iloc[idx_max]
+                vm_index_p_max = vm_index_p_max["vm_index"].iloc[idx_max]
+
         ax = plt.subplot2grid((3, 3), (1, 1), polar=True)
         fr_angle_rad = (np.array(fr_angle) * 2 * np.pi) / 360
         fr_angle_rad = np.concatenate([fr_angle_rad, fr_angle_rad[:1]])
@@ -319,8 +380,18 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["rad_all"] += [rad_all]
             rf_coordinates["ang_all"] += [ang_all]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
-            rf_coordinates["vm_index"] += [vm_index]
+
             rf_coordinates["date"] += [s_path[-1][:19]]
+            rf_coordinates["vm_index_frmax"] += [vm_index]
+            rf_coordinates["code_vm_index"] += [code_vm_index]
+            rf_coordinates["vm_index_v_fr"] += [vm_index_v_fr]
+            rf_coordinates["code_index_v_fr"] += [code_index_v_fr]
+            rf_coordinates["vm_index_p_fr"] += [vm_index_p_fr]
+            rf_coordinates["code_index_p_fr"] += [code_index_p_fr]
+            rf_coordinates["vm_index_v_max"] += [vm_index_v_max]
+            rf_coordinates["code_v_max"] += [code_v_max]
+            rf_coordinates["vm_index_p_max"] += [vm_index_p_max]
+            rf_coordinates["code_p_max"] += [code_p_max]
         ## ------------------ end spider
         avg_events = [-200, 0, 100, 1100, 1500]
         # num_trials = sp_samples.shape[0]

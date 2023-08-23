@@ -382,7 +382,10 @@ def get_rf(
         test_rf["array_position"] += [i_neuron]
         test_rf["p"] += [p]
         test_rf["larger"] += [larger]
-
+        test_rf["p_v"] += [p_v]
+        test_rf["v_larger"] += [v_larger]
+        test_rf["p_p"] += [p_p]
+        test_rf["p_larger"] += [p_larger]
         test_rf["cluster"] += [row["cluster"]]
         test_rf["group"] += [row["group"]]
     test_rf = pd.DataFrame(test_rf)
@@ -408,8 +411,11 @@ def get_vm_index(
         code = row["code"]
         vm_index = np.nan
         sig_type = np.nan
-        # select trials with the same stimulus
-        target_t_idx = np.array(target_codes[code]["trial_idx"])
+        # select trials
+
+        target_t_idx = np.array(
+            target_codes[code]["trial_idx"]
+        )  # select trials with the same stimulus
         target_t_idx = target_t_idx[
             (
                 sp_samples[target_t_idx, i_neuron].sum(axis=1)
@@ -418,15 +424,17 @@ def get_vm_index(
         ]
         all_trials_sp = []
         for i_code in target_codes.keys():
-            # select trials with the same stimulus
-            all_trials = np.array(target_codes[i_code]["trial_idx"])
+            all_trials = np.array(
+                target_codes[i_code]["trial_idx"]
+            )  # select trials with the same stimulus
             all_trials = all_trials[
                 (
                     sp_samples[all_trials, i_neuron].sum(axis=1)
                     > n_spikes_sec * (1100) / 1000
                 )
             ]
-            all_trials = sp_samples[all_trials, i_neuron]
+            all_trials = sp_samples[all_trials, i_neuron]  # .mean(axis=0)
+
             all_trials_sp.append(
                 [all_trials[:, 50:dur_v].mean(), all_trials[:, st_m:end_m].mean()]
             )
@@ -452,7 +460,7 @@ def get_vm_index(
             sp_code = sp_samples[
                 target_t_idx, i_neuron
             ]  # Select trials with at least  5 spikes/sec
-
+            sp_bl_code = sp_bl[target_t_idx, i_neuron, :200]
             sp_trial_avg = sp_code.mean(axis=0)
             v_mean = (sp_trial_avg[50:dur_v].mean() - min_sp) / max_sp
             m_mean = (sp_trial_avg[st_m:end_m].mean() - min_sp) / max_sp
@@ -469,6 +477,10 @@ def get_vm_index(
         test_vm["sig_type"] += [sig_type]
         test_vm["cluster"] += [row["cluster"]]
         test_vm["group"] += [row["group"]]
+        test_vm["p_v"] += [row["p_v"]]
+        test_vm["v_larger"] += [row["v_larger"]]
+        test_vm["p_p"] += [row["p_p"]]
+        test_vm["p_larger"] += [row["p_larger"]]
     test_vm = pd.DataFrame(test_vm)
     return test_vm
 
