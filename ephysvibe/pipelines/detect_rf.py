@@ -76,7 +76,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     code_samples = data.code_samples
     code_numbers = data.code_numbers
     sp_samples = data.sp_samples
-    neuron_type = data.clustersgroup
+
     ipsi = np.array(["124", "123", "122", "121"])
     contra = np.array(["120", "127", "126", "125"])
 
@@ -86,7 +86,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     end_m = 1100
     p_threshold = 0.05
     min_trials = 3
-    n_spikes_sec = 5
 
     align_event = task_constants.EVENTS_B2["target_on"]
     shifts = code_samples[:, 3]
@@ -106,7 +105,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         end_m=end_m,
         neuron_idx=None,
         min_trials=min_trials,
-        n_spikes_sec=n_spikes_sec,
     )
     neurons_info = neurons_info[
         (neurons_info["p"] < 0.05) & (neurons_info["larger"] == True)
@@ -131,7 +129,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         dur_v,
         st_m,
         end_m,
-        n_spikes_sec=n_spikes_sec,
         min_trials=min_trials,
     )
 
@@ -160,7 +157,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         dur_v,
         st_m,
         end_m,
-        n_spikes_sec,
         min_trials,
     )
     test_vm = test_vm[
@@ -380,7 +376,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["rad_all"] += [rad_all]
             rf_coordinates["ang_all"] += [ang_all]
             rf_coordinates["depth"] += [data.clusterdepth[i_n]]
-
             rf_coordinates["date"] += [s_path[-1][:19]]
             rf_coordinates["vm_index_frmax"] += [vm_index]
             rf_coordinates["code_vm_index"] += [code_vm_index]
@@ -431,25 +426,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
-    # # Compute laterality index
-    # lat_index_df = plot_raster.get_laterality_idx(
-    #     rf_coordinates,
-    #     sp_samples,
-    #     ipsi,
-    #     contra,
-    #     target_codes,
-    #     code_samples,
-    #     align_event,
-    #     code_numbers,
-    #     dur_v,
-    #     st_m,
-    #     end_m,
-    #     kernel,
-    #     fs_ds,
-    # )
-    # rf_coordinates = rf_coordinates.merge(
-    #     lat_index_df, left_on="array_position", right_on="array_position"
-    # )
     rf_coordinates.to_csv(
         "/".join([os.path.normpath(output_dir)] + [ss_path + "_rf_coordinates.csv"]),
         index=False,

@@ -101,12 +101,11 @@ def get_neurons_info(
     target_codes: Dict,
     ipsi: np.ndarray,
     contra: np.ndarray,
-    dur_v,
-    st_m,
-    end_m,
+    dur_v: int,
+    st_m: int,
+    end_m: int,
     neuron_idx: np.ndarray = None,
     min_trials: int = 5,
-    n_spikes_sec: int = 5,
 ) -> pd.DataFrame:
     trial_dur = sp_samples.shape[2]
     if neuron_idx is None:
@@ -124,29 +123,14 @@ def get_neurons_info(
             n_type = i_mua
         for code in codes:  # iterate by code'
             trial_idx = np.array(target_codes[code]["trial_idx"])
-            trial_idx = trial_idx[
-                (
-                    sp_samples[trial_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * trial_dur / 1000
-                )
-            ]
+            trial_idx = trial_idx[(sp_samples[trial_idx, i_neuron].sum(axis=1) > 0)]
             n_tr = len(trial_idx)
             larger = False
             p = None
             if n_tr <= min_trials:  # if less than x tr, use tr from adjacent locations
                 next_idx, prev_idx = get_trials(code, target_codes)
-                next_idx = next_idx[
-                    (
-                        sp_samples[next_idx, i_neuron].sum(axis=1)
-                        > n_spikes_sec * trial_dur / 1000
-                    )
-                ]
-                prev_idx = prev_idx[
-                    (
-                        sp_samples[prev_idx, i_neuron].sum(axis=1)
-                        > n_spikes_sec * trial_dur / 1000
-                    )
-                ]
+                next_idx = next_idx[(sp_samples[next_idx, i_neuron].sum(axis=1) > 0)]
+                prev_idx = prev_idx[(sp_samples[prev_idx, i_neuron].sum(axis=1) > 0)]
                 n_tr_min = np.min([len(next_idx), len(prev_idx)])
                 rng = np.random.default_rng(seed=seed)
                 next_idx = rng.choice(next_idx, size=n_tr_min, replace=False)
@@ -191,7 +175,6 @@ def get_responding_neurons(
     sp_samples: np.ndarray,
     align_event: int,
     target_codes: Dict,
-    n_spikes_sec: np.ndarray = 5,
 ) -> pd.DataFrame:
     end_time = np.array(epochs["end_time"]) + before_trial
     start_time = np.array(epochs["start_time"]) + before_trial
@@ -216,8 +199,7 @@ def get_responding_neurons(
             )  # align trials with (target_on - before_trial)
             # select trials with at least  5sp/sec
             shift_sp = shift_sp[
-                np.nansum(shift_sp[:, before_trial : before_trial + 1100], axis=1)
-                > n_spikes_sec * 1100 / 1000
+                np.nansum(shift_sp[:, before_trial : before_trial + 1100], axis=1) > 0
             ]
             # check number of trials
             if (
@@ -239,7 +221,7 @@ def get_responding_neurons(
                 message = ""
             else:
                 p = np.nan
-                message = "less than %s spikes/sec" % n_spikes_sec
+                message = "less than %s spikes" % 0
             test_involved["code"] += [code]
             test_involved["laterality"] += [row["laterality"]]
             test_involved["cluster"] += [row["cluster"]]
@@ -272,7 +254,6 @@ def get_rf(
     dur_v: int,
     st_m: int,
     end_m: int,
-    n_spikes_sec: np.ndarray = 5,
     min_trials: int = 5,
 ) -> pd.DataFrame:
 
@@ -293,73 +274,35 @@ def get_rf(
         code_t_idx = np.array(
             target_codes[code]["trial_idx"]
         )  # select trials with the same stimulus
-        code_t_idx = code_t_idx[
-            (
-                sp_samples[code_t_idx, i_neuron].sum(axis=1)
-                > n_spikes_sec * (1100) / 1000
-            )
-        ]
+        code_t_idx = code_t_idx[(sp_samples[code_t_idx, i_neuron].sum(axis=1) > 0)]
         if code_t_idx.shape[0] < min_trials:
             next_idx, prev_idx = get_trials(code, target_codes)
-            next_idx = next_idx[
-                (
-                    sp_samples[next_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
-            prev_idx = prev_idx[
-                (
-                    sp_samples[prev_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
+            next_idx = next_idx[(sp_samples[next_idx, i_neuron].sum(axis=1) > 0)]
+            prev_idx = prev_idx[(sp_samples[prev_idx, i_neuron].sum(axis=1) > 0)]
             n_tr_min = np.min([len(next_idx), len(prev_idx)])
 
             rng = np.random.default_rng(seed=seed)
             next_idx = rng.choice(next_idx, size=n_tr_min, replace=False)
             prev_idx = rng.choice(prev_idx, size=n_tr_min, replace=False)
             code_t_idx = np.concatenate([code_t_idx, next_idx, prev_idx])
-            code_t_idx = code_t_idx[
-                (
-                    sp_samples[code_t_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
+            code_t_idx = code_t_idx[(sp_samples[code_t_idx, i_neuron].sum(axis=1) > 0)]
 
         # opposite_code
         oppos_t_idx = np.array(
             target_codes[opposite_code]["trial_idx"]
         )  # select trials with the same stimulus
-        oppos_t_idx = oppos_t_idx[
-            (
-                sp_samples[oppos_t_idx, i_neuron].sum(axis=1)
-                > n_spikes_sec * (1100) / 1000
-            )
-        ]
+        oppos_t_idx = oppos_t_idx[(sp_samples[oppos_t_idx, i_neuron].sum(axis=1) > 0)]
         if oppos_t_idx.shape[0] < min_trials:
             next_idx, prev_idx = get_trials(opposite_code, target_codes)
-            next_idx = next_idx[
-                (
-                    sp_samples[next_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
-            prev_idx = prev_idx[
-                (
-                    sp_samples[prev_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
+            next_idx = next_idx[(sp_samples[next_idx, i_neuron].sum(axis=1) > 0)]
+            prev_idx = prev_idx[(sp_samples[prev_idx, i_neuron].sum(axis=1) > 0)]
             n_tr_min = np.min([len(next_idx), len(prev_idx)])
             rng = np.random.default_rng(seed=seed)
             next_idx = rng.choice(next_idx, size=n_tr_min, replace=False)
             prev_idx = rng.choice(prev_idx, size=n_tr_min, replace=False)
             oppos_t_idx = np.concatenate([oppos_t_idx, next_idx, prev_idx])
             oppos_t_idx = oppos_t_idx[
-                (
-                    sp_samples[oppos_t_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
+                (sp_samples[oppos_t_idx, i_neuron].sum(axis=1) > 0)
             ]
 
         if code_t_idx.shape[0] >= min_trials and oppos_t_idx.shape[0] >= min_trials:
@@ -402,7 +345,6 @@ def get_vm_index(
     dur_v,
     st_m,
     end_m,
-    n_spikes_sec,
     min_trials,
 ):
     test_vm: Dict[str, list] = defaultdict(list)
@@ -417,22 +359,14 @@ def get_vm_index(
             target_codes[code]["trial_idx"]
         )  # select trials with the same stimulus
         target_t_idx = target_t_idx[
-            (
-                sp_samples[target_t_idx, i_neuron].sum(axis=1)
-                > n_spikes_sec * (1100) / 1000
-            )
+            (sp_samples[target_t_idx, i_neuron].sum(axis=1) > 0)
         ]
         all_trials_sp = []
         for i_code in target_codes.keys():
             all_trials = np.array(
                 target_codes[i_code]["trial_idx"]
             )  # select trials with the same stimulus
-            all_trials = all_trials[
-                (
-                    sp_samples[all_trials, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
-            ]
+            all_trials = all_trials[(sp_samples[all_trials, i_neuron].sum(axis=1) > 0)]
             all_trials = sp_samples[all_trials, i_neuron]  # .mean(axis=0)
 
             all_trials_sp.append(
@@ -451,10 +385,7 @@ def get_vm_index(
             prev_idx = rng.choice(prev_idx, size=n_tr_min, replace=False)
             target_t_idx = np.concatenate([target_t_idx, next_idx, prev_idx])
             target_t_idx = target_t_idx[
-                (
-                    sp_samples[target_t_idx, i_neuron].sum(axis=1)
-                    > n_spikes_sec * (1100) / 1000
-                )
+                (sp_samples[target_t_idx, i_neuron].sum(axis=1) > 0)
             ]
         if target_t_idx.shape[0] >= min_trials:
             sp_code = sp_samples[
