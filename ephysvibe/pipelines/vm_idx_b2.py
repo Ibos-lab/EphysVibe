@@ -28,7 +28,7 @@ logging.basicConfig(
 def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     s_path = os.path.normpath(filepath).split(os.sep)
     ss_path = s_path[-1][:-3]
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]])
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]] + ["b2"])
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -417,9 +417,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
         # ----- end plot ----
         logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
-        output_dir = "/".join([os.path.normpath(output_dir)] + ["b2"])
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+
         plt.savefig(
             "/".join(
                 [output_dir] + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
@@ -429,7 +427,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
     rf_coordinates.to_csv(
-        "/".join([os.path.normpath(output_dir)] + ["b2"] + [ss_path + "_vm_b2.csv"]),
+        "/".join([output_dir] + [ss_path + "_vm_b2.csv"]),
         index=False,
     )
     del rf_coordinates

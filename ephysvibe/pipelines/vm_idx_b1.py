@@ -217,7 +217,7 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
     ]
 
     neurons_info = pd.DataFrame(neurons_info)
-    output_dir1 = "/".join([os.path.normpath(output_dir)] + ["b1"])
+    output_dir1 = ("/".join([os.path.normpath(output_dir)] + ["b1"])).copy()
     if not os.path.exists(output_dir1):
         os.makedirs(output_dir1)
     neurons_info.to_csv(
