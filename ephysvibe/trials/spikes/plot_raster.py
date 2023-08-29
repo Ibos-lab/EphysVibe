@@ -20,8 +20,8 @@ def get_trials(code, target_codes):
     next = code_order[next]
     prev = code_pos - 1
     prev = code_order[prev]
-    next_idx = np.array(target_codes[next]["trial_idx"])
-    prev_idx = np.array(target_codes[prev]["trial_idx"])
+    next_idx = np.array(target_codes[next]["trial_idx"]).astype(int)
+    prev_idx = np.array(target_codes[prev]["trial_idx"]).astype(int)
     return next_idx, prev_idx
 
 
@@ -122,20 +122,27 @@ def get_neurons_info(
             i_mua += 1
             n_type = i_mua
         for code in codes:  # iterate by code'
-            trial_idx = np.array(target_codes[code]["trial_idx"])
-            trial_idx = trial_idx[(sp_samples[trial_idx, i_neuron].sum(axis=1) > 0)]
+            trial_idx = np.array(target_codes[code]["trial_idx"]).astype(int)
+            if len(trial_idx) != 0:
+                trial_idx = trial_idx[(sp_samples[trial_idx, i_neuron].sum(axis=1) > 0)]
             n_tr = len(trial_idx)
             larger = False
             p = None
             if n_tr <= min_trials:  # if less than x tr, use tr from adjacent locations
                 next_idx, prev_idx = get_trials(code, target_codes)
-                next_idx = next_idx[(sp_samples[next_idx, i_neuron].sum(axis=1) > 0)]
-                prev_idx = prev_idx[(sp_samples[prev_idx, i_neuron].sum(axis=1) > 0)]
+                if len(next_idx) != 0:
+                    next_idx = next_idx[
+                        (sp_samples[next_idx, i_neuron].sum(axis=1) > 0)
+                    ]
+                if len(prev_idx) != 0:
+                    prev_idx = prev_idx[
+                        (sp_samples[prev_idx, i_neuron].sum(axis=1) > 0)
+                    ]
                 n_tr_min = np.min([len(next_idx), len(prev_idx)])
                 rng = np.random.default_rng(seed=seed)
                 next_idx = rng.choice(next_idx, size=n_tr_min, replace=False)
                 prev_idx = rng.choice(prev_idx, size=n_tr_min, replace=False)
-                trial_idx = np.concatenate([trial_idx, next_idx, prev_idx])
+                trial_idx = np.concatenate([trial_idx, next_idx, prev_idx]).astype(int)
             n_tr = len(trial_idx)
             if n_tr >= min_trials:  # if enough tr, compute p value
                 mean_visual = sp_samples[
@@ -259,8 +266,8 @@ def get_rf(
 
     test_rf: Dict[str, list] = defaultdict(list)
     for _, row in th_involved.iterrows():
-        p = np.nan
-        larger = False
+        p, p_v, p_p = np.nan, np.nan, np.nan
+        larger, v_larger, p_larger = False, False, False
         i_neuron = row["array_position"]
         code = row["code"]
 
@@ -289,7 +296,7 @@ def get_rf(
 
         # opposite_code
         oppos_t_idx = np.array(
-            target_codes[opposite_code]["trial_idx"]
+            target_codes[opposite_code]["trial_idx"], dtype=int
         )  # select trials with the same stimulus
         oppos_t_idx = oppos_t_idx[(sp_samples[oppos_t_idx, i_neuron].sum(axis=1) > 0)]
         if oppos_t_idx.shape[0] < min_trials:

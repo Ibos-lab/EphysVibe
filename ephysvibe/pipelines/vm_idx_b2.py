@@ -62,7 +62,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             idx = np.where(int(key) == code)[0]
             if len(idx) != 0:
                 code_idx.append(idx[0])
-                trials.append(i_trial)
+                trials.append(int(i_trial))
         target_codes[key] = {
             "code_idx": code_idx,
             "trial_idx": trials,
