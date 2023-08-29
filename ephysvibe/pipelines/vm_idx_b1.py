@@ -12,6 +12,7 @@ from ..analysis import circular_stats
 import warnings
 from matplotlib import pyplot as plt
 from ..structures.spike_data import SpikeData
+from ephysvibe.structures.bhv_data import BhvData
 from typing import Dict
 from collections import defaultdict
 import pandas as pd
@@ -235,6 +236,9 @@ if __name__ == "__main__":
         "file_path", help="Path to the continuous file (.dat)", type=Path
     )
     parser.add_argument(
+        "bhv_path", help="Path to the continuous file (.dat)", type=Path
+    )
+    parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     parser.add_argument(
@@ -253,6 +257,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     try:
-        main(args.file_path, args.output_dir, args.e_align, args.t_before)
+        main(
+            args.file_path, args.bhv_path, args.output_dir, args.e_align, args.t_before
+        )
     except FileExistsError:
         logging.error("filepath does not exist")
