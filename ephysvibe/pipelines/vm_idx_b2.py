@@ -420,6 +420,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         plt.savefig(
             "/".join(
                 [os.path.normpath(output_dir)]
+                + ["b2"]
                 + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
             ),
             bbox_inches="tight",
@@ -427,7 +428,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
     rf_coordinates = pd.DataFrame(rf_coordinates)
     rf_coordinates.to_csv(
-        "/".join([os.path.normpath(output_dir)] + [ss_path + "_rf_coordinates.csv"]),
+        "/".join([os.path.normpath(output_dir)] + ["b2"] + [ss_path + "_vm_b2.csv"]),
         index=False,
     )
     del rf_coordinates
