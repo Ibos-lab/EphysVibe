@@ -97,8 +97,8 @@ def get_neurons_info(
                 p_m[i] = stats.ttest_rel(mean_bl, mean_mem)[1]
                 p_t = stats.ttest_rel(mean_bl, mean_test)[1]
 
-                p_in_out[i] = np.min([p_v[i], p_m[i], p_t])
-                max_in_out[i] = np.max([v_larger[i], m_larger[i], t_larger])
+                p_in_out[i] = np.nanmin([p_v[i], p_m[i], p_t])
+                max_in_out[i] = np.nanmax([v_larger[i], m_larger[i], t_larger])
                 idx_p_min[i] = np.argmin([p_v[i], p_m[i], p_t])
 
                 vm_index[i] = (mean_mem.mean() - mean_visual.mean()) / (
@@ -106,8 +106,8 @@ def get_neurons_info(
                 )
 
         if (
-            p_in_out[0] > 0.05
-            and p_in_out[1] < 0.05
+            (p_in_out[0] is None or p_in_out[0] > 0.05)
+            and (p_in_out[1] is None or p_in_out[1] < 0.05)
             and [v_larger[1], m_larger[1], t_larger][idx_p_min[1]]
         ):  # (np.argmax(max_in_out) == 1 or
             true_in_out = "out"
