@@ -417,11 +417,12 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         )
         # ----- end plot ----
         logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
+        output_dir = "/".join([os.path.normpath(output_dir)] + ["b2"])
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
         plt.savefig(
             "/".join(
-                [os.path.normpath(output_dir)]
-                + ["b2"]
-                + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
+                [output_dir] + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
             ),
             bbox_inches="tight",
         )
