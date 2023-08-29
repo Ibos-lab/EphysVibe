@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from ..trials.spikes import firing_rate, sp_constants
 from ..spike_sorting import config
-from ..task import task_constants
+from ..task import task_constants, def_task
 from ..trials.spikes import plot_raster
 from ..analysis import circular_stats
 import warnings
