@@ -213,7 +213,7 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
     neurons_info = neurons_info[neurons_info["in_out"] == neurons_info["true_in_out"]]
     neurons_info = neurons_info[
         (np.logical_and(neurons_info["p_v"] < 0.05, neurons_info["v_larger"] == True))
-        | (np.logical_and(neurons_info["p_m"] < 0.05, neurons_info["p_larger"] == True))
+        | (np.logical_and(neurons_info["p_m"] < 0.05, neurons_info["m_larger"] == True))
     ]
 
     neurons_info = pd.DataFrame(neurons_info)
