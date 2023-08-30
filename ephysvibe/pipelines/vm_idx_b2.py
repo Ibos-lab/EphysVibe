@@ -160,7 +160,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         logging.error("No significant units")
         raise ValueError
 
-    no_dup_vm = test_vm  #
     # ------- plot ------------
     color = {
         "visual": ["salmon", "darkred", "--"],
@@ -204,7 +203,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             t_before,
             fs_ds,
             kernel,
-            no_dup_vm,
+            test_vm,
         )
         # ------------------ plot spider in the center
         (
