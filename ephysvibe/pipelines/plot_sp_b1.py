@@ -33,7 +33,7 @@ def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before
     """
     s_path = os.path.normpath(sp_path).split(os.sep)
     ss_path = s_path[-1][:-3]
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]])
 
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
@@ -180,7 +180,7 @@ def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before
         )
         fig.suptitle(
             "%s: %s %d - Depth: %d"
-            % (s_path[-2], cluster, i_cluster, data.clusterdepth[i_n]),
+            % (s_path[-3], cluster, i_cluster, data.clusterdepth[i_n]),
             x=0.05,
             y=0.99,
         )
