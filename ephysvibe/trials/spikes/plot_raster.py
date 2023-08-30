@@ -388,7 +388,7 @@ def get_vm_index(
 
         all_trials_sp = np.concatenate(all_trials_sp)
         min_sp = np.nanmin(all_trials_sp)
-        max_sp = np.nanmax(all_trials_sp) - min_sp
+        max_sp = np.nanmax(all_trials_sp)  # - min_sp
 
         if target_t_idx.shape[0] <= min_trials:
             next_idx, prev_idx = get_trials(code, target_codes)
@@ -403,8 +403,8 @@ def get_vm_index(
         if target_t_idx.shape[0] >= min_trials:
             sp_code = sp_samples[target_t_idx, i_neuron, fix_t:]
             sp_trial_avg = sp_code.mean(axis=0)
-            v_mean = (sp_trial_avg[50:dur_v].mean() - min_sp) / max_sp
-            m_mean = (sp_trial_avg[st_m:end_m].mean() - min_sp) / max_sp
+            v_mean = (sp_trial_avg[50:dur_v].mean()) / max_sp  # - min_sp
+            m_mean = (sp_trial_avg[st_m:end_m].mean()) / max_sp  # - min_sp
 
             vm_index = (m_mean - v_mean) / (v_mean + m_mean)
             if vm_index <= 0:
