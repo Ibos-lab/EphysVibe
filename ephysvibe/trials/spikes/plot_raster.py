@@ -52,8 +52,8 @@ def plot_activity_location(
             axis=1,
         )  # align trials on event
         # select trials with at least 1 spike
-        shift_sp = shift_sp[np.nansum(shift_sp[:, : t_before + 1100], axis=1) > 0][
-            :, : t_before + 1100
+        shift_sp = shift_sp[np.nansum(shift_sp[:, : t_before + 1500], axis=1) > 0][
+            :, : t_before + 1500
         ]
         mean_sp = shift_sp.mean(axis=0)  # mean of all trials
         conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
