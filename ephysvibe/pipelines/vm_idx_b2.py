@@ -89,7 +89,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
     align_event = task_constants.EVENTS_B2["target_on"]
     shifts = code_samples[:, 3]
-    if np.sum(code_numbers[:, 3] - align_event) != 0:
+    if np.sum(code_numbers[trial_idx, 3] - align_event) != 0:
         raise KeyError
     shifts = shifts[:, np.newaxis]
     sp_shift = SpikeData.indep_roll(sp_samples, -(shifts - fix_t).astype(int), axis=2)[
@@ -101,7 +101,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         neuron_type,
         target_codes,
         ipsi,
-        contra,
         dur_v=dur_v,
         st_m=st_m,
         end_m=end_m,
