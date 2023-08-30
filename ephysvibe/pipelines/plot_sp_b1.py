@@ -122,7 +122,7 @@ def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before
                 # Select trials with at least 1 spike
                 bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) > 0
                 mean_sp = np.zeros(shift_sp.shape[1])
-                if np.sum(bool_shift_sp) > 3:
+                if np.sum(bool_shift_sp) > 0:
                     mean_sp = shift_sp[sample_idx][bool_shift_sp].mean(axis=0)
                 # mean_sp = shift_sp[sample_idx].mean(axis=0)
                 conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
@@ -196,7 +196,6 @@ def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
