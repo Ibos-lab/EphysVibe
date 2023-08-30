@@ -404,9 +404,7 @@ def get_vm_index(
                 (sp_samples[target_t_idx, i_neuron].sum(axis=1) > 0)
             ]
         if target_t_idx.shape[0] >= min_trials:
-            sp_code = sp_samples[
-                target_t_idx, i_neuron
-            ]  # Select trials with at least  5 spikes/sec
+            sp_code = sp_samples[target_t_idx, i_neuron]
             sp_bl_code = sp_bl[target_t_idx, i_neuron, :200]
             sp_trial_avg = sp_code.mean(axis=0)
             v_mean = (sp_trial_avg[50:dur_v].mean() - min_sp) / max_sp
@@ -518,7 +516,7 @@ def get_max_fr(
             sp_samples[target_t_idx, i_n], -(trials_s_on).astype(int), axis=1
         )  # align trials on event
         # select trials with at least one spike
-        shift_sp = shift_sp[np.nansum(shift_sp[:, :1100], axis=1) > 5 * 1100 / 1000]
+        shift_sp = shift_sp[np.nansum(shift_sp[:, :1100], axis=1) > 0]
         mean_sp = np.nanmean(shift_sp, axis=0)  # mean of all trials
         if shift_sp.shape[0] == 0:
             conv = np.zeros((1100))

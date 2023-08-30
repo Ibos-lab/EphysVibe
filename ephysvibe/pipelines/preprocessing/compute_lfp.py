@@ -146,8 +146,8 @@ def main(
         path = "/".join(
             [output_d]
             + ["session_struct"]
-            + [subject]
             + [area]
+            + ["lfp"]
             + [str(f_lp) + "_" + str(f_hp)]
         )
         file_name = (
@@ -173,7 +173,6 @@ def main(
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
