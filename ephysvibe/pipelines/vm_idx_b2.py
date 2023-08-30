@@ -89,6 +89,8 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
     align_event = task_constants.EVENTS_B2["target_on"]
     shifts = code_samples[:, 3]
+    if np.sum(code_numbers[:, 3] - align_event) != 0:
+        raise KeyError
     shifts = shifts[:, np.newaxis]
     sp_shift = SpikeData.indep_roll(sp_samples, -(shifts - fix_t).astype(int), axis=2)[
         :, :, : 1100 + fix_t
@@ -114,11 +116,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         raise ValueError
 
     # Search neurons RF
-    shifts = code_samples[:, 3]
-    shifts = shifts[:, np.newaxis]
-    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
-        :, :, :1100
-    ]
+    # shifts = code_samples[:, 3]
+    # shifts = shifts[:, np.newaxis]
+    # sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
+    #     :, :, :1100
+    # ]
 
     rf_test = plot_raster.get_rf(
         neurons_info,
@@ -126,6 +128,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         ipsi,
         contra,
         target_codes,
+        fix_t,
         dur_v,
         st_m,
         end_m,
@@ -139,26 +142,17 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         logging.error("No significant units")
         raise ValueError
 
-    shifts = code_samples[:, 3]
-    shifts = shifts[:, np.newaxis]
-    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts).astype(int), axis=2)[
-        :, :, :1100
-    ]
-    sp_shift_bl = SpikeData.indep_roll(
-        sp_samples, -(shifts - fix_t).astype(int), axis=2
-    )[:, :, : 1100 + fix_t]
     test_vm = plot_raster.get_vm_index(
         th_rf,
         target_codes,
         sp_shift,
-        sp_shift_bl,
-        align_event,
         fix_t,
         dur_v,
         st_m,
         end_m,
         min_trials,
     )
+
     test_vm = test_vm[
         (np.logical_and(test_vm["p_v"] < 0.05, test_vm["v_larger"] == True))
         | (np.logical_and(test_vm["p_p"] < 0.05, test_vm["p_larger"] == True))
@@ -229,6 +223,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             i_n,
             kernel,
             win_size,
+            fix_t,
             dur_v,
             e_code_align,
             test_vm,
@@ -437,7 +432,6 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
