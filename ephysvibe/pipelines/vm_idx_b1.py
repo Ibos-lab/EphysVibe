@@ -60,6 +60,7 @@ def get_neurons_info(
             np.array([False, False]),
             np.array([0, 0]),
         )
+        t_larger = np.nan
         p_in_out, p_v, p_m, vm_index = (
             np.array([None, None]),
             np.array([None, None]),
@@ -78,9 +79,7 @@ def get_neurons_info(
                 & (task["in_out"] == in_out)
                 & (task["sample"] != "o0_c0")
             ]["trial_idx"]
-            trial_idx = trial_idx[
-                (sp_samples[trial_idx, i_neuron, fix_t:].sum(axis=1) > 0)
-            ]
+            trial_idx = trial_idx[(sp_samples[trial_idx, i_neuron].sum(axis=1) > 0)]
             n_tr = len(trial_idx)
             true_in_out = "in"
             if n_tr > 3:
@@ -198,6 +197,7 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
 
     shifts_on = code_samples[:, 4]
     shifts_on = shifts_on[:, np.newaxis]
+    shifts_on = np.where(np.isnan(shifts_on), 0, shifts_on)
     shifts_test = code_samples[:, 6]
     shifts_test = shifts_test[:, np.newaxis]
     shifts_test = np.where(np.isnan(shifts_test), 0, shifts_test)
