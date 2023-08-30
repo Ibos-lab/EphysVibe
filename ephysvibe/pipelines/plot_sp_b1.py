@@ -45,8 +45,8 @@ def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before
     if not os.path.exists(bhv_path):
         raise FileExistsError
     logging.info("-- Start --")
-    logging.info(sp_path)
-    logging.info(bhv_path)
+    logging.info(s_path[-1][:19])
+    logging.info(os.path.normpath(bhv_path).split(os.sep)[-1][:19])
     data = SpikeData.from_python_hdf5(sp_path)
     bhv = BhvData.from_python_hdf5(bhv_path)
     # Select trials and create task frame
