@@ -64,7 +64,13 @@ def get_neurons_info(
             np.array([None, None]),
             np.array([None, None]),
             np.array([None, None]),
-            np.array([None, None]),
+            np.nan,
+        )
+        tr_min, tr_max, mean_mem_all, mean_visual_all = (
+            np.array([np.nan, np.nan]),
+            np.array([np.nan, np.nan]),
+            np.array([np.nan, np.nan]),
+            np.array([np.nan, np.nan]),
         )
         for i, in_out in enumerate(["in", "out"]):  # iterate by code'
             trial_idx = task[
@@ -97,29 +103,41 @@ def get_neurons_info(
                 p_m[i] = stats.ttest_rel(mean_bl, mean_mem)[1]
                 p_t = stats.ttest_rel(mean_bl, mean_test)[1]
 
-                p_in_out[i] = np.nanmin([p_v[i], p_m[i], p_t])
-                max_in_out[i] = np.nanmax([v_larger[i], m_larger[i], t_larger])
+                p_in_out[i] = np.min([p_v[i], p_m[i], p_t])
+                max_in_out[i] = np.max([v_larger[i], m_larger[i], t_larger])
                 idx_p_min[i] = np.argmin([p_v[i], p_m[i], p_t])
 
-                vm_index[i] = (mean_mem.mean() - mean_visual.mean()) / (
-                    mean_mem.mean() + mean_visual.mean()
+                tr_min[i], tr_max[i] = np.min([mean_visual, mean_mem, mean_bl]), np.max(
+                    [mean_visual, mean_mem, mean_bl]
                 )
+                mean_mem_all[i], mean_visual_all[i] = (
+                    mean_mem.mean(),
+                    mean_visual.mean(),
+                )
+        if ~np.all(np.isnan(tr_min)):
+            tr_min_all = np.nanmin(tr_min)
+            tr_max_all = np.nanmax(tr_max) - tr_min_all
+            mean_mem = (mean_mem_all[0] - tr_min_all) / tr_max_all
+            mean_visual = (mean_visual_all[0] - tr_min_all) / tr_max_all
+            vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
 
         if (
             (p_in_out[0] is None or p_in_out[0] > 0.05)
             and (p_in_out[1] is None or p_in_out[1] < 0.05)
             and [v_larger[1], m_larger[1], t_larger][idx_p_min[1]]
-        ):  # (np.argmax(max_in_out) == 1 or
+        ):
             true_in_out = "out"
+            mean_mem = (mean_mem_all[1] - tr_min_all) / tr_max_all
+            mean_visual = (mean_visual_all[1] - tr_min_all) / tr_max_all
+            vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
 
         for i, in_out in enumerate(["in", "out"]):  # iterate by code'
-
             neurons_info["array_position"] += [i_neuron]
             neurons_info["cluster"] += [n_type]
             neurons_info["group"] += [type_neuron]
             neurons_info["in_out"] += [in_out]
             neurons_info["true_in_out"] += [true_in_out]
-            neurons_info["vm_index"] += [vm_index[i]]
+            neurons_info["vm_index"] += [vm_index]
             neurons_info["p"] += [p_in_out[1]]
             neurons_info["larger"] += [larger[i]]
             neurons_info["v_larger"] += [v_larger[i]]
@@ -228,7 +246,6 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
