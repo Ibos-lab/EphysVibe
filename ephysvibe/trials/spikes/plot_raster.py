@@ -11,7 +11,6 @@ seed = 2023
 
 
 def get_trials(code, target_codes):
-
     code_order = np.array(["127", "126", "125", "124", "123", "122", "121", "120"])
     code_pos = np.where(code_order == code)[0][0]
     next = code_pos + 1
@@ -40,7 +39,6 @@ def plot_activity_location(
     all_ax, all_ax2 = [], []
     all_max_conv, max_num_trials = 0, 0
     for code in target_codes.keys():
-
         target_t_idx = target_codes[code][
             "trial_idx"
         ]  # select trials with the same stimulus
@@ -53,9 +51,9 @@ def plot_activity_location(
             -(trials_s_on - t_before).astype(int),
             axis=1,
         )  # align trials on event
-        # select trials with at least 5 spikes/sec
+        # select trials with at least 1 spike
         shift_sp = shift_sp[
-            np.nansum(shift_sp[:, t_before : t_before + 1100], axis=1) > 5 * 1100 / 1000
+            np.nansum(shift_sp[:, t_before : t_before + 1100], axis=1) > 0
         ][:, : t_before + 1100]
         mean_sp = shift_sp.mean(axis=0)  # mean of all trials
         conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
@@ -263,7 +261,6 @@ def get_rf(
     end_m: int,
     min_trials: int = 5,
 ) -> pd.DataFrame:
-
     test_rf: Dict[str, list] = defaultdict(list)
     for _, row in th_involved.iterrows():
         p, p_v, p_p = np.nan, np.nan, np.nan
