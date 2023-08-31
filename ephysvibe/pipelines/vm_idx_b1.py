@@ -106,9 +106,8 @@ def get_neurons_info(
                 max_in_out[i] = np.max([v_larger[i], m_larger[i], t_larger])
                 idx_p_min[i] = np.argmin([p_v[i], p_m[i], p_t])
 
-                tr_min[i], tr_max[i] = np.min([mean_visual, mean_mem, mean_bl]), np.max(
-                    [mean_visual, mean_mem, mean_bl]
-                )
+                all_mean = sp_samples[trial_idx, i_neuron, : fix_t + end_m].mean(axis=0)
+                tr_min[i], tr_max[i] = np.min(all_mean), np.max(all_mean)
                 mean_mem_all[i], mean_visual_all[i] = (
                     mean_mem.mean(),
                     mean_visual.mean(),
