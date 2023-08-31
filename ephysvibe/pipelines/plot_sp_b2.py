@@ -24,7 +24,7 @@ logging.basicConfig(
 def main(sp_path: Path, output_dir: Path, e_align: str, t_before: int):
     s_path = os.path.normpath(sp_path).split(os.sep)
     ss_path = s_path[-1][:-3]
-    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-2]])
+    output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]])
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -125,7 +125,7 @@ def main(sp_path: Path, output_dir: Path, e_align: str, t_before: int):
 
         fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
         fig.suptitle(
-            "%s: %s %d" % (s_path[-2], cluster, i_cluster),
+            "%s: %s %d" % (s_path[-3], cluster, i_cluster),
             x=0,
         )
         fig.text(
@@ -149,7 +149,6 @@ def main(sp_path: Path, output_dir: Path, e_align: str, t_before: int):
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
