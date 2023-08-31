@@ -115,20 +115,31 @@ def get_neurons_info(
                 )
         if ~np.all(np.isnan(tr_min)):
             tr_min_all = np.nanmin(tr_min)
-            tr_max_all = np.nanmax(tr_max) - tr_min_all
-            mean_mem = (mean_mem_all[0] - tr_min_all) / tr_max_all
-            mean_visual = (mean_visual_all[0] - tr_min_all) / tr_max_all
-            vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
-
-        if (
-            (p_in_out[0] is None or p_in_out[0] > 0.05)
-            and (p_in_out[1] is None or p_in_out[1] < 0.05)
-            and [v_larger[1], m_larger[1], t_larger][idx_p_min[1]]
-        ):
-            true_in_out = "out"
-            mean_mem = (mean_mem_all[1] - tr_min_all) / tr_max_all
-            mean_visual = (mean_visual_all[1] - tr_min_all) / tr_max_all
-            vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
+            tr_max_all = np.nanmax(tr_max)  # - tr_min_all
+            if ~(p_v[0] is None):
+                p_and_large_in = np.any(
+                    np.logical_and(
+                        np.array([p_v[0], p_m[0]]) < 0.05,
+                        np.array([v_larger[0], m_larger[0]]),
+                    )
+                )
+            if ~(p_v[0] is None) and p_and_large_in:
+                mean_mem = (mean_mem_all[0]) / tr_max_all  # - tr_min_all
+                mean_visual = (mean_visual_all[0]) / tr_max_all  # - tr_min_all
+                vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
+            else:
+                if ~(p_v[1] is None):
+                    p_and_large_out = np.any(
+                        np.logical_and(
+                            np.array([p_v[1], p_m[1]]) < 0.05,
+                            np.array([v_larger[1], m_larger[1]]),
+                        )
+                    )
+                if ~(p_v[1] is None) and p_and_large_out:
+                    true_in_out = "out"
+                    mean_mem = (mean_mem_all[1]) / tr_max_all  # - tr_min_all
+                    mean_visual = (mean_visual_all[1]) / tr_max_all  # - tr_min_all
+                    vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
 
         for i, in_out in enumerate(["in", "out"]):  # iterate by code'
             neurons_info["array_position"] += [i_neuron]
@@ -178,11 +189,11 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
         samples_cond=task_constants.SAMPLES_COND,
         neuron_cond=neuron_cond,
     )
-    sp_samples = data.sp_samples
+    sp_samples = data.sp_samples[trials_block]
     neuron_type = data.clustersgroup
-    code_samples = data.code_samples
-    code_numbers = data.code_numbers
-    sp_samples = data.sp_samples
+    code_samples = data.code_samples[trials_block]
+    code_numbers = data.code_numbers[trials_block]
+    sp_samples = data.sp_samples[trials_block]
 
     fix_t = 200
     dur_v = 250
@@ -193,7 +204,6 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
     min_trials = 3
     n_spikes_sec = 5
     p_threshold = 0.05
-    vm_threshold = 0.4
 
     shifts_on = code_samples[:, 4]
     align_event = task_constants.EVENTS_B1["sample_on"]
