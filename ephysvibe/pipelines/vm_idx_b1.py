@@ -207,13 +207,13 @@ def main(filepath: Path, bhv_path: Path, output_dir: Path, e_align: str, t_befor
 
     shifts_on = code_samples[:, 4]
     align_event = task_constants.EVENTS_B1["sample_on"]
-    if np.sum(code_numbers[trials_block, 4] - align_event) != 0:
+    if np.sum(code_numbers[:, 4] - align_event) != 0:
         raise KeyError
     shifts_on = shifts_on[:, np.newaxis]
     shifts_on = np.where(np.isnan(shifts_on), 0, shifts_on)
     shifts_test = code_samples[:, 6]
     align_event = task_constants.EVENTS_B1["test_on_1"]
-    if np.sum(code_numbers[trials_block, 6] - align_event) != 0:
+    if np.sum(code_numbers[:, 6] - align_event) != 0:
         raise KeyError
     shifts_test = shifts_test[:, np.newaxis]
     shifts_test = np.where(np.isnan(shifts_test), 0, shifts_test)
