@@ -52,6 +52,7 @@ def main(
     # define paths
     s_path = os.path.normpath(continuous_path).split(os.sep)
     time_path = "/".join(s_path[:-1] + ["sample_numbers.npy"])
+    event_path = os.path.normpath(event_path)
     event_path = "/".join(s_path[:-3] + [event_path])
     # check if paths exist
     if not os.path.exists(time_path):
@@ -114,6 +115,7 @@ def main(
             n_eyes=n_eyes,
             idx_start_time=idx_start_samp,
         )
+
     # to ms
     ds_samples = np.floor(ds_samples / config.DOWNSAMPLE).astype(int)
     idx_start = []
@@ -126,10 +128,10 @@ def main(
         logging.info(area)
         logging.info("compute_lfp")
         lfp_ds = utils_oe.compute_lfp(
-            continuous_path,
-            idx_start_samp,
+            continuous_path=continuous_path,
             shape_0=shape_0,
             shape_1=total_ch,
+            start_time=idx_start_samp,
             start_ch=areas_ch[area][0],
             n_ch=areas_ch[area][1],
             f_lp=f_lp,
@@ -188,6 +190,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
+    parser.add_argument(
+        "--event_path",
+        "-e",
+        default="events/Acquisition_Board-100.Rhythm Data/TTL",
+        help="Output directory",
+        type=Path,
+    )
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
     parser.add_argument(
         "--start_ch", "-s", nargs="*", default=None, help="start_ch", type=int
@@ -203,6 +212,7 @@ if __name__ == "__main__":
             args.continuous_path,
             args.bhv_path,
             args.output_dir,
+            args.event_path,
             args.areas,
             args.start_ch,
             args.n_ch,
