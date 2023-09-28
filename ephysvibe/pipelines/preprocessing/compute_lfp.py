@@ -35,7 +35,7 @@ def main(
 
     Args:
         continuous_path (Path): path to the continuous file (.dat) from OE.
-        bhv_path (Path): path to the bhv.h5 file.
+        bhv_path (Path): path to the folder containing the bhv file (bhv.h5).
         output_dir (Path, optional): output directory. Defaults to "./output".
         event_path (Path, optional): path to event folder. Defaults to "events/Acquisition_Board-100.Rhythm Data/TTL".
         areas (list, optional): list containing the areas to which to compute the trials data. Defaults to None.

@@ -2,14 +2,11 @@ import argparse
 from pathlib import Path
 import logging
 import os
-import json
-from typing import List, Tuple, Dict
+from typing import List
 import numpy as np
-from ...spike_sorting import utils_oe, config, data_structure, pre_treat_oe
+from ...spike_sorting import utils_oe, config, data_structure
 import glob
 from ...structures.bhv_data import BhvData
-from .. import pipe_config
-from collections import defaultdict
 from ...structures.spike_data import SpikeData
 
 logging.basicConfig(
@@ -28,11 +25,10 @@ def main(
     """Compute trials.
 
     Args:
-        continuous_path (Path):  path to the continuous file (.dat) from OE.
+        ks_path (Path):  path to the continuous file (.dat) from OE.
+        bhv_path (Path): path to the folder containing the bhv file (bhv.h5).
         output_dir (Path): output directory.
         areas (list): list containing the areas to which to compute the trials data.
-        start_ch (list): list containing the index of the first channel for each area.
-        n_ch (list): list containing the number of channels for each area.
     """
     if not os.path.exists(ks_path):
         logging.error("ks_path %s does not exist" % ks_path)
@@ -41,7 +37,6 @@ def main(
     # define paths
     ks_path = os.path.normpath(ks_path)
     s_path = ks_path.split(os.sep)
-    # time_path = "/".join(s_path + ["continuous/Acquisition_Board-100.Rhythm Data/"])
 
     # Select info about the recording from the path
     n_exp = s_path[-4][-1]
