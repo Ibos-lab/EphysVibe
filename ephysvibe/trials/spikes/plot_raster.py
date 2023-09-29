@@ -142,7 +142,7 @@ def get_neurons_info(
             n_tr = len(trial_idx)
             if n_tr >= min_trials:  # if enough tr, compute p value
                 mean_visual = sp_samples[
-                    trial_idx, i_neuron, fix_t : fix_t + dur_v
+                    trial_idx, i_neuron, fix_t + 50 : fix_t + dur_v
                 ].mean(axis=1)
                 mean_prep = sp_samples[
                     trial_idx, i_neuron, fix_t + st_m : fix_t + end_m
@@ -320,8 +320,8 @@ def get_rf(
             sp_code = sp_samples[code_t_idx, i_neuron, fix_t:]
             sp_oppos = sp_samples[oppos_t_idx, i_neuron, fix_t:]
             # visual
-            mean_sp_code = sp_code[:, :dur_v].mean(axis=1)
-            mean_sp_opposite = sp_oppos[:, :dur_v].mean(axis=1)
+            mean_sp_code = sp_code[:, 50:dur_v].mean(axis=1)
+            mean_sp_opposite = sp_oppos[:, 50:dur_v].mean(axis=1)
             p_v = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
             v_larger = mean_sp_code.mean() > mean_sp_opposite.mean()
             # preparatory
@@ -519,7 +519,7 @@ def get_max_fr(
             conv = np.zeros((1100))
         else:
             conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
-        fr_max_visual.append(np.nanmax(conv[:dur_v]))
+        fr_max_visual.append(np.nanmax(conv[50:dur_v]))
         fr_angle.append(target_codes[code]["angle_codes"])
         fr_max_motor.append(np.nanmax(conv[700:1100]))
         fr_max_codes.append(np.nanmax(conv[:1100]))

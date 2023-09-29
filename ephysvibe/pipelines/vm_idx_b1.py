@@ -112,29 +112,29 @@ def get_neurons_info(
                     mean_mem.mean(),
                     mean_visual.mean(),
                 )
-        if ~np.all(np.isnan(tr_min)):
+        if not np.all(np.isnan(tr_min)):
             tr_min_all = np.nanmin(tr_min)
             tr_max_all = np.nanmax(tr_max)  # - tr_min_all
-            if ~(p_v[0] is None):
+            if not (p_v[0] is None):
                 p_and_large_in = np.any(
                     np.logical_and(
                         np.array([p_v[0], p_m[0]]) < 0.05,
                         np.array([v_larger[0], m_larger[0]]),
                     )
                 )
-            if ~(p_v[0] is None) and p_and_large_in:
+            if not (p_v[0] is None) and p_and_large_in:
                 mean_mem = (mean_mem_all[0]) / tr_max_all  # - tr_min_all
                 mean_visual = (mean_visual_all[0]) / tr_max_all  # - tr_min_all
                 vm_index = (mean_mem - mean_visual) / (mean_mem + mean_visual)
             else:
-                if ~(p_v[1] is None):
+                if not (p_v[1] is None):
                     p_and_large_out = np.any(
                         np.logical_and(
                             np.array([p_v[1], p_m[1]]) < 0.05,
                             np.array([v_larger[1], m_larger[1]]),
                         )
                     )
-                if ~(p_v[1] is None) and p_and_large_out:
+                if not (p_v[1] is None) and p_and_large_out:
                     true_in_out = "out"
                     mean_mem = (mean_mem_all[1]) / tr_max_all  # - tr_min_all
                     mean_visual = (mean_visual_all[1]) / tr_max_all  # - tr_min_all
