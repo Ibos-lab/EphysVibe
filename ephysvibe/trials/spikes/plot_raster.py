@@ -94,16 +94,36 @@ def plot_activity_location(
 
 def get_neurons_info(
     sp_samples: np.ndarray,
-    fix_t: int,
+    dur_fix: int,
     neuron_type: np.ndarray,
     target_codes: Dict,
     ipsi: np.ndarray,
-    dur_v: int,
-    st_m: int,
-    end_m: int,
+    st_v: int,
+    end_v: int,
+    st_d: int,
+    end_d: int,
     neuron_idx: np.ndarray = None,
     min_trials: int = 3,
 ) -> pd.DataFrame:
+    """Check if neurons respond to the task.
+    Compares baseline activity with activity during the task.
+
+    Args:
+        sp_samples (np.ndarray): _description_
+        dur_fix (int): baseline duration. [ms].
+        neuron_type (np.ndarray): array containing whether is a neuron or mua.
+        target_codes (Dict): Dictionary with the position of stimuli as the key containing the idx of the trials.
+        ipsi (np.ndarray): array containing the ipsilateral codes.
+        st_v (int): start of the visual epoch [ms].
+        end_v (int): end of the visual epoch [ms].
+        st_d (int): start of the delay epoch [ms].
+        end_d (int): end of the delay epoch [ms].
+        neuron_idx (np.ndarray, optional): array containing neurons to be analysed. Defaults to None (all neurons).
+        min_trials (int, optional): Min number of trials required to take the neuron into account. Defaults to 3.
+
+    Returns:
+        pd.DataFrame: df with the results for each neuron.
+    """
     if neuron_idx is None:
         neuron_idx = np.arange(0, len(neuron_type))
     codes = target_codes.keys()
@@ -120,7 +140,9 @@ def get_neurons_info(
         for code in codes:  # iterate by code'
             trial_idx = np.array(target_codes[code]["trial_idx"]).astype(int)
             if len(trial_idx) != 0:
-                trial_idx = trial_idx[(sp_samples[trial_idx, i_neuron].sum(axis=1) > 0)]
+                trial_idx = trial_idx[
+                    (np.nansum(sp_samples[trial_idx, i_neuron], axis=1) > 0)
+                ]
             n_tr = len(trial_idx)
             larger = False
             p = None
@@ -142,12 +164,12 @@ def get_neurons_info(
             n_tr = len(trial_idx)
             if n_tr >= min_trials:  # if enough tr, compute p value
                 mean_visual = sp_samples[
-                    trial_idx, i_neuron, fix_t + 50 : fix_t + dur_v
+                    trial_idx, i_neuron, dur_fix + st_v : dur_fix + end_v
                 ].mean(axis=1)
                 mean_prep = sp_samples[
-                    trial_idx, i_neuron, fix_t + st_m : fix_t + end_m
+                    trial_idx, i_neuron, dur_fix + st_d : dur_fix + end_d
                 ].mean(axis=1)
-                mean_bl = sp_samples[trial_idx, i_neuron, :fix_t].mean(axis=1)
+                mean_bl = sp_samples[trial_idx, i_neuron, :dur_fix].mean(axis=1)
                 v_larger = mean_bl.mean() < mean_visual.mean()
                 p_larger = mean_bl.mean() < mean_prep.mean()
                 larger = v_larger or p_larger
@@ -254,11 +276,12 @@ def get_rf(
     ipsi: np.ndarray,
     contra: np.ndarray,
     target_codes: Dict,
-    fix_t: int,
-    dur_v: int,
-    st_m: int,
-    end_m: int,
-    min_trials: int = 5,
+    dur_fix: int,
+    st_v: int,
+    end_v: int,
+    st_d: int,
+    end_d: int,
+    min_trials: int = 3,
 ) -> pd.DataFrame:
     test_rf: Dict[str, list] = defaultdict(list)
     for _, row in th_involved.iterrows():
@@ -317,16 +340,16 @@ def get_rf(
                 ]
 
         if code_t_idx.shape[0] >= min_trials and oppos_t_idx.shape[0] >= min_trials:
-            sp_code = sp_samples[code_t_idx, i_neuron, fix_t:]
-            sp_oppos = sp_samples[oppos_t_idx, i_neuron, fix_t:]
+            sp_code = sp_samples[code_t_idx, i_neuron, dur_fix:]
+            sp_oppos = sp_samples[oppos_t_idx, i_neuron, dur_fix:]
             # visual
-            mean_sp_code = sp_code[:, 50:dur_v].mean(axis=1)
-            mean_sp_opposite = sp_oppos[:, 50:dur_v].mean(axis=1)
+            mean_sp_code = sp_code[:, st_v:end_v].mean(axis=1)
+            mean_sp_opposite = sp_oppos[:, st_v:end_v].mean(axis=1)
             p_v = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
             v_larger = mean_sp_code.mean() > mean_sp_opposite.mean()
             # preparatory
-            mean_sp_code = sp_code[:, st_m:end_m].mean(axis=1)
-            mean_sp_opposite = sp_oppos[:, st_m:end_m].mean(axis=1)
+            mean_sp_code = sp_code[:, st_d:end_d].mean(axis=1)
+            mean_sp_opposite = sp_oppos[:, st_d:end_d].mean(axis=1)
             p_p = stats.ttest_ind(mean_sp_code, mean_sp_opposite)[1]
             p_larger = mean_sp_code.mean() > mean_sp_opposite.mean()
             p = np.min([p_v, p_p])
@@ -347,14 +370,15 @@ def get_rf(
 
 
 def get_vm_index(
-    th_rf,
-    target_codes,
-    sp_samples,
-    fix_t,
-    dur_v,
-    st_m,
-    end_m,
-    min_trials,
+    th_rf: pd.DataFrame,
+    target_codes: Dict,
+    sp_samples: np.ndarray,
+    dur_fix: int,
+    st_v: int,
+    end_v: int,
+    st_d: int,
+    end_d: int,
+    min_trials: int,
 ):
     test_vm: Dict[str, list] = defaultdict(list)
     for _, row in th_rf.iterrows():
@@ -380,10 +404,10 @@ def get_vm_index(
                 all_trials = all_trials[
                     (sp_samples[all_trials, i_neuron].sum(axis=1) > 0)
                 ]
-            all_trials = sp_samples[all_trials, i_neuron, fix_t:]  # .mean(axis=0)
+            all_trials = sp_samples[all_trials, i_neuron, dur_fix:]  # .mean(axis=0)
 
             all_trials_sp.append(
-                [all_trials[:, 50:dur_v].mean(), all_trials[:, st_m:end_m].mean()]
+                [all_trials[:, st_v:end_v].mean(), all_trials[:, st_d:end_d].mean()]
             )
 
         all_trials_sp = np.concatenate(all_trials_sp)
@@ -401,10 +425,10 @@ def get_vm_index(
                 (sp_samples[target_t_idx, i_neuron].sum(axis=1) > 0)
             ]
         if target_t_idx.shape[0] >= min_trials:
-            sp_code = sp_samples[target_t_idx, i_neuron, fix_t:]
+            sp_code = sp_samples[target_t_idx, i_neuron, dur_fix:]
             sp_trial_avg = sp_code.mean(axis=0)
-            v_mean = (sp_trial_avg[50:dur_v].mean()) / max_sp  # - min_sp
-            m_mean = (sp_trial_avg[st_m:end_m].mean()) / max_sp  # - min_sp
+            v_mean = (sp_trial_avg[st_v:end_v].mean()) / max_sp  # - min_sp
+            m_mean = (sp_trial_avg[st_d:end_d].mean()) / max_sp  # - min_sp
 
             vm_index = (m_mean - v_mean) / (v_mean + m_mean)
             if vm_index <= 0:
@@ -493,9 +517,8 @@ def get_max_fr(
     code_numbers,
     i_n,
     kernel,
-    win_size,
-    fix_t,
-    dur_v,
+    dur_fix,
+    end_v,
     e_code_align,
     test_vm,
     fs_ds,
@@ -513,13 +536,15 @@ def get_max_fr(
             sp_samples[target_t_idx, i_n], -(trials_s_on).astype(int), axis=1
         )  # align trials on event
         # select trials with at least one spike
-        shift_sp = shift_sp[np.nansum(shift_sp[:, : 1100 + fix_t], axis=1) > 0, fix_t:]
+        shift_sp = shift_sp[
+            np.nansum(shift_sp[:, : 1100 + dur_fix], axis=1) > 0, dur_fix:
+        ]
         mean_sp = np.nanmean(shift_sp, axis=0)  # mean of all trials
         if shift_sp.shape[0] == 0:
             conv = np.zeros((1100))
         else:
             conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
-        fr_max_visual.append(np.nanmax(conv[50:dur_v]))
+        fr_max_visual.append(np.nanmax(conv[50:end_v]))
         fr_angle.append(target_codes[code]["angle_codes"])
         fr_max_motor.append(np.nanmax(conv[700:1100]))
         fr_max_codes.append(np.nanmax(conv[:1100]))

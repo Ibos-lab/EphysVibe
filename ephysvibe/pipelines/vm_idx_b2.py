@@ -80,30 +80,40 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     ipsi = np.array(["124", "123", "122", "121"])
     contra = np.array(["120", "127", "126", "125"])
 
-    fix_t = 200
-    dur_v = 200
-    st_m = 700  # 800
-    end_m = 1100
-    p_threshold = 0.05
+    # Timings
+    ## fixation
+    dur_fix = 200
+    ## visual stim
+    st_v = 50
+    end_v = 250
+    ## delay
+    st_d = 700
+    end_d = 700 + 400
+    # trials and threshold
     min_trials = 3
+    n_spikes = 1
+    p_threshold = 0.05
+    vm_threshold = 0.4
 
     align_event = task_constants.EVENTS_B2["target_on"]
     shifts = code_samples[:, 3]
     if np.sum(code_numbers[trial_idx, 3] - align_event) != 0:
         raise KeyError
     shifts = shifts[:, np.newaxis]
-    sp_shift = SpikeData.indep_roll(sp_samples, -(shifts - fix_t).astype(int), axis=2)[
-        :, :, : 1100 + fix_t
-    ]
+    sp_shift = SpikeData.indep_roll(
+        sp_samples, -(shifts - dur_fix).astype(int), axis=2
+    )[:, :, : 1100 + dur_fix]
+    # Select responding neurons
     neurons_info = plot_raster.get_neurons_info(
         sp_shift,
-        fix_t,
+        dur_fix,
         neuron_type,
         target_codes,
         ipsi,
-        dur_v=dur_v,
-        st_m=st_m,
-        end_m=end_m,
+        st_v=st_v,
+        end_v=end_v,
+        st_d=st_d,
+        end_d=end_d,
         neuron_idx=None,
         min_trials=min_trials,
     )
@@ -127,10 +137,11 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         ipsi,
         contra,
         target_codes,
-        fix_t,
-        dur_v,
-        st_m,
-        end_m,
+        dur_fix=dur_fix,
+        st_v=st_v,
+        end_v=end_v,
+        st_d=st_d,
+        end_d=end_d,
         min_trials=min_trials,
     )
 
@@ -145,13 +156,13 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
         th_rf,
         target_codes,
         sp_shift,
-        fix_t,
-        dur_v,
-        st_m,
-        end_m,
+        dur_fix,
+        st_v,
+        end_v,
+        st_d,
+        end_d,
         min_trials,
     )
-
     test_vm = test_vm[
         (np.logical_and(test_vm["p_v"] < 0.05, test_vm["v_larger"] == True))
         | (np.logical_and(test_vm["p_p"] < 0.05, test_vm["p_larger"] == True))
@@ -175,6 +186,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     code_samples = data.code_samples
     code_numbers = data.code_numbers
     sp_samples = data.sp_samples
+    clusters_ch = data.clusters_ch
     e_code_align = task_constants.EVENTS_B2["target_on"]
     # select only individual neurons
     rf_coordinates: Dict[str, list] = defaultdict(list)
@@ -214,18 +226,17 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             v_significant,
             m_significant,
         ) = plot_raster.get_max_fr(
-            target_codes,
-            sp_samples,
-            code_samples,
-            code_numbers,
-            i_n,
-            kernel,
-            win_size,
-            fix_t,
-            dur_v,
-            e_code_align,
-            test_vm,
-            fs_ds,
+            target_codes=target_codes,
+            sp_samples=sp_samples,
+            code_samples=code_samples,
+            code_numbers=code_numbers,
+            i_n=i_n,
+            kernel=kernel,
+            dur_fix=dur_fix,
+            end_v=end_v,
+            e_code_align=e_code_align,
+            test_vm=test_vm,
+            fs_ds=fs_ds,
         )
         codes_sig = np.logical_or(m_significant, v_significant)
         fr_code_max = max(fr_max_codes)
@@ -361,6 +372,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
             rf_coordinates["array_position"] += [i_n]
             rf_coordinates["neuron_type"] += [cluster]
             rf_coordinates["i_neuron"] += [i_cluster]
+            rf_coordinates["clusters_ch"] += [clusters_ch[i_n]]
             rf_coordinates["event"] += [event]
             rf_coordinates["rad"] += [rad]
             rf_coordinates["ang"] += [ang]
@@ -425,6 +437,7 @@ def main(filepath: Path, output_dir: Path, e_align: str, t_before: int):
     )
     del rf_coordinates
     plt.close(fig)
+    del fig
     gc.collect()
     logging.info("-- end --")
 
