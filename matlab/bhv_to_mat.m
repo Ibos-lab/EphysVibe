@@ -3,19 +3,22 @@
 % datapath='/envau/work/invibe/USERS/IBOS/data/openephys/2022-05-25_10-29-38/Record Node 102/experiment1/';
 % and the savepath
 %% 
-addpath(genpath('C:\Users\camil\Documents\int\matlab\'))  
-savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-06_10-32-51/Record Node 102/experiment1/recording1/';
+addpath(genpath('/home/INT/losada.c/Documents/codes/matlab'))  
+savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-10-17_11-15-27/Record Node 102/experiment1/recording1/';
 %%datapath=uigetdir;
 %cd(datapath)
 
-cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-06_10-32-51/Record Node 102/experiment1/recording1/'
+cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-10-17_11-15-27/Record Node 102/experiment1/recording1/'
 directory=pwd;
 bhvfiles=dir('*.bhv2');
 %path = "\\envau_cifs.intlocal.univ-amu.fr\work\invibe\USERS\IBOS\openephys\221201_TSCM_5cj_5cl_Riesling.bhv2";
 bhv=mlread(bhvfiles.name);
 %bhv=mlread(path);
+
 %%
 % Define constants
+n_test_stim = 5;
+flag_n_test = 0;
 n_trials = size(bhv,2);
 n_block2 = size(find(extractfield(bhv,'Block')==2),2);
 % Iterate by trials to get max dim
@@ -38,8 +41,8 @@ Eye = nan(n_trials,3,max_eyes);%nan(n_trials,max_eyes,3);
 PupilSize =[];
 Position = nan(n_trials,2,2);
 % bhv.UserVars
-TestStimuli = nan(n_trials,5); % 5 is de max number of stim in each trial
-TestDistractor = nan(n_trials,5);
+TestStimuli = nan(n_trials,n_test_stim); % 5 is de max number of stim in each trial
+TestDistractor = nan(n_trials,n_test_stim);
 % bhv.VariableChanges
 reward_dur =nan(n_trials,1);
 fix_time =[];
@@ -119,7 +122,7 @@ for i_trial=1:n_trials
         Pos = cat(1,Pos,bhv(i_trial).TaskObject.CurrentConditionInfo.pos);
         Match = cat(1,Match,bhv(i_trial).TaskObject.CurrentConditionInfo.match);
         Total = cat(1,Total,bhv(i_trial).TaskObject.CurrentConditionInfo.total);
-        if size(bhv(i_trial).ObjectStatusRecord.Position,1) ~= 0
+        if size(bhv(i_trial).ObjectStatusRecord.Position,2) ~= 0
             Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
         end
         reward_dur(i_trial) = bhv(i_trial).VariableChanges.reward_dur;
@@ -128,6 +131,7 @@ for i_trial=1:n_trials
             n_test = 5;
         end
         if n_test == 5 
+            flag_n_test = 1;
             s1 = str2num(strcat(bhv(i_trial).UserVars.Stim_Filename_1(end-8), bhv(i_trial).UserVars.Stim_Filename_1(end-4)));
             s2 = str2num(strcat(bhv(i_trial).UserVars.Stim_Filename_2(end-8), bhv(i_trial).UserVars.Stim_Filename_2(end-4)));
             s3 = str2num(strcat(bhv(i_trial).UserVars.Stim_Filename_3(end-8), bhv(i_trial).UserVars.Stim_Filename_3(end-4)));
@@ -181,6 +185,10 @@ New.Condition = reshape(extractfield(bhv,'Condition'),[],1);
 New.TrialError = reshape(extractfield(bhv,'TrialError'),[],1); 
 % Values from the loop
 % bhv.UserVars
+if flag_n_test == 0
+    TestStimuli = TestStimuli(:,1:4);
+    TestDistractor = TestDistractor(:,1:4);
+end
 New.TestStimuli = TestStimuli;
 New.TestDistractor = TestDistractor;
 % bhv.VariableChanges
@@ -217,8 +225,8 @@ New.SampPos = Pos;
 New.StimMatch = Match;
 New.StimTotal = Total;
 %%
-cd(savepath)
-disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
-save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
-clear all
-disp('done')
+% cd(savepath)
+% disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
+% save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
+% %clear all
+% disp('done')
