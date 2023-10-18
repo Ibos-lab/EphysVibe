@@ -73,7 +73,7 @@ def main(
 
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
 
-    output_dir = "/".join([os.path.normpath(output_dir)] + ["bhv"])
+    output_dir = "/".join([os.path.normpath(output_dir)] + ["session_struct"] + ["bhv"])
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_dir = "/".join([os.path.normpath(output_dir)] + [file_name])
@@ -83,7 +83,6 @@ def main(
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
