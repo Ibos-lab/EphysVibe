@@ -143,7 +143,6 @@ def load_fr_samples(
 
 
 def sample_df(frs_avg, tasks, min_trials, seed):
-
     sample_dict: Dict[str, list] = defaultdict(list)
     for i_sample in tasks[0]["sample"].unique():
         all_sample_fr = []
@@ -344,14 +343,14 @@ def main(
     fig.legend(fontsize=9)
     fig.suptitle(
         "%s, condition: %s, group: %s, %d neurons,window: %d, steps: %d, trials: %d"
-        % (s_path[-2], in_out, cgroup, n_neurons, win_size, step, min_trials)
+        % (s_path[-3], in_out, cgroup, n_neurons, win_size, step, min_trials)
     )
 
     fig.savefig(
         "/".join(
             [os.path.normpath(output_dir)]
             + [
-                s_path[-2]
+                s_path[-3]
                 + "_"
                 + to_decode
                 + "_"
@@ -370,7 +369,7 @@ def main(
     scores_path = "/".join(
         [os.path.normpath(output_dir)]
         + [
-            s_path[-2]
+            s_path[-3]
             + "_"
             + to_decode
             + "_"
@@ -390,7 +389,6 @@ def main(
 
 
 if __name__ == "__main__":
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
