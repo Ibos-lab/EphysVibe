@@ -94,22 +94,22 @@ def get_neurons_info(
                 mean_delay = sp_samples[
                     trial_idx, i_neuron, dur_fix + st_d : dur_fix + end_d
                 ].mean(axis=1)
-                mean_test = sp_samples[
-                    trial_idx, i_neuron, dur_fix + st_t : dur_fix + end_t
-                ].mean(axis=1)
+                # mean_test = sp_samples[
+                #     trial_idx, i_neuron, dur_fix + st_t : dur_fix + end_t
+                # ].mean(axis=1)
                 mean_bl = sp_samples[trial_idx, i_neuron, :dur_fix].mean(axis=1)
                 v_larger[i] = mean_bl.mean() < mean_visual.mean()
                 d_larger[i] = mean_bl.mean() < mean_delay.mean()
-                t_larger = mean_bl.mean() < mean_test.mean()
+                # t_larger = mean_bl.mean() < mean_test.mean()
                 larger[i] = v_larger[i] or d_larger[i] or t_larger
                 # paired sample t-test
                 p_v[i] = stats.ttest_rel(mean_bl, mean_visual)[1]
                 p_m[i] = stats.ttest_rel(mean_bl, mean_delay)[1]
-                p_t = stats.ttest_rel(mean_bl, mean_test)[1]
+                # p_t = stats.ttest_rel(mean_bl, mean_test)[1]
 
-                p_in_out[i] = np.min([p_v[i], p_m[i], p_t])
-                max_in_out[i] = np.max([v_larger[i], d_larger[i], t_larger])
-                idx_p_min[i] = np.argmin([p_v[i], p_m[i], p_t])
+                p_in_out[i] = np.min([p_v[i], p_m[i]])  # , p_t])
+                max_in_out[i] = np.max([v_larger[i], d_larger[i]])  # , t_larger])
+                idx_p_min[i] = np.argmin([p_v[i], p_m[i]])  # , p_t])
 
                 all_mean = sp_samples[trial_idx, i_neuron, : dur_fix + end_d].mean(
                     axis=0
