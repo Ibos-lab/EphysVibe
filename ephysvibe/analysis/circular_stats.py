@@ -55,7 +55,6 @@ def unwrap(p, discont=pi, axis=-1):
 
 
 def compute_generalized_phase(x, dt):
-
     # Handle input
     [nch, npts] = x.shape
     # Analytic signal representation (single sided Fourier representation)
@@ -173,13 +172,20 @@ def mean_direction(alpha, w=None, ci=None, d=None, axis=None, axial_correction=1
 
 
 def mean_vector(radius, angle):
-
-    r_vector = np.nanmean((np.array(radius) * np.cos(angle)))
-    im_vector = np.nanmean((np.array(radius) * np.sin(angle)))
+    r_vector = np.nanmean(np.array(radius) * np.cos(angle))
+    im_vector = np.nanmean(np.array(radius) * np.sin(angle))
     ang = np.angle([r_vector + 1j * (im_vector)])[0]
     if ang < 0:
         ang = ang + 2 * np.pi
     rad = np.abs([r_vector + 1j * (im_vector)])[0]
+    return rad, ang
+
+
+def direction_vector(radius, angle):
+    x = np.sum(np.array(radius) * np.cos(angle))
+    y = np.sum(np.array(radius) * np.sin(angle))
+    ang = np.arctan2(y, x)
+    rad = np.sqrt(x**2 + y**2)
     return rad, ang
 
 
