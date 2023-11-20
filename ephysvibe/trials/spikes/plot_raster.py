@@ -72,7 +72,7 @@ def plot_activity_location(
         cols = cols - t_before
         rows = rows + rows * 2
         ax2.scatter(cols, rows, marker="|", alpha=1, color="grey")
-        ax.set_title("Code %s" % (code), fontsize=8)
+        # ax.set_title("Code %s" % (code), fontsize=8)
         if not rf_t_test.empty:
             if (
                 code
