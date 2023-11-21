@@ -66,9 +66,11 @@ Fix_FP_post_T_time =[];
 fix_post_sacc_blank =[];
 max_reaction_time =[];
 stay_time =[];
+% bhv.TaskObject.Attribute
+SampleId = [];%nan(n_trials,1);
 % bhv.TaskObject.CurrentConditionInfo
 SaccCode =[];
-Pos =[];
+PosCode =[];
 Match =[];
 Total =[];
 
@@ -110,18 +112,20 @@ for i_trial=1:n_trials
     stay_time = cat(1,stay_time,bhv(i_trial).VariableChanges.stay_time);
     % bhv.TaskObject.CurrentConditionInfo
     if bhv(i_trial).Block == 2
-        SaccCode = cat(1,SaccCode,bhv(i_trial).TaskObject.CurrentConditionInfo.Code);
-        Pos = cat(1,Pos,[nan]);
+        % SaccCode = cat(1,SaccCode,bhv(i_trial).TaskObject.CurrentConditionInfo.Code);
+        PosCode = cat(1,PosCode,bhv(i_trial).TaskObject.CurrentConditionInfo.Code);
         Match = cat(1,Match,[nan]);
         Total = cat(1,Total,[nan]);
+        SampleId=cat(1,SampleId,"nan");
         %n_pos = size(bhv(i_trial).ObjectStatusRecord.Position{1},1);
         Position(i_trial,1,:) = bhv(i_trial).ObjectStatusRecord.Position{1}(2,:);
         reward_dur(i_trial) = bhv(i_trial).VariableChanges.reward_sacc_dur;
     else % Block == 1
-        SaccCode = cat(1,SaccCode,[nan]);
-        Pos = cat(1,Pos,bhv(i_trial).TaskObject.CurrentConditionInfo.pos);
+        % SaccCode = cat(1,SaccCode,[nan]);
+        PosCode = cat(1,PosCode,bhv(i_trial).TaskObject.CurrentConditionInfo.pos);
         Match = cat(1,Match,bhv(i_trial).TaskObject.CurrentConditionInfo.match);
         Total = cat(1,Total,bhv(i_trial).TaskObject.CurrentConditionInfo.total);
+        SampleId = cat(1,SampleId,convertCharsToStrings(bhv(i_trial).TaskObject.Attribute{2}{2}(end-5:end-2)));
         if size(bhv(i_trial).ObjectStatusRecord.Position,2) ~= 0
             Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
         end
@@ -220,10 +224,11 @@ New.fix_post_sacc_blank = fix_post_sacc_blank;
 New.max_reaction_time = max_reaction_time;
 New.stay_time = stay_time;
 % bhv.TaskObject.CurrentConditionInfo
-New.SaccCode = SaccCode;
-New.SampPos = Pos;
+% New.SaccCode = SaccCode;
+New.SampPosCode = PosCode;
 New.StimMatch = Match;
 New.StimTotal = Total;
+New.SampleId = SampleId;
 %%
 % cd(savepath)
 % disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
