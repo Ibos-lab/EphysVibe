@@ -54,8 +54,6 @@ def main(
     real_strobes = np.floor(real_strobes / config.DOWNSAMPLE).astype(int)
     start_trials = np.floor(start_trials / config.DOWNSAMPLE).astype(int)
     end_trials = np.floor(end_trials / config.DOWNSAMPLE).astype(int)
-    bhv.start_trials = start_trials
-    bhv.end_trials = end_trials
 
     n_trials, n_codes = bhv.code_numbers.shape
     code_samples = np.full((n_trials, n_codes), np.nan)
@@ -70,6 +68,8 @@ def main(
         )
 
     bhv.code_samples = code_samples
+    bhv.start_trials = start_trials
+    bhv.end_trials = end_trials
 
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
 

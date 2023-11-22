@@ -158,19 +158,10 @@ def check_clusters(
             - spike_clusters (np.ndarray): array containing to which neuron the spike belongs to during the recording
             - cluster_info (pd.Dataframe): info about good and mua clusters
     """
-    # check if all the spikes are detected inside the time of recording
-    idx_sp_out = np.where(spike_times_idx >= len_samples)[0]
-    if len(idx_sp_out) > 0:
-        sp_out_id = spike_clusters[idx_sp_out]
-        cluster_info[cluster_info["cluster_id"] == sp_out_id[0]]["group"].values
-        clusters_out = cluster_info[cluster_info["cluster_id"].isin(sp_out_id)][
-            "group"
-        ].values
-        if ~np.all(clusters_out == "noise"):
-            raise IndexError
-        else:
-            spike_times_idx = spike_times_idx[: min(idx_sp_out)]
-            spike_clusters = spike_clusters[: min(idx_sp_out)]
+    # Delete clusters categorized as noise
+    cluster_info = cluster_info[cluster_info["group"] != "noise"]  # ignore noisy groups
+    if cluster_info.shape[0] == 0:
+        raise ValueError
     nan_values = (
         cluster_info[["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]]
         .isnull()
@@ -183,9 +174,19 @@ def check_clusters(
             axis=0, subset=["cluster_id", "ch", "depth", "fr", "group", "n_spikes"]
         )
         logging.warning("Rows with nan values deleted")
-    cluster_info = cluster_info[cluster_info["group"] != "noise"]  # ignore noisy groups
     if cluster_info.shape[0] == 0:
         raise ValueError
+    # check if spikes detected outside the time of recording, if so, exclude them
+    idx_sp_out = np.where(spike_times_idx >= len_samples)[0]
+    if len(idx_sp_out) > 0:
+        spike_times_idx = spike_times_idx[: min(idx_sp_out)]
+        spike_clusters = spike_clusters[: min(idx_sp_out)]
+    mask_valid_clusters = np.in1d(spike_clusters, cluster_info["cluster_id"].values)
+    spike_times_idx = spike_times_idx[mask_valid_clusters]
+    spike_clusters = spike_clusters[mask_valid_clusters]
+    cluster_info = cluster_info.reset_index(drop=True)
+    cluster_info.index.name = "i_cluster"
+    cluster_info = cluster_info.reset_index()
 
     return spike_times_idx, spike_clusters, cluster_info
 
@@ -240,9 +241,7 @@ def reconstruct_8bits_words(
     full_word = np.zeros(len(real_strobes))
 
     for n_strobe, idx_strobe in enumerate(real_strobes):
-
         for ch in np.arange(0, 7):
-
             idx_ch = np.where(e_channel[idx_old:idx_strobe] == ch + 1)[0]
 
             current_8code[7 - ch] = (
@@ -294,7 +293,6 @@ def check_strobes(
             logging.error("Strobe and codes number do not match")
             raise IndexError
         else:  # np.sum(full_word-bhv_codes[:full_word.shape[0]]) == 0
-
             # find the last 18 in bhv_codes (last complete trial)
             logging.info(
                 "ML has %d more codes than OE but the existing ones match",

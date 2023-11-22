@@ -155,7 +155,7 @@ class BhvData:
             test_distractor = group["TestDistractor"][:].transpose()  # orient,color
             test_stimuli = group["TestStimuli"][:].transpose()  # orientation, color
             stim_total = group["StimTotal"][:].reshape(-1)
-            sample_id = group["SampleId"][:].reshape(-1)
+            sample_id = group["SampleId"][:].reshape(-1)  # orientation, color
             trial_error = group["TrialError"][:].reshape(-1)
             closeexc = group["closeexc"][:].reshape(-1)
             delay_time = group["delay_time"][:].reshape(-1)

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 import logging
 import re
@@ -53,6 +54,7 @@ def bhv_to_dictionary(bhv):
     return bhv_res
 
 
+# TODO: adapt this function to create the neuron structures
 def sort_data_trial(
     clusters,
     spike_sample,
@@ -92,6 +94,35 @@ def sort_data_trial(
             # sort spikes in neurons (spiketimestamp)
             idx_cluster = np.where(id_clusters == i_cluster)[0]
             sp_samples[trial_i, i_c, sp_trial[idx_cluster]] = 1
+
+    return sp_samples
+
+
+def get_clusters_spikes(
+    clusters,
+    spike_sample,
+    # start_trials,
+    # end_trials,
+    # code_samples,
+    # ds_samples,
+    spike_clusters,
+    # full_word,
+    # lfp_ds,
+    # eyes_ds,
+):
+    # remap cluster ID to numbers from 0 to n clusters
+    i_cluster = clusters["i_cluster"].values
+    clusters_id = clusters["cluster_id"].values
+    spike_clusters = pd.Series(spike_clusters).replace(clusters_id, i_cluster).values
+
+    n_neurons = len(i_cluster)
+    time = max(spike_sample)
+    sp_samples = np.zeros((n_neurons, time + 1))
+    sp_samples[spike_clusters, spike_sample] = 1
+    # for i_c, i_cluster in enumerate(clusters_id):  # iterate over clusters
+    #     # sort spikes by neuron (spiketimestamp)
+    #     idx_cluster = np.where(spike_clusters == i_cluster)[0]
+    #     sp_samples[i_c, spike_sample[idx_cluster]] = 1
 
     return sp_samples
 
