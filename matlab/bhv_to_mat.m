@@ -4,11 +4,11 @@
 % and the savepath
 %% 
 addpath(genpath('/home/INT/losada.c/Documents/codes/matlab'))  
-savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-10-17_11-15-27/Record Node 102/experiment1/recording1/';
+savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/';
 %%datapath=uigetdir;
 %cd(datapath)
 
-cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-10-17_11-15-27/Record Node 102/experiment1/recording1/'
+cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/'
 directory=pwd;
 bhvfiles=dir('*.bhv2');
 %path = "\\envau_cifs.intlocal.univ-amu.fr\work\invibe\USERS\IBOS\openephys\221201_TSCM_5cj_5cl_Riesling.bhv2";
