@@ -63,9 +63,9 @@ def main(
             real_strobes >= start_trials[i_trial],
             real_strobes <= end_trials[i_trial],
         )
-        code_samples[i_trial, : np.sum(events_mask)] = (
-            real_strobes[events_mask] - start_trials[i_trial]
-        )
+        code_samples[i_trial, : np.sum(events_mask)] = real_strobes[
+            events_mask
+        ]  # - start_trials[i_trial]
 
     bhv.code_samples = code_samples
     bhv.start_trials = start_trials

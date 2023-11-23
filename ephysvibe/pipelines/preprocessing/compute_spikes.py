@@ -5,8 +5,6 @@ import os
 from typing import List
 import numpy as np
 from ...spike_sorting import utils_oe, config, data_structure
-import glob
-from ...structures.bhv_data import BhvData
 from ...structures.spike_data import SpikeData
 
 logging.basicConfig(
@@ -81,11 +79,16 @@ def main(
             spike_clusters=spike_clusters,
         )
         data = SpikeData(
+            date_time=date_time,
+            subject=subject,
+            area=area,
+            experiment=int(n_exp),
+            recording=int(n_record),
             sp_samples=sp_samples,
             clusters_id=cluster_info["cluster_id"].values,
             clusters_ch=cluster_info["ch"].values,
-            clustersgroup=cluster_info["group"].values,
-            clusterdepth=cluster_info["depth"].values,
+            clusters_group=cluster_info["group"].values,
+            clusters_depth=cluster_info["depth"].values,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])
