@@ -94,6 +94,11 @@ class NeuronData:
         bhv_data = {}
         with h5py.File(load_path, "r") as f:
             group = f["data"]
+            bhv_data["date_time"] = group.attrs["date_time"]
+            bhv_data["subject"] = group.attrs["subject"]
+            bhv_data["area"] = group.attrs["area"]
+            bhv_data["experiment"] = group.attrs["experiment"]
+            bhv_data["recording"] = group.attrs["recording"]
             for key, value in zip(group.keys(), group.values()):
                 bhv_data[key] = value[:]
         f.close()
@@ -104,6 +109,12 @@ class NeuronData:
         # save the data
         with h5py.File(save_path, "w") as f:
             group = f.create_group("data")
+            group.attrs["date_time"] = self.__dict__.pop("date_time")
+            group.attrs["subject"] = self.__dict__.pop("subject")
+            group.attrs["area"] = self.__dict__.pop("area")
+            group.attrs["experiment"] = self.__dict__.pop("experiment")
+            group.attrs["recording"] = self.__dict__.pop("recording")
+
             for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
                 group.create_dataset(key, value.shape, data=value)
         f.close()

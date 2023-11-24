@@ -82,8 +82,8 @@ def main(
             date_time=date_time,
             subject=subject,
             area=area,
-            experiment=int(n_exp),
-            recording=int(n_record),
+            experiment=n_exp,
+            recording=n_record,
             sp_samples=sp_samples,
             clusters_id=cluster_info["cluster_id"].values,
             clusters_ch=cluster_info["ch"].values,
@@ -124,6 +124,6 @@ if __name__ == "__main__":
     parser.add_argument("--areas", "-a", nargs="*", default=None, help="area", type=str)
     args = parser.parse_args()
     try:
-        main(args.ks_path, args.bhv_path, args.output_dir, args.areas)
+        main(args.ks_path, args.output_dir, args.areas)
     except FileExistsError:
         logging.error("path does not exist")

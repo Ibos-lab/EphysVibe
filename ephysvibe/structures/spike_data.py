@@ -1,7 +1,6 @@
 import h5py
 import numpy as np
 from pathlib import Path
-import logging
 
 
 class SpikeData:
@@ -16,7 +15,7 @@ class SpikeData:
         sp_samples: np.ndarray,
         clusters_id: np.ndarray,
         clusters_ch: np.ndarray,
-        clusters_group: np.ndarray,  #! change to cluster_group
+        clusters_group: np.ndarray,
         clusters_depth: np.ndarray,
     ):
         """Initialize the class.
@@ -43,38 +42,14 @@ class SpikeData:
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""
         # save the data
+        dt = h5py.vlen_dtype(np.dtype("S1"))
         with h5py.File(save_path, "w") as f:
             group = f.create_group("data")
-            group.create_dataset(
-                "date_time",
-                self.date_time.shape,
-                compression="gzip",
-                data=self.date_time,
-            )
-            group.create_dataset(
-                "subject",
-                self.subject.shape,
-                compression="gzip",
-                data=self.subject,
-            )
-            group.create_dataset(
-                "area",
-                self.area.shape,
-                compression="gzip",
-                data=self.area,
-            )
-            group.create_dataset(
-                "experiment",
-                self.experiment.shape,
-                compression="gzip",
-                data=self.experiment,
-            )
-            group.create_dataset(
-                "recording",
-                self.recording.shape,
-                compression="gzip",
-                data=self.recording,
-            )
+            group.attrs["date_time"] = self.date_time
+            group.attrs["subject"] = self.subject
+            group.attrs["area"] = self.area
+            group.attrs["experiment"] = self.experiment
+            group.attrs["recording"] = self.recording
             group.create_dataset(
                 "sp_samples",
                 self.sp_samples.shape,
@@ -113,11 +88,11 @@ class SpikeData:
         with h5py.File(load_path, "r") as f:
             #  get data
             group = f["data"]
-            date_time = group["date_time"][:]
-            subject = group["subject"][:]
-            area = group["area"][:]
-            experiment = group["experiment"][:]
-            recording = group["recording"][:]
+            date_time = group.attrs["date_time"]
+            subject = group.attrs["subject"]
+            area = group.attrs["area"]
+            experiment = group.attrs["experiment"]
+            recording = group.attrs["recording"]
             sp_samples = group["sp_samples"][:]
             clusters_id = group["clusters_id"][:]
             clusters_ch = group["clusters_ch"][:]

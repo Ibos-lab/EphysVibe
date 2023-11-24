@@ -33,16 +33,22 @@ def main(
         logging.error("sp_path %s does not exist" % sp_path)
         raise FileExistsError
     logging.info("-- Start --")
+
     # define paths
     sp_path = os.path.normpath(sp_path)
     s_path = sp_path.split(os.sep)
-
+    # load spike data
+    sp_data = SpikeData.from_python_hdf5(sp_path)
     # Select info about the recording from the path
-    subj_area_exp_rec = s_path[-1][19:-5]
-    date_time = s_path[-1][:19]
-    area = s_path[-3]
+
+    date_time = sp_data.date_time
+    area = sp_data.area
+    subject = sp_data.subject
+    n_exp = sp_data.experiment
+    n_rec = sp_data.recording
     # load bhv data
-    file_name = date_time + subj_area_exp_rec + "_neu.h5"
+    file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_bhv.h5"
+    bhv_path = "/".join(s_path[:-3] + ["bhv"] + [file_name])
     bhv_path = os.path.normpath(bhv_path) + "/" + file_name
     bhv_path = glob.glob(bhv_path, recursive=True)
     if len(bhv_path) == 0:
@@ -52,7 +58,7 @@ def main(
     # load bhv data
     logging.info("Loading Spike and Bhv data")
     bhv = BhvData.from_python_hdf5(bhv_path[0])
-    sp_data = SpikeData.from_python_hdf5(sp_path)
+
     # --------------------------
     code_samples = bhv.code_samples
     sp_samples = sp_data.sp_samples
@@ -81,16 +87,30 @@ def main(
             :, start_trial:end_trial
         ]
     code_samples_trial = code_samples - code_samples[:, 0].reshape(-1, 1) + before_trial
-    for i_n in range(n_neurons):
-        id = ""
+    i_neuron = 0
+    i_mua = 0
+
+    for i_n, cluster in enumerate(sp_data.clusters_group):
+        if cluster == "good":
+            i_neuron += 1
+            i_cluster = i_neuron
+        elif cluster == "mua":
+            i_mua += 1
+            i_cluster = i_mua
+
         neuron_data = NeuronData(
-            id=id,
             date_time=date_time,
+            subject=subject,
+            area=area,
+            experiment=n_exp,
+            recording=n_rec,
             # -------sp-------
             sp_samples=tr_sp_data,
-            cluster_id=sp_data.clusters_id[i_n],
-            cluster_ch=sp_data.cluster_ch[i_n],
-            cluster_group=sp_data.cluster_group[i_n],
+            cluster_id=np.array(sp_data.clusters_id[i_n], dtype=int),
+            cluster_ch=np.array(sp_data.cluster_ch[i_n], dtype=int),
+            cluster_group=cluster,
+            cluster_number=np.array(i_cluster, dtype=int),
+            cluster_array_pos=np.array(i_n, dtype=int),
             cluster_depth=sp_data.cluster_depth[i_n],
             # -------bhv-------
             block=bhv.block,
@@ -105,6 +125,7 @@ def main(
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])
+
         file_name = (
             date_time
             + "_"
@@ -114,8 +135,11 @@ def main(
             + "_e"
             + n_exp
             + "_r"
-            + n_record
-            + "_sp.h5"
+            + n_rec
+            + "_"
+            + cluster
+            + str(i_cluster)
+            + "_neu.h5"
         )
         if not os.path.exists(path):
             os.makedirs(path)
