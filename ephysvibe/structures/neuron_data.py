@@ -7,13 +7,18 @@ import logging
 class NeuronData:
     def __init__(
         self,
-        id: str,
         date_time: str,
+        subject: str,
+        area: str,
+        experiment: str,
+        recording: str,
         # --------sp-------
         sp_samples: np.ndarray,
         cluster_id: int,
         cluster_ch: int,
         cluster_group: str,
+        cluster_number: int,
+        cluster_array_pos: int,
         cluster_depth: int,
         # -------bhv-------
         block: np.ndarray,
@@ -42,11 +47,18 @@ class NeuronData:
             code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
 
         """
+        self.date_time = date_time
+        self.subject = subject
+        self.area = area
+        self.experiment = experiment
+        self.recording = recording
         # --------sp-------
         self.sp_samples = sp_samples
         self.cluster_id = cluster_id
         self.cluster_ch = cluster_ch
         self.cluster_group = cluster_group
+        self.cluster_number = cluster_number
+        self.cluster_array_pos = cluster_array_pos
         self.cluster_depth = cluster_depth
         # -------bhv-------
         self.block = block
@@ -60,7 +72,7 @@ class NeuronData:
         self.test_distractor = test_distractor
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        self._check_shapes()
+        # self._check_shapes()
 
     def _check_shapes(self):
         n_trials, n_neurons, n_ts = self.sp_samples.shape
@@ -99,8 +111,9 @@ class NeuronData:
             bhv_data["area"] = group.attrs["area"]
             bhv_data["experiment"] = group.attrs["experiment"]
             bhv_data["recording"] = group.attrs["recording"]
+            bhv_data["cluster_group"] = group.attrs["cluster_group"]
             for key, value in zip(group.keys(), group.values()):
-                bhv_data[key] = value[:]
+                bhv_data[key] = np.array(value)
         f.close()
         return cls(**bhv_data)
 
@@ -114,6 +127,7 @@ class NeuronData:
             group.attrs["area"] = self.__dict__.pop("area")
             group.attrs["experiment"] = self.__dict__.pop("experiment")
             group.attrs["recording"] = self.__dict__.pop("recording")
+            group.attrs["cluster_group"] = self.__dict__.pop("cluster_group")
 
             for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
                 group.create_dataset(key, value.shape, data=value)

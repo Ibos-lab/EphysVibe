@@ -49,15 +49,11 @@ def main(
     # load bhv data
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_bhv.h5"
     bhv_path = "/".join(s_path[:-3] + ["bhv"] + [file_name])
-    bhv_path = os.path.normpath(bhv_path) + "/" + file_name
-    bhv_path = glob.glob(bhv_path, recursive=True)
-    if len(bhv_path) == 0:
-        logging.info("Bhv file not found")
-        raise ValueError
+    bhv_path = os.path.normpath(bhv_path)
 
     # load bhv data
     logging.info("Loading Spike and Bhv data")
-    bhv = BhvData.from_python_hdf5(bhv_path[0])
+    bhv = BhvData.from_python_hdf5(bhv_path)
 
     # --------------------------
     code_samples = bhv.code_samples
@@ -107,11 +103,11 @@ def main(
             # -------sp-------
             sp_samples=tr_sp_data,
             cluster_id=np.array(sp_data.clusters_id[i_n], dtype=int),
-            cluster_ch=np.array(sp_data.cluster_ch[i_n], dtype=int),
-            cluster_group=cluster,
+            cluster_ch=np.array(sp_data.clusters_ch[i_n], dtype=int),
+            cluster_group=str(cluster),
             cluster_number=np.array(i_cluster, dtype=int),
             cluster_array_pos=np.array(i_n, dtype=int),
-            cluster_depth=sp_data.cluster_depth[i_n],
+            cluster_depth=sp_data.clusters_depth[i_n],
             # -------bhv-------
             block=bhv.block,
             trial_error=bhv.trial_error,
@@ -124,7 +120,7 @@ def main(
             test_distractor=bhv.test_distractor,
         )
         output_d = os.path.normpath(output_dir)
-        path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])
+        path = "/".join([output_d] + ["session_struct"] + [area] + ["neurons"])
 
         file_name = (
             date_time
@@ -144,6 +140,7 @@ def main(
         if not os.path.exists(path):
             os.makedirs(path)
         logging.info("Saving data")
+        logging.info(file_name)
         neuron_data.to_python_hdf5("/".join([path] + [file_name]))
         logging.info("Data successfully saved")
         del neuron_data
