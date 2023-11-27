@@ -101,7 +101,7 @@ def main(
             experiment=n_exp,
             recording=n_rec,
             # -------sp-------
-            sp_samples=tr_sp_data,
+            sp_samples=tr_sp_data[:, i_n],
             cluster_id=np.array(sp_data.clusters_id[i_n], dtype=int),
             cluster_ch=np.array(sp_data.clusters_ch[i_n], dtype=int),
             cluster_group=str(cluster),

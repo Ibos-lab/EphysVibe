@@ -152,3 +152,19 @@ class NeuronData:
         result = arr[tuple(all_idcs)]
         arr = np.swapaxes(result, -1, axis)
         return arr
+
+    @staticmethod
+    def align_sample_on(self, block: int, time_before: int = 500) -> np.ndarray:
+        # select correct trials in block
+        mask = np.where(
+            np.logical_and(self.trial_error == 0, self.block == block), True, False
+        )
+        sp_samples = self.sp_samples[mask]
+        if block == 1:
+            shifts = self.code_samples[mask, 4]
+        elif block == 2:
+            shifts = self.code_samples[mask, 3]
+        shifts = (shifts - time_before).astype(int)
+        # align sp
+        align_sp = self.indep_roll(arr=sp_samples, shifts=-shifts, axis=1)
+        return align_sp, mask

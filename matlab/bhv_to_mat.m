@@ -117,6 +117,7 @@ for i_trial=1:n_trials
         Match = cat(1,Match,[nan]);
         Total = cat(1,Total,[nan]);
         SampleId=cat(1,SampleId,[nan]);
+        
         %n_pos = size(bhv(i_trial).ObjectStatusRecord.Position{1},1);
         Position(i_trial,1,:) = bhv(i_trial).ObjectStatusRecord.Position{1}(2,:);
         reward_dur(i_trial) = bhv(i_trial).VariableChanges.reward_sacc_dur;
@@ -126,7 +127,13 @@ for i_trial=1:n_trials
         Match = cat(1,Match,bhv(i_trial).TaskObject.CurrentConditionInfo.match);
         Total = cat(1,Total,bhv(i_trial).TaskObject.CurrentConditionInfo.total);
         sample =  bhv(i_trial).TaskObject.Attribute{2}{2}(end-5:end-2);
-        SampleId = cat(1,SampleId,str2num(strcat(sample(2),sample(end))));
+        sample = strcat(sample(2),sample(end));
+        if sample == 'NN'
+            sample = '00';
+        end
+        
+        SampleId = cat(1,SampleId,str2num(sample));
+   
         if size(bhv(i_trial).ObjectStatusRecord.Position,2) ~= 0
             Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
         end
