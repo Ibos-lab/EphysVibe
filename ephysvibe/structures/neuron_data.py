@@ -132,39 +132,3 @@ class NeuronData:
             for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
                 group.create_dataset(key, value.shape, data=value)
         f.close()
-
-    @staticmethod
-    def indep_roll(arr: np.ndarray, shifts: np.ndarray, axis: int = 1) -> np.ndarray:
-        """Apply an independent roll for each dimensions of a single axis.
-        Args:
-            arr (np.ndarray): Array of any shape.
-            shifts (np.ndarray): How many shifting to use for each dimension. Shape: `(arr.shape[axis],)`.
-            axis (int, optional): Axis along which elements are shifted. Defaults to 1.
-
-        Returns:
-            np.ndarray: shifted array.
-        """
-        arr = np.swapaxes(arr, axis, -1)
-        all_idcs = np.ogrid[[slice(0, n) for n in arr.shape]]
-        # Convert to a positive shift
-        shifts[shifts < 0] += arr.shape[-1]
-        all_idcs[-1] = all_idcs[-1] - shifts[:, np.newaxis]
-        result = arr[tuple(all_idcs)]
-        arr = np.swapaxes(result, -1, axis)
-        return arr
-
-    @staticmethod
-    def align_sample_on(self, block: int, time_before: int = 500) -> np.ndarray:
-        # select correct trials in block
-        mask = np.where(
-            np.logical_and(self.trial_error == 0, self.block == block), True, False
-        )
-        sp_samples = self.sp_samples[mask]
-        if block == 1:
-            shifts = self.code_samples[mask, 4]
-        elif block == 2:
-            shifts = self.code_samples[mask, 3]
-        shifts = (shifts - time_before).astype(int)
-        # align sp
-        align_sp = self.indep_roll(arr=sp_samples, shifts=-shifts, axis=1)
-        return align_sp, mask

@@ -21,13 +21,19 @@ class SpikeData:
         """Initialize the class.
 
         Args:
-            sp_samples (np.ndarray): array of shape (trials x neurons x time) containing the number of spikes at each ms.
-            clusters_id (np.ndarray): array of shape (neurons,1)
-            clusters_ch (np.ndarray): array of shape (neurons,1)
-            clusters_group (np.ndarray): array of shape (neurons,1) containing "good" when is a neuron or "mua" when is
-                                        multi unit activity.
-            clusters_depth (np.ndarray): array of shape (neurons,1) containing the de depth of each neuron/mua.
+            date_time (str): _description_
+            subject (str): _description_
+            area (str): _description_
+            experiment (int): _description_
+            recording (int): _description_
+            ------ sp ---------
+            sp_samples (np.ndarray): array of shape (neurons x time) containing the number of spikes at each ms.
+            clusters_id (np.ndarray): array of shape (neurons,1) containing the kilosort cluster ID.
+            clusters_ch (np.ndarray): array of shape (neurons,1) containing the electrode channel that recorded the activity of each cluster.
+            clusters_group (np.ndarray): array of shape (neurons,1) containing "good" when is a neuron or "mua" when is multi unit activity.
+            clusters_depth (np.ndarray): array of shape (neurons,1) containing the de depth of each cluster.
         """
+
         self.date_time = date_time
         self.subject = subject
         self.area = area

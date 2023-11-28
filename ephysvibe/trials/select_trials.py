@@ -16,3 +16,13 @@ def select_correct_trials(bhv_py, trials_idx):
     print("Number of correct trials in block 2: %d" % sum(correct_mask))
     trials_idx = trials_idx[correct_mask]
     return trials_idx
+
+
+def get_trials_by_sample(sample_id: np.ndarray) -> np.ndarray:
+    o1_c1_idx = np.where(sample_id == 11)[0]
+    o1_c5_idx = np.where(sample_id == 15)[0]
+    o5_c1_idx = np.where(sample_id == 51)[0]
+    o5_c5_idx = np.where(sample_id == 55)[0]
+    o0_c0_idx = np.where(sample_id == 0)[0]
+
+    return o1_c1_idx, o1_c5_idx, o5_c1_idx, o5_c5_idx, o0_c0_idx
