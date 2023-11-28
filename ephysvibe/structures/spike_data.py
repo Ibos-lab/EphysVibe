@@ -9,8 +9,8 @@ class SpikeData:
         date_time: str,
         subject: str,
         area: str,
-        experiment: int,
-        recording: int,
+        experiment: str,
+        recording: str,
         # -----sp-----
         sp_samples: np.ndarray,
         clusters_id: np.ndarray,
@@ -26,8 +26,8 @@ class SpikeData:
             date_time (str): date and time of the recording session
             subject (str): name of the subject
             area (str): area recorded
-            experiment (int): experiment number
-            recording (int): recording number
+            experiment (str): experiment number
+            recording (str): recording number
             ------ sp ---------
             sp_samples (np.ndarray): array of shape (neurons x time) containing the number of spikes at each ms.
             clusters_id (np.ndarray): array of shape (neurons,1) containing the kilosort cluster ID.

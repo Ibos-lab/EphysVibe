@@ -34,18 +34,46 @@ class NeuronData:
     ):
         """Initialize the class.
 
-        Args:
-            sp_samples (np.ndarray): array of shape (trials x neurons x time) containing the number of spikes at each ms.
-            eyes_values (np.ndarray): array of shape (trials x ch x time) containing the position of the eye (ch1=x,ch2=y)
-                                    and the dilation of the eye (ch3) at each ms.
-            lfp_values (np.ndarray): array of shape (trials x ch x time) containing the lfp values at each ms.
-            clusters_id (np.ndarray): array of shape (neurons,1)
-            clusters_ch (np.ndarray): array of shape (neurons,1)
-            clustersgroup (np.ndarray): array of shape (neurons,1) containing "good" when is a neuron or "mua" when is
-                                        multi unit activity.
-            clusterdepth (np.ndarray): array of shape (neurons,1) containing the de depth of each neuron/mua.
-            code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
+        This class contains information about each cluster.
 
+        Args:
+            date_time (str): date and time of the recording session
+            subject (str):  name of the subject
+            area (str): area recorded
+            experiment (str): experiment number
+            recording (str): recording number
+            ------ sp ---------
+            sp_samples (np.ndarray): array of shape (trials x time) containing the number of spikes at each ms in each trial.
+            cluster_id (int): kilosort cluster ID.
+            cluster_ch (int): electrode channel that recorded the activity of the cluster.
+            cluster_group (str): "good" if it is a neuron or "mua" if it is a multi unit activity.
+            cluster_number (int): number of good or mua.
+            cluster_array_pos (int): position of the cluster in SpikeDate.sp_samples.
+            cluster_depth (int): depth of the cluster.
+            ------ bhv ---------
+            block (np.ndarray): array of shape (trials) containing:
+                                - 1 when is a DMTS trial
+                                - 2 when is a saccade task trial
+            trial_error (np.ndarray): array of shape (trials) containing:
+                                - 0 when is a correct trial
+                                - n != 0 when is an incorrect trial. Each number correspond to different errors
+            code_samples (np.ndarray): array of shape (trials, events) containing the timestamp of the events
+                                        (timestamps correspond to sp_sample index).
+            code_numbers (np.ndarray): array of shape (trials, events) containing the codes of the events.
+            position (np.ndarray): array of shape (trials, 2) containing the position of the stimulus.
+            pos_code (np.ndarray): array of shape (trials) containing the position code of the stimulus.
+                                    - for block 1: 1 is for 'in', -1 is for 'out' the receptive field
+                                    - for block 2: codes from 120 to 127 corresponding to the 8 target positions.
+            sample_id (np.ndarray): array of shape (trials) containing the sample presented in each trial of block 1:
+                                    - 0: neutral sample
+                                    - 11: orientation 1, color 1
+                                    - 51: orientation 5, color 1
+                                    - 15: orientation 1, color 5
+                                    - 55: orientation 5, color 5
+            test_stimuli (np.ndarray): array of shape (trials,n_test_stimuli) containing the id of the test stimuli.
+                                    As in sample_id, first number correspond to orientation and second to color.
+            test_distractor (np.ndarray): array of shape (trials,n_test_stimuli) containing the id of the test distractor.
+                                    As in sample_id, first number correspond to orientation and second to color.
         """
         self.date_time = date_time
         self.subject = subject

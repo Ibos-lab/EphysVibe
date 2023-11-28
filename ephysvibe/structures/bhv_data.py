@@ -75,8 +75,8 @@ class BhvData:
             farexc (np.ndarray):
             eye_ml (np.ndarray):
             condition (np.ndarray): condition in the txt file. shape: (trials).
-            code_numbers (np.ndarray): code of the events.  shape: (trials, events).
-            code_samples
+            code_numbers (np.ndarray):array of shape (trials, events) containing the codes of the events.
+            code_samples (np.ndarray):array of shape (trials, events) containing the timestamp of the events
             code_times (np.ndarray): exact time when each event ocurred during the trial. shape: (trials, events).
             stim_match (np.ndarray):
             pos_code (np.ndarray): position of the sample stimulus. shape: (trials, 2).
