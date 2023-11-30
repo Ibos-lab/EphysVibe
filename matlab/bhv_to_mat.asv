@@ -4,11 +4,11 @@
 % and the savepath
 %% 
 addpath(genpath('/home/INT/losada.c/Documents/codes/matlab'))  
-savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/';
+savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2022-12-12_10-50-52/Record Node 102/experiment1/recording1/';
 %%datapath=uigetdir;
 %cd(datapath)
 
-cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/'
+cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2022-12-02_11-01-23/Record Node 102/experiment1/recording1/'
 directory=pwd;
 bhvfiles=dir('*.bhv2');
 %path = "\\envau_cifs.intlocal.univ-amu.fr\work\invibe\USERS\IBOS\openephys\221201_TSCM_5cj_5cl_Riesling.bhv2";
@@ -73,8 +73,7 @@ SampleId = [];%nan(n_trials,1);
 PosCode =[];
 Match =[];
 Total =[];
-i_2 =0
-i_1 =0
+
 % Iterate by trials and concatenate
 for i_trial=1:n_trials 
     n_codes = size(bhv(i_trial).BehavioralCodes.CodeTimes,1);
@@ -128,10 +127,13 @@ for i_trial=1:n_trials
         Match = cat(1,Match,bhv(i_trial).TaskObject.CurrentConditionInfo.match);
         Total = cat(1,Total,bhv(i_trial).TaskObject.CurrentConditionInfo.total);
         sample =  bhv(i_trial).TaskObject.Attribute{2}{2}(end-5:end-2);
-        sample
+        sample = strcat(sample(2),sample(end));
+        if sample == 'NN'
+            sample = '00';
+        end
         
-        SampleId = cat(1,SampleId,str2num(strcat(sample(2),sample(end))));
-        size(SampleId)
+        SampleId = cat(1,SampleId,str2num(sample));
+   
         if size(bhv(i_trial).ObjectStatusRecord.Position,2) ~= 0
             Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
         end
@@ -236,8 +238,8 @@ New.StimMatch = Match;
 New.StimTotal = Total;
 New.SampleId = SampleId;
 %%
-% cd(savepath)
-% disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
-% save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
-% %clear all
-% disp('done')
+cd(savepath)
+disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
+save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
+%clear all
+disp('done')

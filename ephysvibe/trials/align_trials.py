@@ -32,20 +32,17 @@ def align_on(
     select_block: int = 1,
     event: str = "sample_on",
     time_before: int = 500,
-    correct_trials: bool = True,
+    error_type: int = 0,
     select_pos: int = 1,
 ) -> [np.ndarray, np.ndarray]:
-    if correct_trials:  # select correct trials in select_block and select position
-        mask = np.where(
-            np.logical_and(
-                pos_code == select_pos,
-                np.logical_and(trial_error == 0, block == select_block),
-            ),
-            True,
-            False,
-        )
-    else:
-        mask = np.where(block == select_block, True, False)
+    mask = np.where(
+        np.logical_and(
+            pos_code == select_pos,
+            np.logical_and(trial_error == error_type, block == select_block),
+        ),
+        True,
+        False,
+    )
     sp_samples = sp_samples[mask]
     if select_block == 1:
         code = task_constants.EVENTS_B1[event]

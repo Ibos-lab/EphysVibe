@@ -4,11 +4,11 @@
 % and the savepath
 %% 
 addpath(genpath('/home/INT/losada.c/Documents/codes/matlab'))  
-savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/';
+savepath='/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-30_10-36-53/Record Node 102/experiment1/recording1/';
 %%datapath=uigetdir;
 %cd(datapath)
 
-cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-03_10-59-32/Record Node 102/experiment1/recording1/'
+cd '/envau/work/invibe/USERS/IBOS/openephys/Riesling/2023-03-30_10-36-53/Record Node 102/experiment1/recording1/'
 directory=pwd;
 bhvfiles=dir('*.bhv2');
 %path = "\\envau_cifs.intlocal.univ-amu.fr\work\invibe\USERS\IBOS\openephys\221201_TSCM_5cj_5cl_Riesling.bhv2";
@@ -134,7 +134,7 @@ for i_trial=1:n_trials
         
         SampleId = cat(1,SampleId,str2num(sample));
    
-        if size(bhv(i_trial).ObjectStatusRecord.Position,2) ~= 0
+        if isempty(bhv(i_trial).ObjectStatusRecord.Position)~=1
             Position(i_trial,:,:) = cat(1,bhv(i_trial).ObjectStatusRecord.Position{1}(2,:),bhv(i_trial).ObjectStatusRecord.Position{1}(end,:));
         end
         reward_dur(i_trial) = bhv(i_trial).VariableChanges.reward_dur;
@@ -238,8 +238,8 @@ New.StimMatch = Match;
 New.StimTotal = Total;
 New.SampleId = SampleId;
 %%
-% cd(savepath)
-% disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
-% save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
-% %clear all
-% disp('done')
+cd(savepath)
+disp(['saving data files...' [bhvfiles.name(1:end-4) 'mat']]);
+save([bhvfiles.name(1:end-4) 'mat'],'New','-v7.3' )
+%clear all
+disp('done')
