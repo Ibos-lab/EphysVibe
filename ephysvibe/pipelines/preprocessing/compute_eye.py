@@ -88,8 +88,8 @@ def main(
     for i_t in range(n_trials):
         start_trial = (trials_start[i_t] - before_trial).astype(int)
         end_trial = (trials_end[i_t] + iti + next_trial).astype(int)
-        if end_trial > eyes_ds.shape[2]:
-            end_trial = eyes_ds.shape[2]
+        if end_trial > eyes_ds.shape[1]:
+            end_trial = eyes_ds.shape[1]
         tr_eye[i_t, :, : int(end_trial - start_trial)] = eyes_ds[
             :, start_trial:end_trial
         ]
