@@ -8,10 +8,10 @@ import dask.array as da
 class EyeData:
     def __init__(
         self,
-        date_time: str,
-        subject: str,
-        experiment: str,
-        recording: str,
+        # date_time: str,
+        # subject: str,
+        # experiment: str,
+        # recording: str,
         # -------bhv-------
         block: np.ndarray,
         trial_error: np.ndarray,
@@ -22,7 +22,7 @@ class EyeData:
         sample_id: np.ndarray,
         test_stimuli: np.ndarray,
         test_distractor: np.ndarray,
-        eye_values: np.ndarray,
+        eye: np.ndarray,
         eye_ml: np.ndarray,
     ):
         """Initialize the class.
@@ -40,10 +40,10 @@ class EyeData:
             code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
             idx_start (np.ndarray): array of shape (trials) containing the timestamp of the start of each trial (downsampled).
         """
-        self.date_time = date_time
-        self.subject = subject
-        self.experiment = experiment
-        self.recording = recording
+        # self.date_time = date_time
+        # self.subject = subject
+        # self.experiment = experiment
+        # self.recording = recording
         # -------bhv-------
         self.block = block
         self.trial_error = trial_error
@@ -55,7 +55,7 @@ class EyeData:
         self.test_stimuli = test_stimuli
         self.test_distractor = test_distractor
         # -----eye--------
-        self.eye_values = eye_values
+        self.eye = eye
         self.eye_ml = eye_ml
 
     def to_python_hdf5(self, save_path: Path):
@@ -63,52 +63,28 @@ class EyeData:
         # save the data
         with h5py.File(save_path, "w") as f:
             group = f.create_group("data")
-            group.create_dataset(
-                "block",
-                self.block.shape,
-                compression="gzip",
-                data=self.block,
-            )
-            group.create_dataset(
-                "idx_start",
-                self.idx_start.shape,
-                data=self.idx_start,
-                compression="gzip",
-            )
-            group.create_dataset(
-                "eyes_values",
-                self.eyes_values.shape,
-                data=self.eyes_values,
-                compression="gzip",
-            )
-            group.create_dataset(
-                "lfp_values",
-                self.lfp_values.shape,
-                data=self.lfp_values,
-                compression="gzip",
-            )
+            # group.attrs["date_time"] = self.__dict__.pop("date_time")
+            # group.attrs["subject"] = self.__dict__.pop("subject")
+            # group.attrs["area"] = self.__dict__.pop("area")
+            # group.attrs["experiment"] = self.__dict__.pop("experiment")
+            # group.attrs["recording"] = self.__dict__.pop("recording")
+            # group.attrs["cluster_group"] = self.__dict__.pop("cluster_group")
+
+            for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
+                group.create_dataset(key, value.shape, data=value)
         f.close()
 
     @classmethod
     def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
+        eye_data = {}
         with h5py.File(load_path, "r") as f:
-            #  get data
             group = f["data"]
-            block = group["block"][:]
-            eyes_values = group["eyes_values"][:]
-            idx_start = group["idx_start"][:]
 
-            lfp_values = group["lfp_values"][:]
-
-        # create class object and return
-        trials_data = {
-            "block": block,
-            "eyes_values": eyes_values,
-            "lfp_values": lfp_values,
-            "idx_start": idx_start,
-        }
-        return cls(**trials_data)
+            for key, value in zip(group.keys(), group.values()):
+                eye_data[key] = np.array(value)
+        f.close()
+        return cls(**eye_data)
 
     @staticmethod
     def indep_roll(arr: np.ndarray, shifts: np.ndarray, axis: int = 1) -> np.ndarray:
