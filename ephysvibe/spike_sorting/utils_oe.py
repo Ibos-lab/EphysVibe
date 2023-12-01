@@ -4,7 +4,8 @@ import glob
 from pathlib import Path
 from typing import List, Dict, Tuple
 import logging
-from open_ephys.analysis import Session
+
+# from open_ephys.analysis import Session
 import numpy as np
 import pandas as pd
 import re
@@ -13,30 +14,30 @@ from ..structures.bhv_data import BhvData
 import mne
 
 
-def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
-    """Load OpenEphis data.
-    Args:
-        directory (Path): path to the directory
-    Returns:
-        Tuple[Session, str, str, list]:
-            - session (Session): session object
-            - subject (str): name of the subject
-            - date_time (str): date and time of the recording
-            - areas (List): name of the recorded areas
-    """
-    logging.info("Loading OE data")
-    session = Session(directory)
-    split_dir = os.path.normpath(directory).split(os.sep)
-    date_time = split_dir[-1]
-    subject = split_dir[-2]
-    # check nodes
-    areas = []
-    for node in session.recordnodes:
-        node_path = node.directory
-        n_area = re.split(r"[ ]", node_path.split(os.sep)[-1])[-1]
-        areas.append(n_area)
+# def load_oe_data(directory: Path) -> Tuple[Session, str, str, list]:
+#     """Load OpenEphis data.
+#     Args:
+#         directory (Path): path to the directory
+#     Returns:
+#         Tuple[Session, str, str, list]:
+#             - session (Session): session object
+#             - subject (str): name of the subject
+#             - date_time (str): date and time of the recording
+#             - areas (List): name of the recorded areas
+#     """
+#     logging.info("Loading OE data")
+#     session = Session(directory)
+#     split_dir = os.path.normpath(directory).split(os.sep)
+#     date_time = split_dir[-1]
+#     subject = split_dir[-2]
+#     # check nodes
+#     areas = []
+#     for node in session.recordnodes:
+#         node_path = node.directory
+#         n_area = re.split(r"[ ]", node_path.split(os.sep)[-1])[-1]
+#         areas.append(n_area)
 
-    return session, subject, date_time, areas
+#     return session, subject, date_time, areas
 
 
 def load_event_files(event_path: Path) -> Dict:
