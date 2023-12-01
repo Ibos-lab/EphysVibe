@@ -126,7 +126,7 @@ def load_spike_data(spike_path: str) -> Tuple[np.ndarray, np.ndarray, pd.DataFra
     spike_times_idx = (
         np.load(spike_path + "/spike_times.npy", "r").reshape(-1) - 1
     )  # -1 to have the first idx = 0 and not 1
-    spike_clusters = np.load(spike_path + "/spike_clusters.npy", "r")  #
+    spike_clusters = np.load(spike_path + "/spike_clusters.npy", "r").reshape(-1)  #
     cluster_info = pd.read_csv(
         spike_path + "/cluster_info.tsv", sep="\t"
     )  # info of each cluster
