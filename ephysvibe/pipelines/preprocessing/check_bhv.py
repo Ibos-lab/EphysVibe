@@ -70,6 +70,10 @@ def main(
     bhv.code_samples = code_samples
     bhv.start_trials = start_trials
     bhv.end_trials = end_trials
+    bhv.date_time = date_time
+    bhv.subject = subject
+    bhv.experiment = n_exp
+    bhv.recording = n_record
 
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
 
