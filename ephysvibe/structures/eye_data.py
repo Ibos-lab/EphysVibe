@@ -8,10 +8,10 @@ import dask.array as da
 class EyeData:
     def __init__(
         self,
-        # date_time: str,
-        # subject: str,
-        # experiment: str,
-        # recording: str,
+        date_time: str,
+        subject: str,
+        experiment: str,
+        recording: str,
         # -------bhv-------
         block: np.ndarray,
         trial_error: np.ndarray,
@@ -40,10 +40,10 @@ class EyeData:
             code_samples (np.ndarray): array of shape (trials x ncodes) containing the time at which the event occurred. [ms].
             idx_start (np.ndarray): array of shape (trials) containing the timestamp of the start of each trial (downsampled).
         """
-        # self.date_time = date_time
-        # self.subject = subject
-        # self.experiment = experiment
-        # self.recording = recording
+        self.date_time = date_time
+        self.subject = subject
+        self.experiment = experiment
+        self.recording = recording
         # -------bhv-------
         self.block = block
         self.trial_error = trial_error
@@ -63,12 +63,10 @@ class EyeData:
         # save the data
         with h5py.File(save_path, "w") as f:
             group = f.create_group("data")
-            # group.attrs["date_time"] = self.__dict__.pop("date_time")
-            # group.attrs["subject"] = self.__dict__.pop("subject")
-            # group.attrs["area"] = self.__dict__.pop("area")
-            # group.attrs["experiment"] = self.__dict__.pop("experiment")
-            # group.attrs["recording"] = self.__dict__.pop("recording")
-            # group.attrs["cluster_group"] = self.__dict__.pop("cluster_group")
+            group.attrs["date_time"] = self.__dict__.pop("date_time")
+            group.attrs["subject"] = self.__dict__.pop("subject")
+            group.attrs["experiment"] = self.__dict__.pop("experiment")
+            group.attrs["recording"] = self.__dict__.pop("recording")
 
             for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
                 group.create_dataset(key, value.shape, data=value)
@@ -80,7 +78,10 @@ class EyeData:
         eye_data = {}
         with h5py.File(load_path, "r") as f:
             group = f["data"]
-
+            eye_data["date_time"] = group.attrs["date_time"]
+            eye_data["subject"] = group.attrs["subject"]
+            eye_data["experiment"] = group.attrs["experiment"]
+            eye_data["recording"] = group.attrs["recording"]
             for key, value in zip(group.keys(), group.values()):
                 eye_data[key] = np.array(value)
         f.close()

@@ -22,8 +22,7 @@ logging.basicConfig(
 
 
 def main(
-    time_path: Path,
-    continuous_path: Path,
+    sp_path: Path,
     bhv_path: Path,
     output_dir: Path = "./output",
 ) -> None:
@@ -39,7 +38,9 @@ def main(
     logging.info("-- Start --")
 
     # define paths
-    # sp_path = os.path.normpath(sp_path)
+    sp_path = os.path.normpath(sp_path)
+    time_path = "/".join([sp_path] + ["sample_numbers.npy"])
+    continuous_path = "/".join([sp_path] + ["continuous.dat"])
     # s_path = sp_path.split(os.sep)
     # load bhv data
     logging.info("Loading Spike and Bhv data")
@@ -49,10 +50,10 @@ def main(
     logging.info("Loading timestamps and events")
     c_samples = np.load(time_path)
 
-    # date_time = bhv.date_time
-    # subject = bhv.subject
-    # n_exp = bhv.experiment
-    # n_rec = bhv.recording
+    date_time = bhv.date_time
+    subject = bhv.subject
+    n_exp = bhv.experiment
+    n_rec = bhv.recording
     # load bhv data
     # file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_bhv.h5"
     # bhv_path = "/".join(s_path[:-3] + ["bhv"] + [file_name])
@@ -67,8 +68,8 @@ def main(
     next_trial = 6000
     trials_end = code_samples[
         np.where(code_numbers == task_constants.EVENTS_B1["end_trial"], True, False)
-    ]
-    trials_start = code_samples[:, 0]
+    ] - int(c_samples[0] / 30)
+    trials_start = code_samples[:, 0] - int(c_samples[0] / 30)
     trials_max_duration = max(trials_end - trials_start)
     trials_max_duration = int(trials_max_duration + before_trial + iti + next_trial)
     total_ch = pipe_config.TOTAL_CH
@@ -76,9 +77,10 @@ def main(
     n_eyes = pipe_config.area_start_nch["eyes"][1]
     n_trials = trials_start.shape[0]
     logging.info("load_eyes")
+    shape_0 = len(c_samples)
     eyes_ds = utils_oe.load_eyes(
         continuous_path,
-        shape_0=len(c_samples),
+        shape_0=shape_0,
         shape_1=total_ch,
         start_ch=start_ch,
         n_eyes=n_eyes,
@@ -96,11 +98,10 @@ def main(
     code_samples_trial = code_samples - code_samples[:, 0].reshape(-1, 1) + before_trial
 
     eye_data = EyeData(
-        # date_time=date_time,
-        # subject=subject,
-        # area=area,
-        # experiment=n_exp,
-        # recording=n_rec,
+        date_time=date_time,
+        subject=subject,
+        experiment=n_exp,
+        recording=n_rec,
         eye=tr_eye,
         block=bhv.block,
         trial_error=bhv.trial_error,
@@ -115,30 +116,17 @@ def main(
     )
     ####### ------------------------
 
-    # output_d = os.path.normpath(output_dir)
-    # path = "/".join([output_d] + ["session_struct"] + [area] + ["neurons"])
+    output_dir = os.path.normpath(output_dir)
+    output_dir = "/".join([output_dir] + ["session_struct"] + ["eye"])
 
-    # file_name = (
-    #     date_time
-    #     + "_"
-    #     + subject
-    #     + "_"
-    #     + area
-    #     + "_e"
-    #     + n_exp
-    #     + "_r"
-    #     + n_rec
-    #     + "_"
-    #     + cluster
-    #     + str(i_cluster)
-    #     + "_neu.h5"
-    # )
-    # if not os.path.exists(path):
-    #     os.makedirs(path)
-    # logging.info("Saving data")
-    # logging.info(file_name)
+    file_name = date_time + "_" + subject + "eye_e" + n_exp + "_r" + n_rec + "_eye.h5"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_dir = "/".join([output_dir] + [file_name])
+    logging.info("Saving data")
+    logging.info(file_name)
     eye_data.to_python_hdf5(output_dir)
-    # logging.info("Data successfully saved")
+    logging.info("Data successfully saved")
     # del neuron_data
 
 
@@ -147,10 +135,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("time_path", help="Path to KS folders location", type=Path)
-    parser.add_argument(
-        "continuous_path", help="Path to KS folders location", type=Path
-    )
+    parser.add_argument("sp_path", help="Path to KS folders location", type=Path)
+
     parser.add_argument("bhv_path", help="Path to KS folders location", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
@@ -158,6 +144,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     try:
-        main(args.time_path, args.continuous_path, args.bhv_path, args.output_dir)
+        main(args.sp_path, args.bhv_path, args.output_dir)
     except FileExistsError:
         logging.error("path does not exist")
