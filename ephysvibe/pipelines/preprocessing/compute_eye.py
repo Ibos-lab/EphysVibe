@@ -119,7 +119,7 @@ def main(
     output_dir = os.path.normpath(output_dir)
     output_dir = "/".join([output_dir] + ["session_struct"] + ["eye"])
 
-    file_name = date_time + "_" + subject + "eye_e" + n_exp + "_r" + n_rec + "_eye.h5"
+    file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_eye.h5"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_dir = "/".join([output_dir] + [file_name])
