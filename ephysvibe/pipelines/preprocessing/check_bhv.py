@@ -15,6 +15,7 @@ logging.basicConfig(
 
 def main(
     bhv_data_file: Path,
+    ks_path: Path,
     output_dir: Path = "./",
     event_path: Path = "events/Acquisition_Board-100.Rhythm Data/TTL",
 ) -> None:
@@ -28,6 +29,12 @@ def main(
     if not os.path.exists(bhv_data_file):
         logging.error("bhv_data_file %s does not exist" % bhv_data_file)
         raise FileExistsError
+    if not os.path.exists(ks_path):
+        logging.error("ks_path %s does not exist" % ks_path)
+        raise FileExistsError
+    ks_path = os.path.normpath(ks_path)
+    ks_path = "/".join([ks_path] + ["sample_numbers.npy"])
+
     logging.info("-- Start --")
     logging.info("%s" % bhv_data_file)
     # Select info about the recording from the path
@@ -67,9 +74,12 @@ def main(
             events_mask
         ]  # - start_trials[i_trial]
 
-    bhv.code_samples = code_samples
-    bhv.start_trials = start_trials
-    bhv.end_trials = end_trials
+    logging.info("Loading timestamps")
+    c_samples = np.load(ks_path)
+    oe_rec_start = int(c_samples[0] / config.DOWNSAMPLE)
+    bhv.code_samples = code_samples - oe_rec_start
+    bhv.start_trials = start_trials - oe_rec_start
+    bhv.end_trials = end_trials - oe_rec_start
     bhv.date_time = date_time
     bhv.subject = subject
     bhv.experiment = n_exp
@@ -94,11 +104,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "bhv_data_file", help="Path to the bhv file (matlab format)", type=Path
     )
+    parser.add_argument("ks_path", help="Path to the ks_path", type=Path)  # !! change
+
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
     args = parser.parse_args()
     try:
-        main(args.bhv_data_file, args.output_dir)
+        main(args.bhv_data_file, args.ks_path, args.output_dir)
     except FileExistsError:
         logging.error("path does not exist")

@@ -43,6 +43,7 @@ def main(
     # load timestamps and events
     logging.info("Loading continuous/sample_numbers data")
     c_samples = np.load("/".join([ks_path] + ["sample_numbers.npy"]))
+    c_samples = c_samples - c_samples[0]  # ! new
     # Iterate by nodes/areas
     for area in areas:
         # define spikes paths and check if path exist
@@ -70,6 +71,7 @@ def main(
             logging.error("There isn't good or mua clusters")
             continue
         # timestamps of all the spikes (in ms)
+
         spike_sample = np.floor(c_samples[spike_times_idx] / config.DOWNSAMPLE).astype(
             int
         )
@@ -89,6 +91,9 @@ def main(
             clusters_ch=cluster_info["ch"].values,
             clusters_group=cluster_info["group"].values,
             clusters_depth=cluster_info["depth"].values,
+            # ! new
+            # start_trials=,
+            # end_trials=,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])

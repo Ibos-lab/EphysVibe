@@ -68,8 +68,8 @@ def main(
     next_trial = 6000
     trials_end = code_samples[
         np.where(code_numbers == task_constants.EVENTS_B1["end_trial"], True, False)
-    ] - int(c_samples[0] / 30)
-    trials_start = code_samples[:, 0] - int(c_samples[0] / 30)
+    ]  # !- int(c_samples[0] / 30)
+    trials_start = code_samples[:, 0]  # ! - int(c_samples[0] / 30)
     trials_max_duration = max(trials_end - trials_start)
     trials_max_duration = int(trials_max_duration + before_trial + iti + next_trial)
     total_ch = pipe_config.TOTAL_CH
