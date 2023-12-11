@@ -19,17 +19,17 @@ def main(
     output_dir: Path = "./output",
     areas: list = None,
 ) -> None:
-    """Compute trials.
+    """Compute spikes by neuron.
     Args:
-        ks_path (Path):  path to the continuous file (.dat) from OE.
+        ks_path (Path): path to Kilosort folders.
         output_dir (Path): output directory.
-        areas (list): list containing the areas to which to compute the trials data.
+        areas (list, optional): list containing the areas to which to compute. Defaults to None.
     """
     if not os.path.exists(ks_path):
         logging.error("ks_path %s does not exist" % ks_path)
         raise FileExistsError
     logging.info("-- Start --")
-    # define paths
+    # Normalize paths
     ks_path = os.path.normpath(ks_path)
     s_path = ks_path.split(os.sep)
     # Select info about the recording from the path
@@ -43,7 +43,7 @@ def main(
     # load timestamps and events
     logging.info("Loading continuous/sample_numbers data")
     c_samples = np.load("/".join([ks_path] + ["sample_numbers.npy"]))
-    c_samples = c_samples - c_samples[0]  # ! new
+    c_samples = c_samples - c_samples[0]
     # Iterate by nodes/areas
     for area in areas:
         # define spikes paths and check if path exist
@@ -71,7 +71,6 @@ def main(
             logging.error("There isn't good or mua clusters")
             continue
         # timestamps of all the spikes (in ms)
-
         spike_sample = np.floor(c_samples[spike_times_idx] / config.DOWNSAMPLE).astype(
             int
         )
@@ -91,9 +90,6 @@ def main(
             clusters_ch=cluster_info["ch"].values,
             clusters_group=cluster_info["group"].values,
             clusters_depth=cluster_info["depth"].values,
-            # ! new
-            # start_trials=,
-            # end_trials=,
         )
         output_d = os.path.normpath(output_dir)
         path = "/".join([output_d] + ["session_struct"] + [area] + ["spikes"])
