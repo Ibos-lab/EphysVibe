@@ -6,11 +6,7 @@ from typing import List
 import numpy as np
 from ...spike_sorting import utils_oe
 from .. import pipe_config
-
-# from ...spike_sorting import utils_oe, config, data_structure
-import glob
 from ...structures.bhv_data import BhvData
-from ...structures.spike_data import SpikeData
 from ...structures.eye_data import EyeData
 from ...task import task_constants
 
@@ -26,50 +22,38 @@ def main(
     bhv_path: Path,
     output_dir: Path = "./output",
 ) -> None:
-    """Compute trials.
+    """Compute eye structure.
 
     Args:
-        sp_path (Path):  path to the continuous file (.dat) from OE.
+        sp_path (Path): path to Kilosort folders.
         output_dir (Path): output directory.
     """
-    # if not os.path.exists(sp_path):
-    #     logging.error("sp_path %s does not exist" % sp_path)
-    #     raise FileExistsError
     logging.info("-- Start --")
-
     # define paths
     sp_path = os.path.normpath(sp_path)
     time_path = "/".join([sp_path] + ["sample_numbers.npy"])
     continuous_path = "/".join([sp_path] + ["continuous.dat"])
-    # s_path = sp_path.split(os.sep)
     # load bhv data
-    logging.info("Loading Spike and Bhv data")
+    logging.info("Loading Bhv data")
     bhv = BhvData.from_python_hdf5(bhv_path)
     # Select info about the recording from the path
-
-    logging.info("Loading timestamps and events")
+    logging.info("Loading timestamps")
+    # --------------------------
     c_samples = np.load(time_path)
-
     date_time = bhv.date_time
     subject = bhv.subject
     n_exp = bhv.experiment
     n_rec = bhv.recording
-    # load bhv data
-    # file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_bhv.h5"
-    # bhv_path = "/".join(s_path[:-3] + ["bhv"] + [file_name])
-    # bhv_path = os.path.normpath(bhv_path)
-
-    # --------------------------
     code_samples = bhv.code_samples
     code_numbers = bhv.code_numbers
-    # --------------------------
     before_trial = 1000
     iti = 1500
     next_trial = 6000
     trials_end = code_samples[
         np.where(code_numbers == task_constants.EVENTS_B1["end_trial"], True, False)
-    ]  # !- int(c_samples[0] / 30)
-    trials_start = code_samples[:, 0]  # ! - int(c_samples[0] / 30)
+    ]
+    trials_start = code_samples[:, 0]
+    # --------------------------
     trials_max_duration = max(trials_end - trials_start)
     trials_max_duration = int(trials_max_duration + before_trial + iti + next_trial)
     total_ch = pipe_config.TOTAL_CH
@@ -85,8 +69,8 @@ def main(
         start_ch=start_ch,
         n_eyes=n_eyes,
     )
+    # Split eye position by trials
     tr_eye = np.full((n_trials, 3, trials_max_duration), np.nan)
-
     for i_t in range(n_trials):
         start_trial = (trials_start[i_t] - before_trial).astype(int)
         end_trial = (trials_end[i_t] + iti + next_trial).astype(int)
@@ -96,7 +80,7 @@ def main(
             :, start_trial:end_trial
         ]
     code_samples_trial = code_samples - code_samples[:, 0].reshape(-1, 1) + before_trial
-
+    # Save data
     eye_data = EyeData(
         date_time=date_time,
         subject=subject,
@@ -114,11 +98,8 @@ def main(
         test_distractor=bhv.test_distractor,
         eye_ml=bhv.eye_ml,
     )
-    ####### ------------------------
-
     output_dir = os.path.normpath(output_dir)
     output_dir = "/".join([output_dir] + ["session_struct"] + ["eye"])
-
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_rec + "_eye.h5"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -127,7 +108,6 @@ def main(
     logging.info(file_name)
     eye_data.to_python_hdf5(output_dir)
     logging.info("Data successfully saved")
-    # del neuron_data
 
 
 if __name__ == "__main__":
@@ -137,7 +117,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("sp_path", help="Path to KS folders location", type=Path)
 
-    parser.add_argument("bhv_path", help="Path to KS folders location", type=Path)
+    parser.add_argument("bhv_path", help="Path to Bhv file", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
