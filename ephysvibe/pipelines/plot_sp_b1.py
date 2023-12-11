@@ -58,6 +58,7 @@ def main(neuron_path: Path, output_dir: Path):
     if not os.path.exists(neuron_path):
         raise FileExistsError
     logging.info("-- Read neuron data --")
+    logging.info(neuron_path)
     neu_data = NeuronData.from_python_hdf5(neuron_path)
     # parameters
     time_before = 500

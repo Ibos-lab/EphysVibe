@@ -35,6 +35,7 @@ def main(
     s_path = sp_path.split(os.sep)
     # load spike data
     logging.info("Loading SpikeData")
+    logging.info(sp_path)
     sp_data = SpikeData.from_python_hdf5(sp_path)
     # Select info about the recording from the path
     date_time = sp_data.date_time
