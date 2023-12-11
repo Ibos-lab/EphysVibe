@@ -4,14 +4,12 @@ import argparse
 from pathlib import Path
 import logging
 import numpy as np
-from ..trials.spikes import firing_rate, sp_constants
-from ..task import def_task
-from ..spike_sorting import config
+from ..trials.spikes import firing_rate
+from ..trials import select_trials, align_trials
 from ..task import task_constants
 import warnings
 from matplotlib import pyplot as plt
-from ..structures.spike_data import SpikeData
-from ..structures.bhv_data import BhvData
+from ..structures.neuron_data import NeuronData
 
 warnings.filterwarnings("ignore")
 logging.basicConfig(
@@ -21,177 +19,208 @@ logging.basicConfig(
 )
 
 
-def main(sp_path: Path, bhv_path: Path, output_dir: Path, e_align: str, t_before: int):
+def plot_raster_conv(sp_sample, start, conv, time, ax1, ax2, colors):
+    n_trials = 0
+    for key, sp in sp_sample.items():
+        # ----- plot conv----------
+        ax1.plot(time, conv[key], color=colors[key])
+        # ----- plot spikes----------
+        rows, cols = np.where(sp >= 1)
+        ax2.scatter(
+            cols + start,
+            rows + n_trials,
+            marker="|",
+            alpha=1,
+            edgecolors="none",
+            color=colors[key],
+            label="sample %s" % key,
+        )
+        n_trials = n_trials + sp.shape[0]
+
+    return ax1, ax2, n_trials
+
+
+def main(neuron_path: Path, output_dir: Path):
     """Compute and plot firing rate during task b1.
 
     Args:
-        filepath (Path): path to the sorted file (.npy).
-        output_dir (Path): output directory.
-        in_out (int): 1 for trials with stimuli in, -1 out.
-        e_align (int): event to which align the spikes.
-        cgroup (str): "good" for individual units, "mua" for multiunits.
+        neuron_path (Path): _description_
+        output_dir (Path): _description_
     """
-    s_path = os.path.normpath(sp_path).split(os.sep)
+    s_path = os.path.normpath(neuron_path).split(os.sep)
     ss_path = s_path[-1][:-3]
     output_dir = "/".join([os.path.normpath(output_dir)] + [s_path[-3]])
 
     # check if output dir exist, create it if not
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     # check if filepath exist
-    if not os.path.exists(sp_path):
+    if not os.path.exists(neuron_path):
         raise FileExistsError
-    if not os.path.exists(bhv_path):
-        raise FileExistsError
+    logging.info("-- Read neuron data --")
+    neu_data = NeuronData.from_python_hdf5(neuron_path)
+    # parameters
+    time_before = 500
+    select_block = 1
+    start = -200
+    end = 1200
+    idx_start = time_before + start
+    idx_end = time_before + end
+    # ---------------
+    conv_all = {"in": {}, "out": {}}
+    all_sp_by_sample = {"in": {}, "out": {}}
+    pos_label = ["in", "out"]
+    pos_code = [1, -1]
+    count_trials = 0
+    all_max_conv = 0
+    all_max_trial = 0
     logging.info("-- Start --")
-    logging.info(s_path[-1])
-    logging.info(os.path.normpath(bhv_path).split(os.sep)[-1])
-    data = SpikeData.from_python_hdf5(sp_path)
-    bhv = BhvData.from_python_hdf5(bhv_path)
-    # Select trials and create task frame
-    trial_idx = np.where(np.logical_and(data.trial_error == 0, data.block == 1))[0]
-    if np.isnan(data.neuron_cond):
-        neuron_cond = np.ones(len(data.clustersgroup))
-    else:
-        neuron_cond = data.neuron_cond
-    task = def_task.create_task_frame(
-        condition=bhv.condition[trial_idx],
-        test_stimuli=bhv.test_stimuli[trial_idx],
-        samples_cond=task_constants.SAMPLES_COND,
-        neuron_cond=neuron_cond,
-    )
-    logging.info("Number of clusters: %d" % len(data.clustersgroup))
-    # define kernel for convolution
-    fs_ds = config.FS / config.DOWNSAMPLE
-    kernel = firing_rate.define_kernel(
-        sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
-    )
-    # select the trials
-    trials_sp = data.sp_samples[trial_idx]
-    trials_s_on = data.code_samples[
-        trial_idx,
-        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1[e_align])[1],
-    ]
-    trials_s_off = data.code_samples[
-        trial_idx,
-        np.where(
-            data.code_numbers[trial_idx] == task_constants.EVENTS_B1["sample_off"]
-        )[1],
-    ]
-    trials_t_on_1 = data.code_samples[
-        trial_idx,
-        np.where(data.code_numbers[trial_idx] == task_constants.EVENTS_B1["test_on_1"])[
-            1
-        ],
-    ]
-    mean_s_off = round((trials_s_off - trials_s_on).mean())
-    mean_t_on_1 = round((trials_t_on_1 - trials_s_on).mean())
-    samples = np.sort(np.unique(task["sample"].values))
-    # plot fr for each neuron
-    i_neuron, i_mua = 1, 1
-    for i_n, cluster in enumerate(data.clustersgroup):
-        if cluster == "good":
-            i_cluster = i_neuron
-            i_neuron += 1
-            cluster = "neuron"
-        else:
-            i_cluster = i_mua
-            i_mua += 1
-        neuron_sp = trials_sp[:, i_n, :]
-        shift_sp = SpikeData.indep_roll(
-            neuron_sp, -(trials_s_on - t_before).astype(int), axis=1
-        )[:, :1600]
-        # Iterate by sample and condition
-        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 8), sharey=True)
-        ax2 = [ax[0].twinx(), ax[1].twinx()]
-        all_max_conv = 0
-        all_max_trial = 0
-        for i_ax, cond in enumerate(["in", "out"]):
-            count_trials = 0
-            max_conv = 0
-            for i_sample in samples:
-                sample_idx = task[
-                    np.logical_and(
-                        task["i_neuron"] == i_n,
-                        np.logical_and(
-                            task["in_out"] == cond, task["sample"] == i_sample
-                        ),
-                    )
-                ]["trial_idx"].values
-                # Select trials with at least 1 spike
-                bool_shift_sp = np.sum(shift_sp[sample_idx], axis=1) > 0
-                mean_sp = np.zeros(shift_sp.shape[1])
-                if np.sum(bool_shift_sp) > 0:
-                    mean_sp = shift_sp[sample_idx][bool_shift_sp].mean(axis=0)
-                # mean_sp = shift_sp[sample_idx].mean(axis=0)
-                conv = np.convolve(mean_sp, kernel, mode="same") * fs_ds
-                max_conv = np.max(conv) if np.max(conv) > max_conv else max_conv
-                time = np.arange(0, len(conv)) - t_before
-                ax[i_ax].plot(time, conv, color=task_constants.PALETTE_B1[i_sample])
-                # Plot spikes
-                count_t = len(sample_idx)
-                rows, cols = np.where(shift_sp[sample_idx] == 1)
-                ax2[i_ax].scatter(
-                    cols - t_before,
-                    rows + count_trials,
-                    marker=2,
-                    linewidths=0.5,
-                    alpha=1,
-                    edgecolors="none",
-                    color=task_constants.PALETTE_B1[i_sample],
-                    label="Sample %s" % i_sample,
-                )
-                count_trials += count_t
+    for code, pos in zip(pos_code, pos_label):
+        # select correct trials, block one, inside/outside RF, and align with sample onset
+        sp_sample_on, mask = align_trials.align_on(
+            sp_samples=neu_data.sp_samples,
+            code_samples=neu_data.code_samples,
+            code_numbers=neu_data.code_numbers,
+            trial_error=neu_data.trial_error,
+            block=neu_data.block,
+            pos_code=neu_data.pos_code,
+            select_block=select_block,
+            select_pos=code,
+            event="sample_on",
+            time_before=time_before,
+            error_type=0,
+        )
+
+        sample_id = neu_data.sample_id[mask]
+        sp_by_sample = select_trials.get_sp_by_sample(sp_sample_on, sample_id)
+        for key, value in sp_by_sample.items():
+            arr = value.mean(axis=0)
+            conv = firing_rate.convolve_signal(
+                arr=arr, fs=1000, w_size=0.1, w_std=0.015, axis=0
+            )[idx_start:idx_end]
+            conv_all[pos][key] = conv
+            sp_by_sample[key] = value[:, idx_start:idx_end]
+            count_trials = value.shape[0]
+            max_conv = np.max(conv)
             all_max_conv = max_conv if max_conv > all_max_conv else all_max_conv
             all_max_trial = (
                 count_trials if count_trials > all_max_trial else all_max_trial
             )
-            ax[i_ax].set_title(cond)
-        for i_ax in range(2):
-            ax[i_ax].set_ylim(0, all_max_conv + all_max_trial + 5)
-            ax[i_ax].set_yticks(np.arange(0, all_max_conv + 5, 10))
-            ax2[i_ax].set_yticks(np.arange(-all_max_conv - 5, all_max_trial))
-            plt.setp(ax2[i_ax].get_yticklabels(), visible=False)
-            ax[i_ax].vlines(
-                [0, mean_s_off, mean_t_on_1],
-                0,
-                all_max_conv + all_max_trial + 5,
-                color="k",
-                linestyles="dashed",
-            )
-        ax[0].set(xlabel="Time (s)", ylabel="Average firing rate")
-        ax2[1].set(xlabel="Time (s)", ylabel="trials")
-        ax2[1].legend(
-            fontsize=9,
-            scatterpoints=5,
-            columnspacing=0.5,
-            facecolor="white",
-            framealpha=1,
-            loc="upper right",
-        )
-        fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.8)
-        fig.text(
-            0.5,
-            0.99,
-            s="%s - Aligned with %s" % (ss_path[:10], e_align),
-            horizontalalignment="center",
-            verticalalignment="center",
-        )
-        fig.suptitle(
-            "%s: %s %d - Depth: %d"
-            % (s_path[-3], cluster, i_cluster, data.clusterdepth[i_n]),
-            x=0.05,
-            y=0.99,
-        )
-        logging.info("Saving figure, %s: %d" % (cluster, i_cluster))
-        fig.savefig(
-            "/".join(
-                [os.path.normpath(output_dir)]
-                + [ss_path + "_" + cluster + "_" + str(i_cluster) + ".jpg"]
-            ),
-            bbox_inches="tight",
-        )
+        all_sp_by_sample[pos] = sp_by_sample
+
+    fig, (ax_in, ax_out) = plt.subplots(nrows=1, ncols=2, figsize=(25, 10), sharey=True)
+
+    time = np.arange(0, end - start) + start
+    ax_in_2 = ax_in.twinx()
+    pos = "in"
+    ax_in, ax_in_2, n_trials_in = plot_raster_conv(
+        all_sp_by_sample[pos],
+        start,
+        conv_all[pos],
+        time,
+        ax_in,
+        ax_in_2,
+        colors=task_constants.PALETTE_B1,
+    )
+    ax_out_2 = ax_out.twinx()
+    pos = "out"
+    ax_out, ax_out_2, n_trials_out = plot_raster_conv(
+        all_sp_by_sample[pos],
+        start,
+        conv_all[pos],
+        time,
+        ax_out,
+        ax_out_2,
+        colors=task_constants.PALETTE_B1,
+    )
+
+    all_max_trial = max([n_trials_in, n_trials_out])
+    # -----parameters in plot
+    ax_in_2.axes.set_yticks(np.arange(-all_max_conv - 5, all_max_trial))
+    ax_in.axes.set_ylim(0, all_max_conv + all_max_trial + 5)
+    ax_in.axes.set_yticks(np.arange(0, all_max_conv + 5, 10))
+    plt.setp(ax_in_2.axes.get_yticklabels(), visible=False)
+    plt.setp(ax_in_2.axes.get_yaxis(), visible=False)
+    ax_in.set_title("in", fontsize=15)
+    ax_in.vlines(
+        [0, 450, 900],
+        0,
+        all_max_conv + all_max_trial + 5,
+        color="k",
+        linestyles="dashed",
+    )
+    ax_in.spines["right"].set_visible(False)
+    ax_in.spines["top"].set_visible(False)
+    ax_in_2.spines["right"].set_visible(False)
+    ax_in_2.spines["top"].set_visible(False)
+    ax_in.set_xlabel(xlabel="Time (ms)", fontsize=18)
+    ax_in.set_ylabel(ylabel="Average firing rate", fontsize=15, loc="bottom")
+    for xtick in ax_in.xaxis.get_major_ticks():
+        xtick.label1.set_fontsize(15)
+    for ytick in ax_in.yaxis.get_major_ticks():
+        ytick.label1.set_fontsize(15)
+    for xtick in ax_in_2.xaxis.get_major_ticks():
+        xtick.label1.set_fontsize(15)
+    # -----parameters out plot
+    ax_out_2.axes.set_yticks(np.arange(-all_max_conv - 5, all_max_trial))
+    ax_out.axes.set_ylim(0, all_max_conv + all_max_trial + 5)
+    ax_out.axes.set_yticks(np.arange(0, all_max_conv + 5, 10))
+    plt.setp(ax_out_2.axes.get_yticklabels(), visible=False)
+    plt.setp(ax_out_2.axes.get_yaxis(), visible=False)
+    ax_out.set_title("out", fontsize=15)
+    ax_out.vlines(
+        [0, 450, 900],
+        0,
+        all_max_conv + all_max_trial + 5,
+        color="k",
+        linestyles="dashed",
+    )
+    ax_out.spines["right"].set_visible(False)
+    ax_out.spines["top"].set_visible(False)
+    ax_out_2.spines["right"].set_visible(False)
+    ax_out_2.spines["top"].set_visible(False)
+    ax_out.set_xlabel(xlabel="Time (ms)", fontsize=18)
+    for xtick in ax_out.xaxis.get_major_ticks():
+        xtick.label1.set_fontsize(15)
+    for ytick in ax_out.yaxis.get_major_ticks():
+        ytick.label1.set_fontsize(15)
+    for xtick in ax_out_2.xaxis.get_major_ticks():
+        xtick.label1.set_fontsize(15)
+    ax_out_2.legend(
+        fontsize=15, scatterpoints=5, columnspacing=0.5, framealpha=0, loc="upper right"
+    )
+    ## --- figure
+    fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.8)
+    fig.suptitle(
+        "%s: %s %s %d "
+        % (
+            neu_data.date_time,
+            neu_data.area,
+            neu_data.cluster_group,
+            neu_data.cluster_number,
+        ),
+        x=0.05,
+        y=0.99,
+        fontsize=15,
+    )
+
+    logging.info(
+        "Saving figure, %s: %d" % (neu_data.cluster_group, neu_data.cluster_number)
+    )
+    fig.savefig(
+        "/".join(
+            [os.path.normpath(output_dir)]
+            + [
+                ss_path
+                + "_"
+                + neu_data.cluster_group
+                + "_"
+                + str(neu_data.cluster_number)
+                + ".jpg"
+            ]
+        ),
+        bbox_inches="tight",
+    )
     logging.info("-- end --")
 
 
@@ -200,27 +229,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("sp_path", help="Path to the spikes file (sp.h5)", type=Path)
-    parser.add_argument("bhv_path", help="Path to the bhv file (bhv.h5)", type=Path)
+    parser.add_argument("neuron_path", help="Path to neuron data (neu.h5)", type=Path)
     parser.add_argument(
         "--output_dir", "-o", default="./output", help="Output directory", type=Path
     )
-    parser.add_argument(
-        "--e_align",
-        "-e",
-        default="sample_on",
-        help="Event to aligne the spikes",
-        type=str,
-    )
-    parser.add_argument(
-        "--t_before",
-        "-t",
-        default=200,
-        help="Time before e_aligne",
-        type=int,
-    )
     args = parser.parse_args()
     try:
-        main(args.sp_path, args.bhv_path, args.output_dir, args.e_align, args.t_before)
+        main(args.neuron_path, args.output_dir)
     except FileExistsError:
         logging.error("filepath does not exist")
