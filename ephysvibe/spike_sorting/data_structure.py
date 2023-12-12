@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import os
 import logging
 import re
@@ -53,6 +54,7 @@ def bhv_to_dictionary(bhv):
     return bhv_res
 
 
+# TODO: adapt this function to create the neuron structures
 def sort_data_trial(
     clusters,
     spike_sample,
@@ -96,6 +98,34 @@ def sort_data_trial(
     return sp_samples
 
 
+def get_clusters_spikes(
+    clusters: pd.DataFrame,
+    spike_sample: np.ndarray,
+    spike_clusters: np.ndarray,
+) -> np.ndarray:
+    """_summary_
+
+    Args:
+        clusters (pd.DataFrame): _description_
+        spike_sample (np.ndarray): _description_
+        spike_clusters (np.ndarray): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
+    # remap cluster ID to numbers from 0 to n clusters
+    i_cluster = clusters["i_cluster"].values
+    clusters_id = clusters["cluster_id"].values
+    spike_clusters = pd.Series(spike_clusters).replace(clusters_id, i_cluster).values
+    # create sp matrix
+    n_neurons = len(i_cluster)
+    time = max(spike_sample)
+    sp_samples = np.zeros((n_neurons, time + 1))
+    sp_samples[spike_clusters, spike_sample] = 1
+
+    return sp_samples
+
+
 def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
     output_dir = os.path.normpath(output_dir)
     path = "/".join([output_dir] + ["session_struct"] + [subject] + [area])
@@ -105,32 +135,3 @@ def save_data(data, output_dir, subject, date_time, area, n_exp, n_record):
     logging.info("Saving data")
     np.save("/".join([path] + [file_name]), data)
     logging.info("Data successfully saved")
-
-
-# def build_data_structure(
-#     clusters,
-#     sp_samples,
-#     code_numbers,
-#     code_samples,
-#     eyes_values,
-#     lfp_values,
-#     samples,
-#     blocks,
-#     bhv_trial,
-# ):
-#     sp_data = {
-#         "sp_samples": sp_samples,
-#         "blocks": blocks,
-#         "code_numbers": code_numbers,
-#         "code_samples": code_samples,
-#         "eyes_values": eyes_values,
-#         "lfp_values": lfp_values,
-#         "samples": samples,
-#         "clusters_id": clusters["cluster_id"].values,
-#         "clusters_ch": clusters["ch"].values,
-#         "clustersgroup": clusters["group"].values,
-#         "clusterdepth": clusters["depth"].values,
-#     }
-#     data = {"sp_data": sp_data, "bhv": bhv_trial}
-
-#     return data
