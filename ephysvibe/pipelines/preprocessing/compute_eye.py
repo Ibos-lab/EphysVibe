@@ -18,21 +18,22 @@ logging.basicConfig(
 
 
 def main(
-    sp_path: Path,
+    ks_path: Path,
     bhv_path: Path,
     output_dir: Path = "./output",
 ) -> None:
     """Compute eye structure.
 
     Args:
-        sp_path (Path): path to Kilosort folders.
+        ks_path (Path): path to Kilosort folders.
+        bhv_path (Path): path to bhv file.
         output_dir (Path): output directory.
     """
     logging.info("-- Start --")
     # define paths
-    sp_path = os.path.normpath(sp_path)
-    time_path = "/".join([sp_path] + ["sample_numbers.npy"])
-    continuous_path = "/".join([sp_path] + ["continuous.dat"])
+    ks_path = os.path.normpath(ks_path)
+    time_path = "/".join([ks_path] + ["sample_numbers.npy"])
+    continuous_path = "/".join([ks_path] + ["continuous.dat"])
     # load bhv data
     logging.info("Loading Bhv data")
     bhv = BhvData.from_python_hdf5(bhv_path)
@@ -115,7 +116,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("sp_path", help="Path to KS folders location", type=Path)
+    parser.add_argument("ks_path", help="Path to KS folders location", type=Path)
 
     parser.add_argument("bhv_path", help="Path to Bhv file", type=Path)
     parser.add_argument(
@@ -124,6 +125,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     try:
-        main(args.sp_path, args.bhv_path, args.output_dir)
+        main(args.ks_path, args.bhv_path, args.output_dir)
     except FileExistsError:
         logging.error("path does not exist")
