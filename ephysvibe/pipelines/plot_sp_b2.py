@@ -80,6 +80,8 @@ def main(neu_path: Path, output_dir: Path):
     # plot
     fig, _ = plt.subplots(figsize=(8, 8), sharex=True, sharey=True)
     conv_max = np.nanmax(conv_all)
+    if np.isnan(conv_max):
+        conv_max = 0
     max_num_trials = max(n_trials)
     for code, sp_target_on, conv in zip(
         position_codes.keys(), sp_target_on_all, conv_all
