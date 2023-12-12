@@ -79,7 +79,7 @@ def main(neu_path: Path, output_dir: Path):
         n_trials.append(mask_in.sum())
     # plot
     fig, _ = plt.subplots(figsize=(8, 8), sharex=True, sharey=True)
-    conv_max = np.max(conv_all)
+    conv_max = np.nanmax(conv_all)
     max_num_trials = max(n_trials)
     for code, sp_target_on, conv in zip(
         position_codes.keys(), sp_target_on_all, conv_all
