@@ -114,7 +114,7 @@ def main(neu_path: Path, output_dir: Path):
             conv_max + max_num_trials * 3,
             color="k",
             linestyles="dashed",
-        )  # target_on
+        )
 
     fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
     fig.suptitle(
@@ -142,9 +142,10 @@ def main(neu_path: Path, output_dir: Path):
                 + neu_data.cluster_group
                 + "_"
                 + str(neu_data.cluster_number)
-                + ".jpg"
+                + ".svg"
             ]
         ),
+        format="svg",
         bbox_inches="tight",
     )
 

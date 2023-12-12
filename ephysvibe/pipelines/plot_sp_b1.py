@@ -217,9 +217,10 @@ def main(neuron_path: Path, output_dir: Path):
                 + neu_data.cluster_group
                 + "_"
                 + str(neu_data.cluster_number)
-                + ".jpg"
+                + ".svg"
             ]
         ),
+        format="svg",
         bbox_inches="tight",
     )
     logging.info("-- end --")
