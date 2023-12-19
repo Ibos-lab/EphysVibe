@@ -51,7 +51,7 @@ def main(
     logging.info("Loading bhv data")
     bhv = BhvData.from_matlab_mat(bhv_mat_path)
     # load events
-    event_data_files = "/".join(s_path[:-1] + [event_path])
+    event_data_files = "/".join(s_path[:-1] + [os.path.normpath(event_path)])
     events = utils_oe.load_event_files(event_data_files)
     # reconstruct 8 bit words
     _, real_strobes, len_idx, idx_start, idx_end = utils_oe.find_events_codes(
