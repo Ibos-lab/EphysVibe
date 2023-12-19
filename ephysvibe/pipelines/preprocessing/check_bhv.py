@@ -31,7 +31,7 @@ def main(
     if not os.path.exists(bhv_mat_path):
         logging.error("bhv_mat_path %s does not exist" % bhv_mat_path)
         raise FileExistsError
-    ks_path = "/".join([ks_path] + ["sample_numbers.npy"])
+    ks_path = "/".join([os.path.normpath(ks_path)] + ["sample_numbers.npy"])
     if not os.path.exists(ks_path):
         logging.error("ks_path %s does not exist" % ks_path)
         raise FileExistsError
