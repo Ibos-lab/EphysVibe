@@ -11,6 +11,7 @@
 # }
 EVENTS_B1 = {
     "start_trial": 9,
+    "fix_on": 35,
     "fixation": 8,
     "sample_on": 23,
     "sample_off": 24,
@@ -24,6 +25,7 @@ EVENTS_B1 = {
     "test_off_4": 32,
     "test_on_5": 33,
     "test_off_5": 34,
+    "fix_off": 36,
     "end_trial": 18,
 }
 PALETTE_B1 = {
