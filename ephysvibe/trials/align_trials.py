@@ -35,6 +35,7 @@ def align_on(
     error_type: int = 0,
     select_pos: int = 1,
 ) -> [np.ndarray, np.ndarray]:
+    # Select trials with the selected error and block
     mask = np.where(
         np.logical_and(
             pos_code == select_pos,
@@ -43,15 +44,27 @@ def align_on(
         True,
         False,
     )
-    sp_samples = sp_samples[mask]
+    sp_samples_m = sp_samples[mask]
+    # Code corresponding to the event
     if select_block == 1:
         code = task_constants.EVENTS_B1[event]
     elif select_block == 2:
         code = task_constants.EVENTS_B2[event]
     else:
         return
-    shifts = code_samples[mask][np.where(code_numbers[mask] == code, True, False)]
+    # Find the codes in the code_numbers matrix
+    code_mask = np.where(code_numbers[mask] == code, True, False)
+    # Wether the event ocured in each trial
+    trials_mask = np.any(code_mask, axis=1)
+    # Select the sample when the event ocurred
+    shifts = code_samples[mask][code_mask]
     shifts = (shifts - time_before).astype(int)
     # align sp
-    align_sp = indep_roll(arr=sp_samples, shifts=-shifts, axis=1)
-    return align_sp, mask
+    align_sp = indep_roll(arr=sp_samples_m[trials_mask], shifts=-shifts, axis=1)
+    # Create mask for selecting the trials from the original matrix size
+    tr = np.arange(sp_samples.shape[0])
+    complete_mask = np.isin(tr, tr[mask][trials_mask])
+    return (
+        align_sp,
+        complete_mask,
+    )
