@@ -16,6 +16,10 @@
 - Output: sp.h5
 - Example: 
 
+### Compute neurons
+- 
+
+
 `python -m ephysvibe.pipelines.preprocessing.compute_spk [path_continuous] [path_bhv] [-o output_path] `
 ### 4 Compute lfp
 - Computes local field potentials from raw data using [compute_lfp.py](https://github.com/camilosada/EphysVibe/blob/master/ephysvibe/pipelines/preprocessing/compute_lfp.py)
@@ -31,3 +35,15 @@
 
 ## Information within each structure
 
+### bhv_data
+* trial_error: 
+  * 0: correct trial 
+  * 1: no bartouch
+  * 2: no fixation
+  * 3: break fixation
+  * 4: no fixation
+  * 5: bar release (before test period)
+  * 6: false alarm (relase during test period)
+  * 8: missed target
+  * 10: break fixation during delay presentaton
+* 
