@@ -31,7 +31,7 @@ def compute_roc_auc(group1, group2):
             score = metrics.auc(fpr[fpr.argsort()], tpr[fpr.argsort()])
         roc_score.append(score)
     roc_score = np.array(roc_score)
-    roc_score = processing.scale_p(np.round(roc_score, 2), out_range=[-1, 1])
+    roc_score = processing.scale_signal(np.round(roc_score, 2), out_range=[-1, 1])
     return roc_score, np.array(p)
 
 
