@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Dict, List
 
 
 def select_trials_block(sp_py, n_block):
@@ -28,17 +29,15 @@ def get_trials_by_sample(sample_id: np.ndarray) -> np.ndarray:
     return o1_c1_idx, o1_c5_idx, o5_c1_idx, o5_c5_idx, o0_c0_idx
 
 
-def get_sp_by_sample(sp, sample_id: np.ndarray) -> np.ndarray:
-    o1_c1_sp = sp[np.where(sample_id == 11)[0]]
-    o1_c5_sp = sp[np.where(sample_id == 15)[0]]
-    o5_c1_sp = sp[np.where(sample_id == 51)[0]]
-    o5_c5_sp = sp[np.where(sample_id == 55)[0]]
-    o0_c0_sp = sp[np.where(sample_id == 0)[0]]
-
-    return {
-        "o1_c1": o1_c1_sp,
-        "o1_c5": o1_c5_sp,
-        "o5_c1": o5_c1_sp,
-        "o5_c5": o5_c5_sp,
-        "o0_c0": o0_c0_sp,
-    }
+def get_sp_by_sample(
+    sp: np.ndarray, sample_id: np.ndarray, samples: List = [11, 15, 51, 55, 0]
+) -> Dict:
+    sp_samples = {}
+    for s_id in samples:
+        s_sp = sp[np.where(sample_id == s_id, True, False)]
+        # Check number of trials
+        if s_sp.shape[0] > 0:
+            sp_samples[str(s_id)] = s_sp
+        else:
+            sp_samples[str(s_id)] = np.array([np.nan])
+    return sp_samples
