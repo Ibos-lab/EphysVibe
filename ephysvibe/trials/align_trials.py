@@ -68,3 +68,22 @@ def align_on(
         align_sp,
         complete_mask,
     )
+
+
+def get_align_tr(
+    neu_data, select_block, select_pos, time_before, event="sample_on", error_type=0
+):
+    sp, mask = align_on(
+        sp_samples=neu_data.sp_samples,
+        code_samples=neu_data.code_samples,
+        code_numbers=neu_data.code_numbers,
+        trial_error=neu_data.trial_error,
+        block=neu_data.block,
+        pos_code=neu_data.pos_code,
+        select_block=select_block,
+        select_pos=select_pos,
+        event=event,
+        time_before=time_before,
+        error_type=error_type,
+    )
+    return sp, mask
