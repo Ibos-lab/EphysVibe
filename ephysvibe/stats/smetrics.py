@@ -3,6 +3,7 @@ from scipy import stats
 from ..stats import processing
 from ..trials import align_trials
 from sklearn import metrics
+from ..trials.spikes import firing_rate
 
 
 def compute_roc_auc(group1, group2):
@@ -66,44 +67,119 @@ def get_selectivity(sp_1, sp_2, win):
     return lat, roc_score[lat]
 
 
-def get_vd_index(bl, group1, group2, step=1, avg_win=100, pwin=75):
+# def get_vd_index(bl, group1, group2, step=1, avg_win=100, pwin=75):
+# Computes the index using the significant period
+#     p_son, p_d = [], []
+#     bl = np.mean(bl, axis=1)
+#     for i in range(0, group1.shape[1] - avg_win, step):
+#         g1 = np.mean(group1[:, i : i + avg_win], axis=1)
+#         p_son.append(stats.ranksums(bl, g1)[1])
+#     for i in range(0, group2.shape[1] - avg_win, step):
+#         g2 = np.mean(group2[:, i : i + avg_win], axis=1)
+#         p_d.append(stats.ranksums(bl, g2)[1])
+#     p_son = np.array(p_son)
+#     p_d = np.array(p_d)
+#     lat_son, end_son = find_latency(p_value=p_son, win=pwin, step=1)
+#     lat_d, end_d = find_latency(p_value=p_d, win=pwin, step=1)
+#     if np.logical_and(np.isnan(lat_son), ~np.isnan(lat_d)):
+#         g1 = group1
+#         g2 = group2[:, lat_d:end_d]
+#     elif np.logical_and(~np.isnan(lat_son), np.isnan(lat_d)):
+#         g1 = group1[:, lat_son:end_son]
+#         g2 = group2
+#     elif np.logical_and(np.isnan(lat_son), np.isnan(lat_d)):
+#         return np.nan, np.nan, np.nan, np.nan
+#     else:
+#         g1 = group1[:, lat_son:end_son]
+#         g2 = group2[:, lat_d:end_d]
+#     bl_mean = np.mean(bl)
+#     g1_mean = np.mean(g1)
+#     g2_mean = np.mean(g2)
+#     g2_mean_bl = np.abs(g2_mean - bl_mean)
+#     g1_mean_bl = np.abs(g1_mean - bl_mean)
+#     vd_idx = (g2_mean_bl - g1_mean_bl) / (g1_mean_bl + g2_mean_bl)
+#     return vd_idx, bl_mean, g1_mean, g2_mean
+
+
+def get_vd_index(bl, group1, group2, st_v, end_v, st_d, end_d, pwin=75):
     p_son, p_d = [], []
     bl = np.mean(bl, axis=1)
-    for i in range(0, group1.shape[1] - avg_win, step):
-        g1 = np.mean(group1[:, i : i + avg_win], axis=1)
+    for i in range(st_v, end_v):
+        g1 = group1[:, i]
         p_son.append(stats.ranksums(bl, g1)[1])
-    for i in range(0, group2.shape[1] - avg_win, step):
-        g2 = np.mean(group2[:, i : i + avg_win], axis=1)
+    for i in range(st_d, end_d):
+        g2 = group2[:, i]
         p_d.append(stats.ranksums(bl, g2)[1])
     p_son = np.array(p_son)
     p_d = np.array(p_d)
     lat_son, end_son = find_latency(p_value=p_son, win=pwin, step=1)
-    lat_d, end_d = find_latency(p_value=p_d, win=pwin, step=1)
-    if np.logical_and(np.isnan(lat_son), ~np.isnan(lat_d)):
-        g1 = group1
-        g2 = group2[:, lat_d:end_d]
-    elif np.logical_and(~np.isnan(lat_son), np.isnan(lat_d)):
-        g1 = group1[:, lat_son:end_son]
-        g2 = group2
-    elif np.logical_and(np.isnan(lat_son), np.isnan(lat_d)):
+    lat_don, end_don = find_latency(p_value=p_d, win=pwin, step=1)
+    if np.logical_and(np.isnan(lat_son), np.isnan(lat_don)):
         return np.nan, np.nan, np.nan, np.nan
     else:
-        g1 = group1[:, lat_son:end_son]
-        g2 = group2[:, lat_d:end_d]
+        g1 = group1[:, st_v:end_v]
+        g2 = group2[:, st_d:end_d]
     bl_mean = np.mean(bl)
     g1_mean = np.mean(g1)
     g2_mean = np.mean(g2)
     g2_mean_bl = np.abs(g2_mean - bl_mean)
     g1_mean_bl = np.abs(g1_mean - bl_mean)
+    # if np.logical_and(g1_mean_bl*1000<3,g2_mean_bl*1000<3):
+    #     return np.nan, np.nan, np.nan, np.nan
     vd_idx = (g2_mean_bl - g1_mean_bl) / (g1_mean_bl + g2_mean_bl)
-    return vd_idx, bl_mean, g1_mean, g2_mean
+    return vd_idx, bl_mean * 1000, g1_mean * 1000, g2_mean * 1000
+
+
+# def compute_vd_idx(
+#     neu_data=None,
+#     time_before=None,
+#     vd_st=10,
+#     vd_win=150,
+#     vd_avg_win=200,
+#     sp_s=None,
+#     sp_d=None,
+#     in_out=1,
+# ):
+#     if neu_data is not None:
+#         # get spike matrices in and out conditions
+#         sp_s, mask_s = align_trials.get_align_tr(
+#             neu_data, select_block=1, select_pos=in_out, time_before=time_before
+#         )
+#         sp_s = sp_s[neu_data.sample_id[mask_s] != 0]
+#         sp_d, mask_d = align_trials.get_align_tr(
+#             neu_data,
+#             select_block=1,
+#             select_pos=in_out,
+#             time_before=0,
+#             event="sample_off",
+#         )
+#         sp_d = sp_d[neu_data.sample_id[mask_d] != 0]
+
+#     #### Compute VD index
+#     # get avg fr over trials and time
+#     vd_idx, bl_mean, g1_mean, g2_mean = np.nan, np.nan, np.nan, np.nan
+
+#     if np.logical_and(sp_d.shape[0] > 2, sp_d.ndim > 1):
+#         vd_idx, bl_mean, g1_mean, g2_mean = get_vd_index(
+#             bl=sp_s[:, :time_before],
+#             group1=sp_s[:, time_before + vd_st : time_before + vd_st + 460],
+#             group2=sp_d[:, vd_st:400],
+#             step=1,
+#             avg_win=vd_avg_win,
+#             pwin=vd_win,
+#         )
+
+#     return vd_idx, bl_mean, g1_mean, g2_mean
 
 
 def compute_vd_idx(
     neu_data=None,
     time_before=None,
-    vd_st=10,
-    vd_win=150,
+    st_v=50,
+    end_v=200,
+    st_d=100,
+    end_d=300,
+    vd_pwin=75,
     vd_avg_win=200,
     sp_s=None,
     sp_d=None,
@@ -112,17 +188,27 @@ def compute_vd_idx(
     if neu_data is not None:
         # get spike matrices in and out conditions
         sp_s, mask_s = align_trials.get_align_tr(
-            neu_data, select_block=1, select_pos=in_out, time_before=time_before
+            neu_data,
+            select_block=1,
+            select_pos=in_out,
+            time_before=time_before + vd_avg_win,
         )
         sp_s = sp_s[neu_data.sample_id[mask_s] != 0]
         sp_d, mask_d = align_trials.get_align_tr(
             neu_data,
             select_block=1,
             select_pos=in_out,
-            time_before=0,
+            time_before=0 + vd_avg_win,
             event="sample_off",
         )
         sp_d = sp_d[neu_data.sample_id[mask_d] != 0]
+
+        sp_s = firing_rate.moving_average(data=sp_s, win=vd_avg_win, step=1)[
+            :, vd_avg_win:
+        ]
+        sp_d = firing_rate.moving_average(data=sp_d, win=vd_avg_win, step=1)[
+            :, vd_avg_win:
+        ]
 
     #### Compute VD index
     # get avg fr over trials and time
@@ -131,11 +217,13 @@ def compute_vd_idx(
     if np.logical_and(sp_d.shape[0] > 2, sp_d.ndim > 1):
         vd_idx, bl_mean, g1_mean, g2_mean = get_vd_index(
             bl=sp_s[:, :time_before],
-            group1=sp_s[:, time_before + vd_st : time_before + vd_st + 460],
-            group2=sp_d[:, vd_st:400],
-            step=1,
-            avg_win=vd_avg_win,
-            pwin=vd_win,
+            group1=sp_s[:, time_before : time_before + st_v + 460],
+            group2=sp_d[:, : st_d + 460],
+            st_v=st_v,
+            end_v=end_v,
+            st_d=st_d,
+            end_d=end_d,
+            pwin=vd_pwin,
         )
 
     return vd_idx, bl_mean, g1_mean, g2_mean
