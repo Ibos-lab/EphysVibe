@@ -32,11 +32,11 @@ EVENTS_B1 = {
     "reward": 96,
 }
 PALETTE_B1 = {
-    "o1_c1": "firebrick",
-    "o1_c5": "teal",
-    "o5_c1": "tomato",
-    "o5_c5": "lightseagreen",
-    "o0_c0": "grey",
+    "11": "firebrick",  # o1_c1
+    "15": "teal",  # o1_c5
+    "51": "tomato",  # o5_c1
+    "55": "lightseagreen",  # o5_c5
+    "0": "grey",  # o0_c0
 }
 
 EVENTS_B2 = {
