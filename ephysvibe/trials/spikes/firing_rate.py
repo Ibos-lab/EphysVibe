@@ -11,23 +11,46 @@ from ...spike_sorting import config
 from ...task import task_constants
 
 
+# def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
+#     d_shape = data.shape
+#     count = 0
+#     if len(d_shape) == 3:
+#         d_avg = np.zeros((d_shape[0], d_shape[1], int(np.floor(d_shape[2] / step))))
+#         for i_step in np.arange(0, d_shape[2] - step, step):
+#             d_avg[:, :, count] = np.mean(data[:, :, i_step : i_step + win], axis=2)
+#             count += 1
+#     if len(d_shape) == 2:
+#         d_avg = np.zeros((d_shape[0], int(np.floor(d_shape[1] / step))))
+#         for i_step in np.arange(0, d_shape[1] - step, step):
+#             d_avg[:, count] = np.mean(data[:, i_step : i_step + win], axis=1)
+#             count += 1
+#     if len(d_shape) == 1:
+#         d_avg = np.zeros((int(np.floor(d_shape[0] / step))))
+#         for i_step in np.arange(0, d_shape[0] - step, step):
+#             d_avg[count] = np.mean(data[i_step : i_step + win], axis=0)
+#             count += 1
+#     return d_avg
 def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
     d_shape = data.shape
     count = 0
+    win = int(np.floor(win / 2))
     if len(d_shape) == 3:
         d_avg = np.zeros((d_shape[0], d_shape[1], int(np.floor(d_shape[2] / step))))
-        for i_step in np.arange(0, d_shape[2] - win, step):
-            d_avg[:, :, count] = np.mean(data[:, :, i_step : i_step + win], axis=2)
+        for i_step in np.arange(0, d_shape[2] - step, step):
+            st_win = 0 if i_step - win < 0 else i_step - win
+            d_avg[:, :, count] = np.mean(data[:, :, st_win : i_step + win], axis=2)
             count += 1
     if len(d_shape) == 2:
         d_avg = np.zeros((d_shape[0], int(np.floor(d_shape[1] / step))))
-        for i_step in np.arange(0, d_shape[1] - win, step):
-            d_avg[:, count] = np.mean(data[:, i_step : i_step + win], axis=1)
+        for i_step in np.arange(0, d_shape[1] - step, step):
+            st_win = 0 if i_step - win < 0 else i_step - win
+            d_avg[:, count] = np.mean(data[:, st_win : i_step + win], axis=1)
             count += 1
     if len(d_shape) == 1:
         d_avg = np.zeros((int(np.floor(d_shape[0] / step))))
-        for i_step in np.arange(0, d_shape[0] - win, step):
-            d_avg[count] = np.mean(data[i_step : i_step + win], axis=0)
+        for i_step in np.arange(0, d_shape[0] - step, step):
+            st_win = 0 if i_step - win < 0 else i_step - win
+            d_avg[count] = np.mean(data[st_win : i_step + win], axis=0)
             count += 1
     return d_avg
 
@@ -49,19 +72,19 @@ def define_kernel(w_size, w_std, fs):
     return kernel
 
 
-def convolve_signal(
-    arr: np.ndarray,
-    fs: int = 1000,
-    w_size: float = 0.1,
-    w_std: float = 0.015,
-    axis: int = 1,
-):
-    # define kernel for convolution
-    kernel = define_kernel(w_size, w_std, fs=fs)
-    conv = np.apply_along_axis(
-        lambda m: np.convolve(m, kernel, mode="same"), axis=axis, arr=arr
-    )
-    return conv * fs
+# def convolve_signal(
+#     arr: np.ndarray,
+#     fs: int = 1000,
+#     w_size: float = 0.1,
+#     w_std: float = 0.015,
+#     axis: int = 1,
+# ):
+#     # define kernel for convolution
+#     kernel = define_kernel(w_size, w_std, fs=fs)
+#     conv = np.apply_along_axis(
+#         lambda m: np.convolve(m, kernel, mode="same"), axis=axis, arr=arr
+#     )
+#     return conv * fs
 
 
 def convolve_signal(
