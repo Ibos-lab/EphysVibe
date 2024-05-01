@@ -127,7 +127,13 @@ def get_vd_index(bl, group1, group2, st_v, end_v, st_d, end_d, pwin=75):
     # if np.logical_and(g1_mean_bl*1000<3,g2_mean_bl*1000<3):
     #     return np.nan, np.nan, np.nan, np.nan
     vd_idx = (g2_mean_bl - g1_mean_bl) / (g1_mean_bl + g2_mean_bl)
-    return vd_idx, bl_mean * 1000, g1_mean * 1000, g2_mean * 1000
+
+    if np.logical_and(np.isnan(lat_son), vd_idx < 0):
+        return np.nan, np.nan, np.nan, np.nan
+    elif np.logical_and(np.isnan(lat_don), vd_idx > 0):
+        return np.nan, np.nan, np.nan, np.nan
+    else:
+        return vd_idx, bl_mean * 1000, g1_mean * 1000, g2_mean * 1000
 
 
 # def compute_vd_idx(
