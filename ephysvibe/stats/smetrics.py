@@ -193,34 +193,23 @@ def compute_vd_idx(
     return vd_idx, bl_mean, g1_mean, g2_mean
 
 
-def compute_fr(frsignal, sample_id):
+def compute_fr(frsignal, st_max=0, win=100):
+    nan_init = [np.nan] * 3
+    mean_fr, lat_max_fr, mean_max_fr = nan_init
+    win = int(win / 2)
+    if ~np.all(np.isnan(frsignal)):
+        # Mean fr during epochs
+        mean_fr = np.nanmean(frsignal) * 1000
+        # Max fr
+        imax = np.nanargmax(frsignal[st_max:])
+        if ~np.isnan(imax):
+            imax = int(imax)
+            lat_max_fr = imax
+            imax = win if imax < win else imax
+            mean_max_fr = np.mean(frsignal[imax - win : imax + win]) * 1000
 
-    # Mean fr during epochs
-    mean_fr_sample = np.nanmean(frsignal[:, :450]) * 1000
-    mean_fr_delay = np.nanmean(frsignal[:, 450:900]) * 1000
-    # Max fr during sample NN
-    imax = np.median(np.nanargmax(frsignal[sample_id != 0, :450], axis=1))
-    if ~np.isnan(imax):
-        imax = int(imax)
-        lat_max_fr_sample_NN = imax
-        imax = 100 if imax < 100 else imax
-        mean_max_fr_sample_NN = (
-            np.mean(frsignal[sample_id != 0, imax - 100 : imax + 100]) * 1000
-        )
-    # Max fr during sample N
-    imax = np.median(np.nanargmax(frsignal[sample_id == 0, :450], axis=1))
-    if ~np.isnan(imax):
-        imax = int(imax)
-        lat_max_fr_sample_N = imax
-        imax = 100 if imax < 100 else imax
-        mean_max_fr_sample_N = (
-            np.mean(frsignal[sample_id == 0, imax - 100 : imax + 100]) * 1000
-        )
     return {
-        "mean_fr_sample": mean_fr_sample,
-        "mean_fr_delay": mean_fr_delay,
-        "lat_max_fr_sample_NN": lat_max_fr_sample_NN,
-        "mean_max_fr_sample_NN": mean_max_fr_sample_NN,
-        "lat_max_fr_sample_N": lat_max_fr_sample_N,
-        "mean_max_fr_sample_N": mean_max_fr_sample_N,
+        "mean_fr": mean_fr,
+        "lat_max_fr": lat_max_fr,
+        "mean_max_fr": mean_max_fr,
     }

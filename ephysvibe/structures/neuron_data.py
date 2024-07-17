@@ -212,17 +212,27 @@ class NeuronData:
                 time_before=time_before,
                 error_type=0,
             )
-            # Average fr across time
-            sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)[
-                :, time_before:
-            ]
-            res_fr = smetrics.compute_fr(
-                frsignal=sp_avg, sample_id=self.sample_id[mask]
-            )
-            res[in_out + "_mean_fr_sample"] = res_fr["mean_fr_sample"]
-            res[in_out + "_mean_fr_delay"] = res_fr["mean_fr_delay"]
-            res[in_out + "_lat_max_fr_sample_NN"] = res_fr["lat_max_fr_sample_NN"]
-            res[in_out + "_mean_max_fr_sample_NN"] = res_fr["mean_max_fr_sample_NN"]
-            res[in_out + "_lat_max_fr_sample_N"] = res_fr["lat_max_fr_sample_N"]
-            res[in_out + "_mean_max_fr_sample_N"] = res_fr["mean_max_fr_sample_N"]
+            for nn_n in ["NN", "N"]:
+                if nn_n == "NN":
+                    sample_mask = self.sample_id[mask] != 0
+                else:
+                    sample_mask = self.sample_id[mask] == 0
+                # Average fr across time
+                sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)
+                frsignal = np.mean(
+                    sp_avg[sample_mask, time_before : time_before + 450], axis=0
+                )
+                res_fr = smetrics.compute_fr(frsignal=frsignal)
+                res[in_out + "_mean_fr_sample_" + nn_n] = res_fr["mean_fr"]
+                res[in_out + "_lat_max_fr_sample_" + nn_n] = res_fr["lat_max_fr"]
+                res[in_out + "_mean_max_fr_sample_" + nn_n] = res_fr["mean_max_fr"]
+
+                frsignal = np.mean(
+                    sp_avg[sample_mask, time_before + 450 : time_before + 850], axis=0
+                )
+                res_fr = smetrics.compute_fr(frsignal=frsignal)
+                res[in_out + "_mean_fr_delay_" + nn_n] = res_fr["mean_fr"]
+                res[in_out + "_lat_max_fr_delay_" + nn_n] = res_fr["lat_max_fr"]
+                res[in_out + "_mean_max_fr_delay_" + nn_n] = res_fr["mean_max_fr"]
+
         return res
