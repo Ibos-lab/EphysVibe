@@ -38,19 +38,19 @@ def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:
         d_avg = np.zeros((d_shape[0], d_shape[1], int(np.floor(d_shape[2] / step))))
         for i_step in np.arange(0, d_shape[2] - step, step):
             st_win = 0 if i_step - win < 0 else i_step - win
-            d_avg[:, :, count] = np.mean(data[:, :, st_win : i_step + win], axis=2)
+            d_avg[:, :, count] = np.nanmean(data[:, :, st_win : i_step + win], axis=2)
             count += 1
     if len(d_shape) == 2:
         d_avg = np.zeros((d_shape[0], int(np.floor(d_shape[1] / step))))
         for i_step in np.arange(0, d_shape[1] - step, step):
             st_win = 0 if i_step - win < 0 else i_step - win
-            d_avg[:, count] = np.mean(data[:, st_win : i_step + win], axis=1)
+            d_avg[:, count] = np.nanmean(data[:, st_win : i_step + win], axis=1)
             count += 1
     if len(d_shape) == 1:
         d_avg = np.zeros((int(np.floor(d_shape[0] / step))))
         for i_step in np.arange(0, d_shape[0] - step, step):
             st_win = 0 if i_step - win < 0 else i_step - win
-            d_avg[count] = np.mean(data[st_win : i_step + win], axis=0)
+            d_avg[count] = np.nanmean(data[st_win : i_step + win], axis=0)
             count += 1
     return d_avg
 

@@ -2,6 +2,11 @@ import h5py
 import numpy as np
 from pathlib import Path
 import logging
+from typing import Tuple, Dict
+from ephysvibe.task import task_constants
+from ephysvibe.trials.spikes import firing_rate
+from ephysvibe.trials import align_trials
+from ephysvibe.stats import smetrics
 
 
 class NeuronData:
@@ -102,31 +107,6 @@ class NeuronData:
             setattr(self, key, kwargs[key])
         # self._check_shapes()
 
-    def _check_shapes(self):
-        n_trials, n_neurons, n_ts = self.sp_samples.shape
-        n_codes = self.code_numbers.shape[1]
-        # Check if the number of trials is the same than in bhv
-        if self.block.shape[0] != n_trials:
-            logging.warning(
-                "bhv n_trials (%s) != sp n_trials (%s)"
-                % (self.block.shape[0], n_trials)
-            )
-        if self.code_samples.shape != (n_trials, n_codes):
-            raise ValueError(
-                "code_samples shape: (%s, %s), expected: (%s, %s)"
-                % (self.code_samples.shape, n_trials, n_codes)
-            )
-        if self.cluster_id.shape[0] != n_neurons:
-            raise ValueError(
-                "clusters_id shape: %s, expected: %s"
-                % (self.clusters_id.shape[0], n_neurons)
-            )
-        if self.clusters_ch.shape[0] != n_neurons:
-            raise ValueError(
-                "clusters_ch shape: %s, expected: %s"
-                % (self.clusters_ch.shape[0], n_neurons)
-            )
-
     @classmethod
     def from_python_hdf5(cls, load_path: Path):
         """Load data from a file in hdf5 format from Python."""
@@ -160,3 +140,89 @@ class NeuronData:
             for key, value in zip(self.__dict__.keys(), self.__dict__.values()):
                 group.create_dataset(key, value.shape, data=value)
         f.close()
+
+    def get_neuron_id(self):
+        nid = (
+            self.cluster_group
+            + str(int(self.cluster_number))
+            + self.area.upper()
+            + self.date_time
+            + self.subject
+        )
+        return nid
+
+    def align_on(
+        self,
+        select_block: int = 1,
+        event: str = "sample_on",
+        time_before: int = 500,
+        error_type: int = 0,
+        select_pos: int = 1,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        # Select trials with the selected error and block
+        mask = np.where(
+            np.logical_and(
+                self.pos_code == select_pos,
+                np.logical_and(
+                    self.trial_error == error_type, self.block == select_block
+                ),
+            ),
+            True,
+            False,
+        )
+        sp_samples_m = self.sp_samples[mask]
+        # Code corresponding to the event
+        if select_block == 1:
+            code = task_constants.EVENTS_B1[event]
+        elif select_block == 2:
+            code = task_constants.EVENTS_B2[event]
+        else:
+            return
+        # Find the codes in the code_numbers matrix
+        code_mask = np.where(self.code_numbers[mask] == code, True, False)
+        # Wether the event ocured in each trial
+        trials_mask = np.any(code_mask, axis=1)
+        # Select the sample when the event ocurred
+        shifts = self.code_samples[mask][code_mask]
+        shifts = (shifts - time_before).astype(int)
+        # align sp
+        align_sp = align_trials.indep_roll(
+            arr=sp_samples_m[trials_mask], shifts=-shifts, axis=1
+        )
+        # Create mask for selecting the trials from the original matrix size
+        tr = np.arange(self.sp_samples.shape[0])
+        complete_mask = np.isin(tr, tr[mask][trials_mask])
+
+        return (align_sp, complete_mask)
+
+    def edit_attributes(self, new_values: Dict):
+        for attr_name, attr_value in zip(new_values.keys(), new_values.values()):
+            setattr(self, attr_name, attr_value)
+
+    def get_sp_per_sec(self):
+        time_before = 100
+        res = {}
+        res["nid"] = self.get_neuron_id()
+        for in_out in ["in", "out"]:
+            pos_io = 1 if in_out == "in" else -1
+            sp, mask = self.align_on(
+                select_block=1,
+                select_pos=pos_io,
+                event="sample_on",
+                time_before=time_before,
+                error_type=0,
+            )
+            # Average fr across time
+            sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)[
+                :, time_before:
+            ]
+            res_fr = smetrics.compute_fr(
+                frsignal=sp_avg, sample_id=self.sample_id[mask]
+            )
+            res[in_out + "_mean_fr_sample"] = res_fr["mean_fr_sample"]
+            res[in_out + "_mean_fr_delay"] = res_fr["mean_fr_delay"]
+            res[in_out + "_lat_max_fr_sample_NN"] = res_fr["lat_max_fr_sample_NN"]
+            res[in_out + "_mean_max_fr_sample_NN"] = res_fr["mean_max_fr_sample_NN"]
+            res[in_out + "_lat_max_fr_sample_N"] = res_fr["lat_max_fr_sample_N"]
+            res[in_out + "_mean_max_fr_sample_N"] = res_fr["mean_max_fr_sample_N"]
+        return res

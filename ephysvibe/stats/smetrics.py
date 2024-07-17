@@ -12,7 +12,7 @@ def compute_roc_auc(group1, group2):
     for n_win in np.arange(group1.shape[1]):
         g1 = group1[:, n_win]
         g2 = group2[:, n_win]
-        p.append(stats.ranksums(g1, g2)[1])
+        p.append(stats.ranksums(g1, g2)[1])  # Wilcoxon rank-sum
         thresholds = np.unique(np.concatenate([g1, g2]))
         y_g1, y_g2 = np.ones(len(g1)), np.zeros(len(g2))
         score = 0.5
@@ -106,7 +106,7 @@ def get_vd_index(bl, group1, group2, st_v, end_v, st_d, end_d, pwin=75):
     bl = np.mean(bl, axis=1)
     for i in range(st_v, end_v):
         g1 = group1[:, i]
-        p_son.append(stats.ranksums(bl, g1)[1])
+        p_son.append(stats.ranksums(bl, g1)[1])  # Wilcoxon rank-sum
     for i in range(st_d, end_d):
         g2 = group2[:, i]
         p_d.append(stats.ranksums(bl, g2)[1])
@@ -134,48 +134,6 @@ def get_vd_index(bl, group1, group2, st_v, end_v, st_d, end_d, pwin=75):
         return np.nan, np.nan, np.nan, np.nan
     else:
         return vd_idx, bl_mean * 1000, g1_mean * 1000, g2_mean * 1000
-
-
-# def compute_vd_idx(
-#     neu_data=None,
-#     time_before=None,
-#     vd_st=10,
-#     vd_win=150,
-#     vd_avg_win=200,
-#     sp_s=None,
-#     sp_d=None,
-#     in_out=1,
-# ):
-#     if neu_data is not None:
-#         # get spike matrices in and out conditions
-#         sp_s, mask_s = align_trials.get_align_tr(
-#             neu_data, select_block=1, select_pos=in_out, time_before=time_before
-#         )
-#         sp_s = sp_s[neu_data.sample_id[mask_s] != 0]
-#         sp_d, mask_d = align_trials.get_align_tr(
-#             neu_data,
-#             select_block=1,
-#             select_pos=in_out,
-#             time_before=0,
-#             event="sample_off",
-#         )
-#         sp_d = sp_d[neu_data.sample_id[mask_d] != 0]
-
-#     #### Compute VD index
-#     # get avg fr over trials and time
-#     vd_idx, bl_mean, g1_mean, g2_mean = np.nan, np.nan, np.nan, np.nan
-
-#     if np.logical_and(sp_d.shape[0] > 2, sp_d.ndim > 1):
-#         vd_idx, bl_mean, g1_mean, g2_mean = get_vd_index(
-#             bl=sp_s[:, :time_before],
-#             group1=sp_s[:, time_before + vd_st : time_before + vd_st + 460],
-#             group2=sp_d[:, vd_st:400],
-#             step=1,
-#             avg_win=vd_avg_win,
-#             pwin=vd_win,
-#         )
-
-#     return vd_idx, bl_mean, g1_mean, g2_mean
 
 
 def compute_vd_idx(
@@ -233,3 +191,36 @@ def compute_vd_idx(
         )
 
     return vd_idx, bl_mean, g1_mean, g2_mean
+
+
+def compute_fr(frsignal, sample_id):
+
+    # Mean fr during epochs
+    mean_fr_sample = np.nanmean(frsignal[:, :450]) * 1000
+    mean_fr_delay = np.nanmean(frsignal[:, 450:900]) * 1000
+    # Max fr during sample NN
+    imax = np.median(np.nanargmax(frsignal[sample_id != 0, :450], axis=1))
+    if ~np.isnan(imax):
+        imax = int(imax)
+        lat_max_fr_sample_NN = imax
+        imax = 100 if imax < 100 else imax
+        mean_max_fr_sample_NN = (
+            np.mean(frsignal[sample_id != 0, imax - 100 : imax + 100]) * 1000
+        )
+    # Max fr during sample N
+    imax = np.median(np.nanargmax(frsignal[sample_id == 0, :450], axis=1))
+    if ~np.isnan(imax):
+        imax = int(imax)
+        lat_max_fr_sample_N = imax
+        imax = 100 if imax < 100 else imax
+        mean_max_fr_sample_N = (
+            np.mean(frsignal[sample_id == 0, imax - 100 : imax + 100]) * 1000
+        )
+    return {
+        "mean_fr_sample": mean_fr_sample,
+        "mean_fr_delay": mean_fr_delay,
+        "lat_max_fr_sample_NN": lat_max_fr_sample_NN,
+        "mean_max_fr_sample_NN": mean_max_fr_sample_NN,
+        "lat_max_fr_sample_N": lat_max_fr_sample_N,
+        "mean_max_fr_sample_N": mean_max_fr_sample_N,
+    }
