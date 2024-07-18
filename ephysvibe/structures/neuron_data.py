@@ -157,8 +157,15 @@ class NeuronData:
         event: str = "sample_on",
         time_before: int = 500,
         error_type: int = 0,
-        select_pos: int = 1,
+        select_pos="in",
     ) -> Tuple[np.ndarray, np.ndarray]:
+        # Check select_pos value
+        if isinstance(select_pos, str):
+            select_pos = (
+                1 if select_pos == "in" else -1 if select_pos == "out" else np.nan
+            )
+            if np.isnan(select_pos):
+                raise KeyError
         # Select trials with the selected error and block
         mask = np.where(
             np.logical_and(
@@ -236,3 +243,7 @@ class NeuronData:
                 res[in_out + "_mean_max_fr_delay_" + nn_n] = res_fr["mean_max_fr"]
 
         return res
+
+    def plot_sp_b1(self):
+        # TODO
+        return
