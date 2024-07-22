@@ -1,5 +1,6 @@
 import numpy as np
 from ephysvibe.task import task_constants
+from typing import Tuple
 
 
 def indep_roll(arr: np.ndarray, shifts: np.ndarray, axis: int = 1) -> np.ndarray:
