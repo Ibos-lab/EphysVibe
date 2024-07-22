@@ -4,6 +4,7 @@ from ..stats import processing
 from ..trials import align_trials
 from sklearn import metrics
 from ..trials.spikes import firing_rate
+from typing import Tuple
 
 
 def compute_roc_auc(group1, group2):
@@ -55,7 +56,7 @@ def find_latency(
         return np.nan, np.nan
 
 
-def get_selectivity(sp_1, sp_2, win, scores=False):
+def get_selectivity(sp_1, sp_2, win, scores=False) -> Tuple[np.ndarray, np.ndarray]:
     if np.logical_or(sp_1.ndim < 2, sp_2.ndim < 2):
         return np.nan, np.nan
     if np.logical_or(sp_1.shape[0] < 2, sp_2.shape[0] < 2):
@@ -63,10 +64,10 @@ def get_selectivity(sp_1, sp_2, win, scores=False):
     roc_score, p_value = compute_roc_auc(sp_1, sp_2)
     lat, _ = find_latency(p_value, win=win, step=1)
     if np.isnan(lat):
-        return lat, np.nan
-    if scores:
+        roc_score = roc_score if scores else np.array([np.nan])
         return lat, roc_score
-    return lat, roc_score[lat]
+    roc_score = roc_score if scores else np.array(roc_score[lat])
+    return lat, roc_score
 
 
 # def get_vd_index(bl, group1, group2, step=1, avg_win=100, pwin=75):

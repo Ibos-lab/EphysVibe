@@ -34,7 +34,7 @@ def align_on(
     time_before: int = 500,
     error_type: int = 0,
     select_pos: int = 1,
-) -> [np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     # Select trials with the selected error and block
     mask = np.where(
         np.logical_and(
