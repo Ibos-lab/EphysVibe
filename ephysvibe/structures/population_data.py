@@ -56,7 +56,10 @@ class PopulationData:
         neu_data = NeuronData.from_python_hdf5(path)
 
         for i_name, i_dtype in zip(attr_dtype.keys(), attr_dtype.values()):
+
             neu_attr = getattr(neu_data, i_name)
+            if i_name == "sp_samples":
+                neu_attr = np.nan_to_num(neu_attr, nan=-1)
             neu_attr = neu_attr.astype(i_dtype)
             setattr(neu_data, i_name, neu_attr)
         return neu_data

@@ -55,7 +55,7 @@ def find_latency(
         return np.nan, np.nan
 
 
-def get_selectivity(sp_1, sp_2, win):
+def get_selectivity(sp_1, sp_2, win, scores=False):
     if np.logical_or(sp_1.ndim < 2, sp_2.ndim < 2):
         return np.nan, np.nan
     if np.logical_or(sp_1.shape[0] < 2, sp_2.shape[0] < 2):
@@ -64,6 +64,8 @@ def get_selectivity(sp_1, sp_2, win):
     lat, _ = find_latency(p_value, win=win, step=1)
     if np.isnan(lat):
         return lat, np.nan
+    if scores:
+        return lat, roc_score
     return lat, roc_score[lat]
 
 
