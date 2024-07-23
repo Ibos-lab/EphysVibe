@@ -56,12 +56,14 @@ def find_latency(
         return np.nan, np.nan
 
 
-def get_selectivity(sp_1, sp_2, win, scores=False) -> Tuple[np.ndarray, np.ndarray]:
+def get_selectivity(
+    sp_1, sp_2, win, scores=False
+) -> Tuple[float, np.ndarray, np.ndarray]:
     nanarray = np.array([np.nan])
     if np.logical_or(sp_1.ndim < 2, sp_2.ndim < 2):
-        return nanarray, nanarray, nanarray
+        return np.nan, nanarray, nanarray
     if np.logical_or(sp_1.shape[0] < 2, sp_2.shape[0] < 2):
-        return nanarray, nanarray, nanarray
+        return np.nan, nanarray, nanarray
     roc_score, p_value = compute_roc_auc(sp_1, sp_2)
     lat, _ = find_latency(p_value, win=win, step=1)
     if np.isnan(lat):
