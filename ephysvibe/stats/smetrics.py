@@ -13,7 +13,7 @@ def compute_roc_auc(group1, group2):
     for n_win in np.arange(group1.shape[1]):
         g1 = group1[:, n_win]
         g2 = group2[:, n_win]
-        p.append(stats.ranksums(g1, g2)[1])  # Wilcoxon rank-sum
+        p.append(stats.ttest_ind(g1, g2)[1])
         thresholds = np.unique(np.concatenate([g1, g2]))
         y_g1, y_g2 = np.ones(len(g1)), np.zeros(len(g2))
         score = 0.5
@@ -38,10 +38,10 @@ def compute_roc_auc(group1, group2):
 
 
 def find_latency(
-    p_value: np.ndarray, win: int, step: int = 1, p_treshold: float = 0.05
+    p_value: np.ndarray, win: int, step: int = 1, p_treshold: float = 0.01
 ) -> np.ndarray:
     sig = np.full(p_value.shape[0], False)
-    sig[p_value < 0.05] = True
+    # sig[p_value < 0.01] = True
     for i_step in np.arange(0, sig.shape[0], step):
         sig[i_step] = np.where(
             np.all(p_value[i_step : i_step + win] < p_treshold), True, False
@@ -57,17 +57,18 @@ def find_latency(
 
 
 def get_selectivity(sp_1, sp_2, win, scores=False) -> Tuple[np.ndarray, np.ndarray]:
+    nanarray = np.array([np.nan])
     if np.logical_or(sp_1.ndim < 2, sp_2.ndim < 2):
-        return np.nan, np.nan
+        return nanarray, nanarray, nanarray
     if np.logical_or(sp_1.shape[0] < 2, sp_2.shape[0] < 2):
-        return np.nan, np.nan
+        return nanarray, nanarray, nanarray
     roc_score, p_value = compute_roc_auc(sp_1, sp_2)
     lat, _ = find_latency(p_value, win=win, step=1)
     if np.isnan(lat):
-        roc_score = roc_score if scores else np.array([np.nan])
-        return lat, roc_score
+        roc_score = roc_score if scores else nanarray
+        return lat, roc_score, p_value
     roc_score = roc_score if scores else np.array(roc_score[lat])
-    return lat, roc_score
+    return lat, roc_score, p_value
 
 
 # def get_vd_index(bl, group1, group2, step=1, avg_win=100, pwin=75):
