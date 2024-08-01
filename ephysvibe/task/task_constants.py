@@ -30,6 +30,7 @@ EVENTS_B1 = {
     "bar_release": 4,
     "fix_spot_off": 36,
     "reward": 96,
+    "fix_break": 97,
 }
 PALETTE_B1 = {
     "11": "firebrick",  # o1_c1

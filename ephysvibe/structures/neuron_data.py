@@ -247,3 +247,94 @@ class NeuronData:
     def plot_sp_b1(self):
         # TODO
         return
+
+    def get_performance(self):
+        eventsb1 = task_constants.EVENTS_B1
+        b1mask = self.block == 1
+        bhv_matrix = np.full((np.sum(b1mask), self.test_stimuli.shape[1]), np.nan)
+        match_matrix = np.full((np.sum(b1mask), self.test_stimuli.shape[1]), np.nan)
+        # Check if there was a bar release in any moment of the trial
+        maskbar = align_trials.indep_roll(
+            arr=self.code_numbers[b1mask] == eventsb1["bar_release"],
+            shifts=np.array([-1] * sum(b1mask)),
+            axis=1,
+        )
+        rowbar, colbar = np.where(maskbar)
+        # bar_during_test_mask = np.zeros(len(maskbar))
+        for itest, event in enumerate(
+            ["test_on_1", "test_on_2", "test_on_3", "test_on_4", "test_on_5"]
+        ):
+            evmask = self.code_numbers[b1mask][maskbar] == eventsb1[event]
+            # 1 if bar released in test presentation n
+            bhv_matrix[rowbar[evmask], itest] = 1
+
+        # Check if break fixation
+        idx_brfix = np.where(
+            np.sum(
+                np.sum(
+                    (
+                        self.code_numbers[b1mask] == eventsb1["fix_break"],
+                        self.code_numbers[b1mask] == eventsb1["fix_spot_off"],
+                    ),
+                    axis=0,
+                ),
+                axis=1,
+            )
+            == 2
+        )[0]
+        _, c_break = np.where(
+            self.code_numbers[b1mask][idx_brfix] == eventsb1["fix_break"]
+        )
+        _, c_fixoff = np.where(
+            self.code_numbers[b1mask][idx_brfix] == eventsb1["fix_spot_off"]
+        )
+        idx_breakfix = np.where(c_break < c_fixoff)[0]
+        if len(idx_breakfix) != 0:
+            bhv_matrix[idx_brfix[idx_breakfix]] = -2
+        # Check if release bar error
+        idx_rbe = np.where(
+            np.sum(
+                np.sum(
+                    (
+                        self.code_numbers[b1mask] == eventsb1["bar_release"],
+                        self.code_numbers[b1mask] == eventsb1["test_on_1"],
+                    ),
+                    axis=0,
+                ),
+                axis=1,
+            )
+            == 2
+        )[0]
+        _, c_rbe = np.where(
+            self.code_numbers[b1mask][idx_rbe] == eventsb1["bar_release"]
+        )
+        _, c_t1on = np.where(
+            self.code_numbers[b1mask][idx_rbe] == eventsb1["test_on_1"]
+        )
+
+        idx_rbarerror = np.where(c_rbe < c_t1on)[0]
+        if len(idx_rbarerror) != 0:
+            bhv_matrix[idx_rbe[idx_rbarerror]] = -2
+
+        bhv_matrix = np.where(bhv_matrix == 1, 2, bhv_matrix)
+
+        # Trials where all tests were presented but there was no response (catch (all CR:0))
+        maskcatch1 = (
+            np.sum(
+                self.test_stimuli[b1mask] != self.sample_id[b1mask].reshape(-1, 1),
+                axis=1,
+            )
+            == self.test_stimuli.shape[1]
+        )
+        maskcatch2 = np.all(~np.isnan(self.test_stimuli[b1mask]), axis=1)
+        maskcatch3 = np.logical_and(maskcatch1, maskcatch2)
+        catch_trial = np.logical_and(maskcatch3, self.sample_id[b1mask] != 0)
+        match_matrix[catch_trial] = 0
+        test_match = self.test_stimuli[b1mask] == self.sample_id[b1mask].reshape(-1, 1)
+        match_matrix[test_match] = 1
+        nanmask = np.logical_and(np.isnan(bhv_matrix), np.isnan(match_matrix))
+        # bhv_matrix[test_match] = np.nansum([bhv_matrix[test_match],np.array([1]*np.sum(test_match))],axis=0)
+        bhv_matrix = np.nansum([bhv_matrix, match_matrix], axis=0)
+        bhv_matrix[nanmask] = np.nan
+
+        return bhv_matrix
