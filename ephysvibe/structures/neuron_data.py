@@ -251,8 +251,9 @@ class NeuronData:
     def get_performance(self):
         eventsb1 = task_constants.EVENTS_B1
         b1mask = self.block == 1
-        bhv_matrix = np.full((np.sum(b1mask), self.test_stimuli.shape[1]), np.nan)
-        match_matrix = np.full((np.sum(b1mask), self.test_stimuli.shape[1]), np.nan)
+        ntest = self.test_stimuli.shape[1]
+        bhv_matrix = np.full((np.sum(b1mask), ntest), np.nan)
+        match_matrix = np.full((np.sum(b1mask), ntest), np.nan)
         # Check if there was a bar release in any moment of the trial
         maskbar = align_trials.indep_roll(
             arr=self.code_numbers[b1mask] == eventsb1["bar_release"],
@@ -260,10 +261,8 @@ class NeuronData:
             axis=1,
         )
         rowbar, colbar = np.where(maskbar)
-        # bar_during_test_mask = np.zeros(len(maskbar))
-        for itest, event in enumerate(
-            ["test_on_1", "test_on_2", "test_on_3", "test_on_4", "test_on_5"]
-        ):
+        testlist = ["test_on_" + str(i + 1) for i in range(ntest)]
+        for itest, event in enumerate(testlist):
             evmask = self.code_numbers[b1mask][maskbar] == eventsb1[event]
             # 1 if bar released in test presentation n
             bhv_matrix[rowbar[evmask], itest] = 1
@@ -337,4 +336,36 @@ class NeuronData:
         bhv_matrix = np.nansum([bhv_matrix, match_matrix], axis=0)
         bhv_matrix[nanmask] = np.nan
 
+        r, c = np.where(bhv_matrix == 3)
+        mask = np.where(bhv_matrix == 3, True, False)
+        cols = np.arange(bhv_matrix.shape[1])  # Column indices
+        maskcols = cols <= (c - 1).reshape(-1, 1)  # Create a mask based on idx
+        mask[r] = maskcols
+        bhv_matrix[mask] = 0
+
         return bhv_matrix
+
+    @classmethod
+    def get_tests_tr_bhv_clasification(
+        cls,
+        sp: np.ndarray,
+        performance: np.ndarray,
+        codes: np.ndarray,
+        code_samples: np.ndarray,
+        code_numbers: np.ndarray,
+        time_before: int = 500,
+        time_after: int = 1000,
+        name_code: Dict = {},
+    ) -> np.ndarray:
+        tests = {}
+        for iperf in codes:
+            key = iperf if not bool(name_code) else name_code[iperf]
+            rM, cM = np.where(performance == iperf)
+            # Select the sample when the event ocurred
+            shifts = code_samples[rM][code_numbers[rM] == (cM * 2 + 25).reshape(-1, 1)]
+            shifts = (shifts - time_before).astype(int)
+            # align sp
+            align_sp = align_trials.indep_roll(arr=sp[rM], shifts=-shifts, axis=1)
+            tests[key] = align_sp[:, : time_before + time_after].astype(np.int8)
+            tests[str(key) + "_" + "pos"] = cM
+        return tests
