@@ -43,7 +43,8 @@ class PopulationData:
     def cast_neurondata(
         cls,
         path: Path,
-        attr_dtype: Dict,
+        attr_dtype: Dict = {},
+        replace_nan: Dict = {},
     ) -> NeuronData:
         """Read and cast attributes.
 
@@ -51,22 +52,28 @@ class PopulationData:
             path (Path): path to NeuronData.h5 file
             attr_dtype (Dict): dictionary of attribute data types
         Returns:
-            NeuronData: _description_
+            NeuronData object
         """
         neu_data = NeuronData.from_python_hdf5(path)
-
+        if not bool(attr_dtype):
+            return neu_data
         for i_name, i_dtype in zip(attr_dtype.keys(), attr_dtype.values()):
 
             neu_attr = getattr(neu_data, i_name)
-            if i_name == "sp_samples":
-                neu_attr = np.nan_to_num(neu_attr, nan=-1)
+            if bool(replace_nan) and i_name in replace_nan:
+                neu_attr = np.nan_to_num(neu_attr, nan=replace_nan[i_name])
+                print(replace_nan[i_name])
             neu_attr = neu_attr.astype(i_dtype)
             setattr(neu_data, i_name, neu_attr)
         return neu_data
 
     @classmethod
     def get_population(
-        cls, path_list: List, attr_dtype: Dict, comment: str = "", n_jobs: int = -1
+        cls,
+        path_list: List,
+        comment: str = "",
+        n_jobs: int = -1,
+        **args,
     ):
         """Get the population data by reading and casting attributes from multiple files.
 
@@ -77,7 +84,7 @@ class PopulationData:
             n_jobs (int, optional): number of jobs to run in parallel. Defaults to -1
         """
         population = Parallel(n_jobs=n_jobs)(
-            delayed(cls.cast_neurondata)(path, attr_dtype) for path in tqdm(path_list)
+            delayed(cls.cast_neurondata)(path, **args) for path in tqdm(path_list)
         )
         population = PopulationData(population, comment=comment)
         return population
@@ -139,7 +146,12 @@ class PopulationData:
         f.close()
 
     def execute_function(
-        self, func: Callable[..., Any], *args, n_jobs: int = -1, ret_df=True, **kwargs
+        self,
+        func: Callable[..., Any],
+        *args,
+        n_jobs: int = -1,
+        ret_df: bool = True,
+        **kwargs,
     ) -> pd.DataFrame:
         """Execute a provided function with given arguments and keyword arguments.
 
@@ -147,6 +159,7 @@ class PopulationData:
             func (Callable[..., Any]): The function to execute.
             *args: Variable length argument list to pass to the function.
             n_jobs (int, optional): Number of jobs to run in parallel. Defaults to -1.
+            ret_df (bool, optional): Whether to return a dataframe. Defaults to True.
             **kwargs: Arbitrary keyword arguments to pass to the function.
 
         Returns:
