@@ -4,9 +4,11 @@ from pathlib import Path
 import logging
 from typing import Tuple, Dict
 from ephysvibe.task import task_constants
-from ephysvibe.trials.spikes import firing_rate
-from ephysvibe.trials import align_trials
+from ephysvibe.trials.spikes import firing_rate, sp_constants
+from ephysvibe.trials import align_trials, select_trials
 from ephysvibe.stats import smetrics
+from ephysvibe.spike_sorting import config
+import matplotlib.pyplot as plt
 
 
 class NeuronData:
@@ -245,8 +247,197 @@ class NeuronData:
         return res
 
     def plot_sp_b1(self):
-        # TODO
-        return
+        # define kernel for convolution
+        fs_ds = config.FS / config.DOWNSAMPLE
+        kernel = firing_rate.define_kernel(
+            sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
+        )
+
+        samples = [0, 11, 15, 55, 51]
+        sp_sampleon_in, mask_sampleon_in = self.align_on(
+            select_block=1,
+            event="sample_on",
+            time_before=500,
+            error_type=0,
+            select_pos="in",
+        )
+        samples_sampleon_in = select_trials.get_sp_by_sample(
+            sp_sampleon_in, self.sample_id[mask_sampleon_in], samples=samples
+        )
+        sp_test_in, mask_test_in = self.align_on(
+            select_block=1,
+            event="test_on_1",
+            time_before=500,
+            error_type=0,
+            select_pos="in",
+        )
+        samples_test_in = select_trials.get_sp_by_sample(
+            sp_test_in, self.sample_id[mask_test_in], samples=samples
+        )
+        conv_in = {}
+        samples_in = {}
+        for sample in samples_sampleon_in.keys():
+            conv_sonin = (
+                np.convolve(
+                    np.mean(samples_sampleon_in[sample], axis=0), kernel, mode="same"
+                )
+                * fs_ds
+            )[300 : 500 + 450 + 400]
+
+            conv_testin = (
+                np.convolve(
+                    np.mean(samples_test_in[sample], axis=0), kernel, mode="same"
+                )
+                * fs_ds
+            )[100 : 500 + 500]
+
+            conv_in[sample] = np.concatenate((conv_sonin, conv_testin))
+            samples_in[sample] = np.concatenate(
+                (
+                    samples_sampleon_in[sample][:, 300 : 500 + 450 + 400],
+                    samples_test_in[sample][:, 100 : 500 + 500],
+                ),
+                axis=1,
+            )
+
+        sp_sampleon_out, mask_sampleon_out = self.align_on(
+            select_block=1,
+            event="sample_on",
+            time_before=500,
+            error_type=0,
+            select_pos="out",
+        )
+        samples_sampleon_out = select_trials.get_sp_by_sample(
+            sp_sampleon_out, self.sample_id[mask_sampleon_out], samples=samples
+        )
+        sp_test_out, mask_test_out = self.align_on(
+            select_block=1,
+            event="test_on_1",
+            time_before=500,
+            error_type=0,
+            select_pos="out",
+        )
+        samples_test_out = select_trials.get_sp_by_sample(
+            sp_test_out, self.sample_id[mask_test_out], samples=samples
+        )
+        conv_out = {}
+        samples_out = {}
+        for sample in samples_sampleon_out.keys():
+            if np.all((np.isnan(samples_sampleon_out[sample]))):
+                continue
+            conv_sonin = (
+                np.convolve(
+                    np.mean(samples_sampleon_out[sample], axis=0), kernel, mode="same"
+                )
+                * fs_ds
+            )[300 : 500 + 450 + 400]
+            conv_testin = (
+                np.convolve(
+                    np.mean(samples_test_out[sample], axis=0), kernel, mode="same"
+                )
+                * fs_ds
+            )[100 : 500 + 500]
+            conv_out[sample] = np.concatenate((conv_sonin, conv_testin))
+            samples_out[sample] = np.concatenate(
+                (
+                    samples_sampleon_out[sample][:, 300 : 500 + 450 + 400],
+                    samples_test_out[sample][:, 100 : 500 + 500],
+                ),
+                axis=1,
+            )
+
+        sampleco = {
+            "0": "neutral",
+            "11": "o1 c1",
+            "15": "o1 c5",
+            "51": "o5 c1",
+            "55": "o5 c5",
+        }
+        t_before = 200
+        # Iterate by sample and condition
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(25, 10), sharey=True)
+        ax2 = [ax[0].twinx(), ax[1].twinx()]
+        all_max_conv = 0
+        all_max_trial = 0
+        conv = {"out": conv_out, "in": conv_in}
+        sp = {"out": samples_out, "in": samples_in}
+        for i_ax, cond in enumerate(["in", "out"]):
+            count_trials = 0
+            max_conv = 0
+            for i_s, i_sample in enumerate(conv[cond].keys()):
+                max_conv = (
+                    np.max(conv[cond][i_sample])
+                    if np.max(conv[cond][i_sample]) > max_conv
+                    else max_conv
+                )
+                time = np.arange(0, len(conv[cond][i_sample])) - t_before
+                ax[i_ax].plot(
+                    time,
+                    conv[cond][i_sample],
+                    color=task_constants.PALETTE_B1[i_sample],
+                )
+                # Plot spikes
+                count_t = len(sp[cond][i_sample])
+                rows, cols = np.where(sp[cond][i_sample] >= 1)
+                ax2[i_ax].scatter(
+                    cols - t_before,
+                    rows + count_trials,
+                    marker="|",
+                    alpha=1,
+                    edgecolors="none",
+                    color=task_constants.PALETTE_B1[i_sample],
+                    label=sampleco[i_sample],
+                )
+                count_trials += count_t
+            all_max_conv = max_conv if max_conv > all_max_conv else all_max_conv
+            all_max_trial = (
+                count_trials if count_trials > all_max_trial else all_max_trial
+            )
+            ax[i_ax].set_title(cond, fontsize=15)
+        for i_ax in range(2):
+            ax[i_ax].set_ylim(0, all_max_conv + all_max_trial + 5)
+            ax[i_ax].set_yticks(np.arange(0, all_max_conv + 5, 10))
+            ax2[i_ax].set_yticks(np.arange(-all_max_conv - 5, all_max_trial))
+            plt.setp(ax2[i_ax].get_yticklabels(), visible=False)
+            plt.setp(ax2[i_ax].get_yaxis(), visible=False)
+            ax[i_ax].vlines(
+                [0, 450, 450 + 400 + 400],
+                0,
+                all_max_conv + all_max_trial + 5,
+                color="k",
+                linestyles="dashed",
+            )
+            ax2[i_ax].spines["right"].set_visible(False)
+            ax2[i_ax].spines["top"].set_visible(False)
+            ax[i_ax].spines["right"].set_visible(False)
+            ax[i_ax].spines["top"].set_visible(False)
+        ax[0].set(xlabel="Time (ms)", ylabel="Average firing rate")
+        ax2[1].set(xlabel="Time (ms)", ylabel="trials")
+        ax[1].set_xlabel(xlabel="Time (ms)", fontsize=18)
+        # ax[1].set_xticks(fontsize=15)
+        ax[0].set_xlabel(xlabel="Time (ms)", fontsize=18)
+        ax[0].set_ylabel(ylabel="Average firing rate", fontsize=15)
+        for xtick in ax[0].xaxis.get_major_ticks():
+            xtick.label1.set_fontsize(15)
+        for ytick in ax[0].yaxis.get_major_ticks():
+            ytick.label1.set_fontsize(15)
+        for xtick in ax[1].xaxis.get_major_ticks():
+            xtick.label1.set_fontsize(15)
+        ax2[1].legend(
+            fontsize=15,
+            scatterpoints=5,
+            columnspacing=0.5,
+            framealpha=0,
+            loc="upper right",
+        )
+        fig.tight_layout(pad=0.2, h_pad=0.2, w_pad=0.8)
+        fig.suptitle(
+            "%s: %s %d " % (self.area.upper(), self.cluster_group, self.cluster_number),
+            x=0.05,
+            y=0.99,
+            fontsize=15,
+        )
+        return fig
 
     def get_performance(self):
         eventsb1 = task_constants.EVENTS_B1
