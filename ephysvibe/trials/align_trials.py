@@ -88,3 +88,22 @@ def get_align_tr(
         error_type=error_type,
     )
     return sp, mask
+
+
+def get_rt(code_numbers:np.ndarray, code_samples:np.ndarray)->np.ndarray:
+    """_summary_
+
+    Args:
+        code_numbers (np.ndarray): _description_
+        code_samples (np.ndarray): _description_
+
+    Returns:
+        np.ndarray: _description_
+    """
+    rt=np.empty(code_numbers.shape[0])*np.nan
+    a,b=np.where(code_numbers==4)
+    code4=code_numbers==4
+    bar_release=code_samples[code4]
+    test_time=code_samples[np.roll(code4,-1)]
+    rt[a]=bar_release-test_time
+    return rt
