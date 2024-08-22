@@ -161,6 +161,21 @@ class NeuronData:
         error_type: int = 0,
         select_pos="in",
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """_summary_
+
+        Args:
+            select_block (int, optional): _description_. Defaults to 1.
+            event (str, optional): _description_. Defaults to "sample_on".
+            time_before (int, optional): _description_. Defaults to 500.
+            error_type (int, optional): _description_. Defaults to 0.
+            select_pos (str, optional): "in", "out", "ipsi", "contra". Defaults to "in".
+
+        Raises:
+            KeyError: _description_
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: _description_
+        """
         # Check select_pos value
         if isinstance(select_pos, str):
             select_pos = (
