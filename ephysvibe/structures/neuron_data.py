@@ -161,7 +161,7 @@ class NeuronData:
         event: str,
         time_before: int,
         error_type: int,
-        select_pos: str,
+        rf_stim_loc: str,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Align spike data on a specific event and return the aligned data along with a trial mask.
 
@@ -170,10 +170,10 @@ class NeuronData:
             event (str): Event to align on.
             time_before (int): Time before the event to include in the alignment.
             error_type (int): Type of error trials to include (e.g., 0 for correct trials).
-            select_pos (str): Position code for selecting trials. Must be one of "in", "out", "ipsi", or "contra".
+            rf_stim_loc (str): Position code for selecting trials. Must be one of "in", "out", "ipsi", or "contra".
 
         Raises:
-            KeyError: If select_pos is not one of "in", "out", "ipsi", or "contra".
+            KeyError: If rf_stim_loc is not one of "in", "out", "ipsi", or "contra".
             ValueError: If select_block is not valid.
 
         Returns:
@@ -181,26 +181,23 @@ class NeuronData:
                 - Aligned spike data.
                 - Mask for selecting trials from the original data.
         """
-        # Check select_pos value
-        if isinstance(
-            select_pos, str
-        ):  #! 1/-1 option will be deleted, only in/out/ipsi/contra will be accepted
-            if select_pos == "in":
-                select_pos, rfstim_loc = 1, self.pos_code
-            elif select_pos == "out":
-                select_pos, rfstim_loc = -1, self.pos_code
-            elif select_pos == "contra":
-                select_pos, rfstim_loc = 1, self.rf_loc
-            elif select_pos == "ipsi":
-                select_pos, rfstim_loc = -1, self.rf_loc
-            else:
-                raise KeyError(
-                    "Invalid select_pos value: %s. Must be one of 'in', 'out', 'ipsi', or 'contra'."
-                    % select_pos
-                )
+        # Check rf_stim_loc value
+        if rf_stim_loc == "in":
+            rf_stim_loc, rfstim_loc = 1, self.rf_loc
+        elif rf_stim_loc == "out":
+            rf_stim_loc, rfstim_loc = -1, self.rf_loc
+        elif rf_stim_loc == "contra":
+            rf_stim_loc, rfstim_loc = 1, self.pos_code
+        elif rf_stim_loc == "ipsi":
+            rf_stim_loc, rfstim_loc = -1, self.pos_code
+        else:
+            raise KeyError(
+                "Invalid rf_stim_loc value: %s. Must be one of 'in', 'out', 'ipsi', or 'contra'."
+                % rf_stim_loc
+            )
         # Create mask to select trials based on position, error type, and block
         mask = (
-            (rfstim_loc == select_pos)
+            (rfstim_loc == rf_stim_loc)
             & (self.trial_error == error_type)
             & (self.block == select_block)
         )
@@ -255,15 +252,16 @@ class NeuronData:
             raise IndexError(f"No rf_loc found for neuron ID {nid}")
         rfloc = filtered_rf_loc["rf_loc"].values[0]
         pos_code = self.pos_code
+        rf_loc = np.zeros(pos_code.shape, dtype=np.int8)
         if rfloc == "ipsi":
-            rf_loc = np.zeros(pos_code.shape, dtype=np.int8)
-            rf_loc[pos_code == 1] = -1
-            rf_loc[pos_code == -1] = 1
-            setattr(self, "rf_loc", rf_loc)
+            rf_loc[pos_code == 1] = -1  # out
+            rf_loc[pos_code == -1] = 1  # in
         elif rfloc == "contra":
-            setattr(self, "rf_loc", pos_code)
+            rf_loc[pos_code == 1] = 1
+            rf_loc[pos_code == -1] = -1
         else:
             raise ValueError('rf_loc must be "ipsi" or "contra"')
+        setattr(self, "rf_loc", rf_loc)
         return self
 
     def get_neu_align(
@@ -284,13 +282,13 @@ class NeuronData:
         Returns:
             NeuronData: The modified NeuronData object with added spiking activity.
         """
-        if rf_loc:
+        if rf_loc is not None:
             self = self.check_fr_loc(rf_loc)
         for it in params:
             # Alignment and extraction of spike and mask data
             sp, mask = self.align_on(
                 select_block=it["select_block"],
-                select_pos=it["loc"],
+                rf_stim_loc=it["loc"],
                 event=it["event"],
                 time_before=it["time_before"],
                 error_type=0,
@@ -369,7 +367,7 @@ class NeuronData:
             event="sample_on",
             time_before=500,
             error_type=0,
-            select_pos="in",
+            rf_stim_loc="in",
         )
         samples_sampleon_in = select_trials.get_sp_by_sample(
             sp_sampleon_in, self.sample_id[mask_sampleon_in], samples=samples
@@ -379,7 +377,7 @@ class NeuronData:
             event="test_on_1",
             time_before=500,
             error_type=0,
-            select_pos="in",
+            rf_stim_loc="in",
         )
         samples_test_in = select_trials.get_sp_by_sample(
             sp_test_in, self.sample_id[mask_test_in], samples=samples
@@ -415,7 +413,7 @@ class NeuronData:
             event="sample_on",
             time_before=500,
             error_type=0,
-            select_pos="out",
+            rf_stim_loc="out",
         )
         samples_sampleon_out = select_trials.get_sp_by_sample(
             sp_sampleon_out, self.sample_id[mask_sampleon_out], samples=samples
@@ -425,7 +423,7 @@ class NeuronData:
             event="test_on_1",
             time_before=500,
             error_type=0,
-            select_pos="out",
+            rf_stim_loc="out",
         )
         samples_test_out = select_trials.get_sp_by_sample(
             sp_test_out, self.sample_id[mask_test_out], samples=samples
