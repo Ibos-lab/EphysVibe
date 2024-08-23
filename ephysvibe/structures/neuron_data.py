@@ -2,13 +2,15 @@ import h5py
 import numpy as np
 from pathlib import Path
 import logging
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 from ephysvibe.task import task_constants
+from ephysvibe.task.task_constants import EVENTS_B1_SHORT
 from ephysvibe.trials.spikes import firing_rate, sp_constants
 from ephysvibe.trials import align_trials, select_trials
 from ephysvibe.stats import smetrics
 from ephysvibe.spike_sorting import config
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class NeuronData:
@@ -155,61 +157,71 @@ class NeuronData:
 
     def align_on(
         self,
-        select_block: int = 1,
-        event: str = "sample_on",
-        time_before: int = 500,
-        error_type: int = 0,
-        select_pos="in",
+        select_block: int,
+        event: str,
+        time_before: int,
+        error_type: int,
+        select_pos: str,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """_summary_
+        """Align spike data on a specific event and return the aligned data along with a trial mask.
 
         Args:
-            select_block (int, optional): _description_. Defaults to 1.
-            event (str, optional): _description_. Defaults to "sample_on".
-            time_before (int, optional): _description_. Defaults to 500.
-            error_type (int, optional): _description_. Defaults to 0.
-            select_pos (str, optional): "in", "out", "ipsi", "contra". Defaults to "in".
+            select_block (int): Block number to select trials from.
+            event (str): Event to align on.
+            time_before (int): Time before the event to include in the alignment.
+            error_type (int): Type of error trials to include (e.g., 0 for correct trials).
+            select_pos (str): Position code for selecting trials. Must be one of "in", "out", "ipsi", or "contra".
 
         Raises:
-            KeyError: _description_
+            KeyError: If select_pos is not one of "in", "out", "ipsi", or "contra".
+            ValueError: If select_block is not valid.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: _description_
+            Tuple[np.ndarray, np.ndarray]:
+                - Aligned spike data.
+                - Mask for selecting trials from the original data.
         """
         # Check select_pos value
-        if isinstance(select_pos, str):
-            select_pos = (
-                1 if select_pos == "in" else -1 if select_pos == "out" else np.nan
-            )
-            if np.isnan(select_pos):
-                raise KeyError
-        # Select trials with the selected error and block
-        mask = np.where(
-            np.logical_and(
-                self.pos_code == select_pos,
-                np.logical_and(
-                    self.trial_error == error_type, self.block == select_block
-                ),
-            ),
-            True,
-            False,
+        if isinstance(
+            select_pos, str
+        ):  #! 1/-1 option will be deleted, only in/out/ipsi/contra will be accepted
+            if select_pos == "in":
+                select_pos, rfstim_loc = 1, self.pos_code
+            elif select_pos == "out":
+                select_pos, rfstim_loc = -1, self.pos_code
+            elif select_pos == "contra":
+                select_pos, rfstim_loc = 1, self.rf_loc
+            elif select_pos == "ipsi":
+                select_pos, rfstim_loc = -1, self.rf_loc
+            else:
+                raise KeyError(
+                    "Invalid select_pos value: %s. Must be one of 'in', 'out', 'ipsi', or 'contra'."
+                    % select_pos
+                )
+        # Create mask to select trials based on position, error type, and block
+        mask = (
+            (rfstim_loc == select_pos)
+            & (self.trial_error == error_type)
+            & (self.block == select_block)
         )
         sp_samples_m = self.sp_samples[mask]
-        # Code corresponding to the event
+        # Determine the event code based on the block number
         if select_block == 1:
             code = task_constants.EVENTS_B1[event]
         elif select_block == 2:
             code = task_constants.EVENTS_B2[event]
         else:
-            return
-        # Find the codes in the code_numbers matrix
+            raise ValueError(
+                "Invalid select_block value: %d. Must be 1 or 2." % select_block
+            )
+        # Find event occurrences in the code_numbers matrix
         code_mask = np.where(self.code_numbers[mask] == code, True, False)
-        # Wether the event ocured in each trial
+        # Check if the event occurred in each trial
         trials_mask = np.any(code_mask, axis=1)
-        # Select the sample when the event ocurred
+        # Get the sample indices where the event occurred and shift by time_before
         shifts = self.code_samples[mask][code_mask]
         shifts = (shifts - time_before).astype(int)
-        # align sp
+        # Align spike data based on the calculated shifts
         align_sp = align_trials.indep_roll(
             arr=sp_samples_m[trials_mask], shifts=-shifts, axis=1
         )
@@ -223,43 +235,126 @@ class NeuronData:
         for attr_name, attr_value in zip(new_values.keys(), new_values.values()):
             setattr(self, attr_name, attr_value)
 
-    def get_sp_per_sec(self):
-        time_before = 100
-        res = {}
-        res["nid"] = self.get_neuron_id()
-        for in_out in ["in", "out"]:
-            pos_io = 1 if in_out == "in" else -1
+    def check_fr_loc(self, rf_loc_df: pd.DataFrame):
+        """Add receptive field position to NeuronData object.
+
+        Args:
+            rf_loc (pd.DataFrame): DataFrame containing neuron IDs ('nid') and their corresponding 'rf_loc'.
+
+        Returns:
+            NeuronData: The modified NeuronData object.
+
+        Raises:
+            ValueError: If rf_loc is not 'ipsi' or 'contra'.
+            IndexError: If the neuron ID (nid) is not found in rf_loc_df.
+        """
+        nid = self.get_neuron_id()
+        # Filter the DataFrame and check if any results are found
+        filtered_rf_loc = rf_loc_df[rf_loc_df["nid"] == nid]
+        if filtered_rf_loc.empty:
+            raise IndexError(f"No rf_loc found for neuron ID {nid}")
+        rfloc = filtered_rf_loc["rf_loc"].values[0]
+        pos_code = self.pos_code
+        if rfloc == "ipsi":
+            rf_loc = np.zeros(pos_code.shape, dtype=np.int8)
+            rf_loc[pos_code == 1] = -1
+            rf_loc[pos_code == -1] = 1
+            setattr(self, "rf_loc", rf_loc)
+        elif rfloc == "contra":
+            setattr(self, "rf_loc", pos_code)
+        else:
+            raise ValueError('rf_loc must be "ipsi" or "contra"')
+        return self
+
+    def get_neu_align(
+        self, params: List, delete_att: List = None, rf_loc: pd.DataFrame = None
+    ):
+        """Read, align, and add spiking activity to the NeuronData object.
+
+        Args:
+            params (List[dict]): List of dictionaries containing the following keys:
+                - 'loc': str, location code ('in', 'out', 'ipsi', 'contra')
+                - 'event': str, event name (e.g., 'sample_on')
+                - 'time_before': int, time before event
+                - 'time_after': int, time after event
+                - 'select_block': int, block number
+            delete_att (List[str], optional): List of attribute names to delete. Defaults to None.
+            rf_loc (pd.DataFrame, optional): DataFrame containing neuron IDs ('nid') and their corresponding 'rf_loc'. Defaults to None.
+
+        Returns:
+            NeuronData: The modified NeuronData object with added spiking activity.
+        """
+        if rf_loc:
+            self = self.check_fr_loc(rf_loc)
+        for it in params:
+            # Alignment and extraction of spike and mask data
             sp, mask = self.align_on(
-                select_block=1,
-                select_pos=pos_io,
-                event="sample_on",
-                time_before=time_before,
+                select_block=it["select_block"],
+                select_pos=it["loc"],
+                event=it["event"],
+                time_before=it["time_before"],
                 error_type=0,
             )
-            for nn_n in ["NN", "N"]:
-                if nn_n == "NN":
-                    sample_mask = self.sample_id[mask] != 0
+            endt = it["time_before"] + it["time_after"]
+            # Set name based on the event and rf/stimulus location
+            att_name = f"{EVENTS_B1_SHORT[it['event']]}_{it['loc']}"
+            # Set attributes with appropriate data types
+            setattr(self, f"sp_{att_name}", np.array(sp[:, :endt], dtype=np.int8))
+            setattr(self, f"mask_{att_name}", np.array(mask, dtype=bool))
+            setattr(
+                self,
+                f"time_before_{att_name}",
+                np.array(it["time_before"], dtype=np.int32),
+            )
+        # Delete specified attributes if delete_att is provided
+        if delete_att:
+            for iatt in delete_att:
+                if hasattr(self, iatt):
+                    setattr(self, iatt, np.array([]))
                 else:
-                    sample_mask = self.sample_id[mask] == 0
-                # Average fr across time
-                sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)
-                frsignal = np.mean(
-                    sp_avg[sample_mask, time_before : time_before + 450], axis=0
-                )
-                res_fr = smetrics.compute_fr(frsignal=frsignal)
-                res[in_out + "_mean_fr_sample_" + nn_n] = res_fr["mean_fr"]
-                res[in_out + "_lat_max_fr_sample_" + nn_n] = res_fr["lat_max_fr"]
-                res[in_out + "_mean_max_fr_sample_" + nn_n] = res_fr["mean_max_fr"]
+                    print(
+                        f"Warning: Attribute '{iatt}' does not exist and cannot be deleted."
+                    )
+        return self
 
-                frsignal = np.mean(
-                    sp_avg[sample_mask, time_before + 450 : time_before + 850], axis=0
-                )
-                res_fr = smetrics.compute_fr(frsignal=frsignal)
-                res[in_out + "_mean_fr_delay_" + nn_n] = res_fr["mean_fr"]
-                res[in_out + "_lat_max_fr_delay_" + nn_n] = res_fr["lat_max_fr"]
-                res[in_out + "_mean_max_fr_delay_" + nn_n] = res_fr["mean_max_fr"]
+    #! to delete
+    # def get_sp_per_sec(self):
+    #     time_before = 100
+    #     res = {}
+    #     res["nid"] = self.get_neuron_id()
+    #     for in_out in ["in", "out"]:
+    #         pos_io = 1 if in_out == "in" else -1
+    #         sp, mask = self.align_on(
+    #             select_block=1,
+    #             select_pos=pos_io,
+    #             event="sample_on",
+    #             time_before=time_before,
+    #             error_type=0,
+    #         )
+    #         for nn_n in ["NN", "N"]:
+    #             if nn_n == "NN":
+    #                 sample_mask = self.sample_id[mask] != 0
+    #             else:
+    #                 sample_mask = self.sample_id[mask] == 0
+    #             # Average fr across time
+    #             sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)
+    #             frsignal = np.mean(
+    #                 sp_avg[sample_mask, time_before : time_before + 450], axis=0
+    #             )
+    #             res_fr = smetrics.compute_fr(frsignal=frsignal)
+    #             res[in_out + "_mean_fr_sample_" + nn_n] = res_fr["mean_fr"]
+    #             res[in_out + "_lat_max_fr_sample_" + nn_n] = res_fr["lat_max_fr"]
+    #             res[in_out + "_mean_max_fr_sample_" + nn_n] = res_fr["mean_max_fr"]
 
-        return res
+    #             frsignal = np.mean(
+    #                 sp_avg[sample_mask, time_before + 450 : time_before + 850], axis=0
+    #             )
+    #             res_fr = smetrics.compute_fr(frsignal=frsignal)
+    #             res[in_out + "_mean_fr_delay_" + nn_n] = res_fr["mean_fr"]
+    #             res[in_out + "_lat_max_fr_delay_" + nn_n] = res_fr["lat_max_fr"]
+    #             res[in_out + "_mean_max_fr_delay_" + nn_n] = res_fr["mean_max_fr"]
+
+    #     return res
 
     def plot_sp_b1(self):
         # define kernel for convolution

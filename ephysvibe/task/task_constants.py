@@ -32,6 +32,29 @@ EVENTS_B1 = {
     "reward": 96,
     "fix_break": 97,
 }
+EVENTS_B1_SHORT = {
+    "start_trial": "trst",
+    "bar_hold": "barh",
+    "fix_spot_on": "fspoton",
+    "fixation": "fixst",
+    "sample_on": "son",
+    "sample_off": "soff",
+    "test_on_1": "t1on",
+    "test_off_1": "t1off",
+    "test_on_2": "t2on",
+    "test_off_2": "t2off",
+    "test_on_3": "t3on",
+    "test_off_3": "t3off",
+    "test_on_4": "t4on",
+    "test_off_4": "t4off",
+    "test_on_5": "t5on",
+    "test_off_5": "t5off",
+    "end_trial": "trend",
+    "bar_release": "barr",
+    "fix_spot_off": "fspotoff",
+    "reward": "rwd",
+    "fix_break": "fixbrk",
+}
 PALETTE_B1 = {
     "11": "firebrick",  # o1_c1
     "15": "teal",  # o1_c5
