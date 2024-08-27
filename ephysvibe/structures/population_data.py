@@ -91,59 +91,40 @@ class PopulationData:
 
     @classmethod
     def from_python_hdf5(cls, load_path: Path):
-        """Load data from a file in hdf5 format from Python."""
-        # load the data and create class object
+        """Load data from a file in hdf5 format and return a class instance."""
         data = {}
         neurons = []
         with h5py.File(load_path, "r") as f:
             for key, group in zip(f.keys(), f.values()):
-                if key == "0":
+                if key == "info":
                     data["comment"] = group.attrs["comment"]
                     data["created"] = group.attrs["created"]
                 else:
                     ineu = {}
-                    ineu["date_time"] = group.attrs["date_time"]
-                    ineu["subject"] = group.attrs["subject"]
-                    ineu["area"] = group.attrs["area"]
-                    ineu["experiment"] = group.attrs["experiment"]
-                    ineu["recording"] = group.attrs["recording"]
-                    ineu["cluster_group"] = group.attrs["cluster_group"]
-                    for nkey, nvalue in zip(group.keys(), group.values()):
-                        ineu[nkey] = np.array(nvalue)
+                    for gkey, gvalue in zip(group.keys(), group.values()):
+                        ineu[gkey] = np.array(gvalue)
+                    for attr_key, attr_value in group.attrs.items():
+                        ineu[attr_key] = attr_value
+
                     neurons.append(NeuronData(**ineu))
 
         data["population"] = neurons
-        f.close()
-
         return cls(**data)
 
     def to_python_hdf5(self, save_path: Path):
         """Save data in hdf5 format."""
-        # Cast data
-        # save the data
         with h5py.File(save_path, "w") as f:
-            group = f.create_group("0")
+            group = f.create_group("info")
             group.attrs["comment"] = self.comment
             group.attrs["created"] = self.created
-            population = self.population
-            for i_d in np.arange(len(population)) + 1:
-                group = f.create_group(str(i_d))
-                group.attrs["date_time"] = population[i_d - 1].__dict__.pop("date_time")
-                group.attrs["subject"] = population[i_d - 1].__dict__.pop("subject")
-                group.attrs["area"] = population[i_d - 1].__dict__.pop("area")
-                group.attrs["experiment"] = population[i_d - 1].__dict__.pop(
-                    "experiment"
-                )
-                group.attrs["recording"] = population[i_d - 1].__dict__.pop("recording")
-                group.attrs["cluster_group"] = population[i_d - 1].__dict__.pop(
-                    "cluster_group"
-                )
-                for key, value in zip(
-                    population[i_d - 1].__dict__.keys(),
-                    population[i_d - 1].__dict__.values(),
-                ):
-                    group.create_dataset(key, np.array(value).shape, data=value)
-        f.close()
+
+            for ip, ipopulation in enumerate(self.population):
+                group = f.create_group(str(ip))
+                for key, value in ipopulation.__dict__.items():
+                    if isinstance(value, np.ndarray):
+                        group.create_dataset(key, value.shape, data=value)
+                    else:
+                        group.attrs[key] = value
 
     def execute_function(
         self,
