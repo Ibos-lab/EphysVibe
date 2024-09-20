@@ -354,105 +354,9 @@ class NeuronData:
 
     #     return res
 
-    def plot_sp_b1(self):
+    def plot_sp_b1(self, sp: Dict, conv: Dict):
+        key1, key2 = list(sp.keys())
         # define kernel for convolution
-        fs_ds = config.FS / config.DOWNSAMPLE
-        kernel = firing_rate.define_kernel(
-            sp_constants.W_SIZE, sp_constants.W_STD, fs=fs_ds
-        )
-
-        samples = [0, 11, 15, 55, 51]
-        sp_sampleon_in, mask_sampleon_in = self.align_on(
-            select_block=1,
-            event="sample_on",
-            time_before=500,
-            error_type=0,
-            rf_stim_loc="in",
-        )
-        samples_sampleon_in = select_trials.get_sp_by_sample(
-            sp_sampleon_in, self.sample_id[mask_sampleon_in], samples=samples
-        )
-        sp_test_in, mask_test_in = self.align_on(
-            select_block=1,
-            event="test_on_1",
-            time_before=500,
-            error_type=0,
-            rf_stim_loc="in",
-        )
-        samples_test_in = select_trials.get_sp_by_sample(
-            sp_test_in, self.sample_id[mask_test_in], samples=samples
-        )
-        conv_in = {}
-        samples_in = {}
-        for sample in samples_sampleon_in.keys():
-            conv_sonin = (
-                np.convolve(
-                    np.mean(samples_sampleon_in[sample], axis=0), kernel, mode="same"
-                )
-                * fs_ds
-            )[300 : 500 + 450 + 400]
-
-            conv_testin = (
-                np.convolve(
-                    np.mean(samples_test_in[sample], axis=0), kernel, mode="same"
-                )
-                * fs_ds
-            )[100 : 500 + 500]
-
-            conv_in[sample] = np.concatenate((conv_sonin, conv_testin))
-            samples_in[sample] = np.concatenate(
-                (
-                    samples_sampleon_in[sample][:, 300 : 500 + 450 + 400],
-                    samples_test_in[sample][:, 100 : 500 + 500],
-                ),
-                axis=1,
-            )
-
-        sp_sampleon_out, mask_sampleon_out = self.align_on(
-            select_block=1,
-            event="sample_on",
-            time_before=500,
-            error_type=0,
-            rf_stim_loc="out",
-        )
-        samples_sampleon_out = select_trials.get_sp_by_sample(
-            sp_sampleon_out, self.sample_id[mask_sampleon_out], samples=samples
-        )
-        sp_test_out, mask_test_out = self.align_on(
-            select_block=1,
-            event="test_on_1",
-            time_before=500,
-            error_type=0,
-            rf_stim_loc="out",
-        )
-        samples_test_out = select_trials.get_sp_by_sample(
-            sp_test_out, self.sample_id[mask_test_out], samples=samples
-        )
-        conv_out = {}
-        samples_out = {}
-        for sample in samples_sampleon_out.keys():
-            if np.all((np.isnan(samples_sampleon_out[sample]))):
-                continue
-            conv_sonin = (
-                np.convolve(
-                    np.mean(samples_sampleon_out[sample], axis=0), kernel, mode="same"
-                )
-                * fs_ds
-            )[300 : 500 + 450 + 400]
-            conv_testin = (
-                np.convolve(
-                    np.mean(samples_test_out[sample], axis=0), kernel, mode="same"
-                )
-                * fs_ds
-            )[100 : 500 + 500]
-            conv_out[sample] = np.concatenate((conv_sonin, conv_testin))
-            samples_out[sample] = np.concatenate(
-                (
-                    samples_sampleon_out[sample][:, 300 : 500 + 450 + 400],
-                    samples_test_out[sample][:, 100 : 500 + 500],
-                ),
-                axis=1,
-            )
 
         sampleco = {
             "0": "neutral",
@@ -467,12 +371,12 @@ class NeuronData:
         ax2 = [ax[0].twinx(), ax[1].twinx()]
         all_max_conv = 0
         all_max_trial = 0
-        conv = {"out": conv_out, "in": conv_in}
-        sp = {"out": samples_out, "in": samples_in}
-        for i_ax, cond in enumerate(["in", "out"]):
+        conv = {key1: conv[key1], key2: conv[key2]}
+        sp = {key1: sp[key1], key2: sp[key2]}
+        for i_ax, cond in enumerate([key1, key2]):
             count_trials = 0
             max_conv = 0
-            for i_s, i_sample in enumerate(conv[cond].keys()):
+            for i_sample in conv[cond].keys():
                 max_conv = (
                     np.max(conv[cond][i_sample])
                     if np.max(conv[cond][i_sample]) > max_conv
@@ -492,7 +396,6 @@ class NeuronData:
                     rows + count_trials,
                     marker="|",
                     alpha=1,
-                    edgecolors="none",
                     color=task_constants.PALETTE_B1[i_sample],
                     label=sampleco[i_sample],
                 )
@@ -508,12 +411,22 @@ class NeuronData:
             ax2[i_ax].set_yticks(np.arange(-all_max_conv - 5, all_max_trial))
             plt.setp(ax2[i_ax].get_yticklabels(), visible=False)
             plt.setp(ax2[i_ax].get_yaxis(), visible=False)
+            ax[i_ax].set_xticks([0, 450, 1250, 1700])
+            ax[i_ax].set_xticklabels(["0", "450", "0", "450"])
+
             ax[i_ax].vlines(
                 [0, 450, 450 + 400 + 400],
                 0,
                 all_max_conv + all_max_trial + 5,
                 color="k",
-                linestyles="dashed",
+                linestyles="-",
+            )
+            ax[i_ax].vlines(
+                [850],
+                0,
+                all_max_conv + all_max_trial + 5,
+                color="k",
+                linestyles="--",
             )
             ax2[i_ax].spines["right"].set_visible(False)
             ax2[i_ax].spines["top"].set_visible(False)
