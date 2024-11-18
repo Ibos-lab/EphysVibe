@@ -146,13 +146,8 @@ class NeuronData:
         f.close()
 
     def get_neuron_id(self):
-        nid = (
-            self.cluster_group
-            + str(int(self.cluster_number))
-            + self.area.upper()
-            + self.date_time
-            + self.subject
-        )
+        nid = f"{self.date_time}_{self.subject}_{self.area}_e{self.experiment}_r{self.recording}_{self.cluster_group}{self.cluster_number}"
+
         return nid
 
     def align_on(
