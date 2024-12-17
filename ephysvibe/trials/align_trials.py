@@ -13,12 +13,11 @@ def indep_roll(arr: np.ndarray, shifts: np.ndarray, axis: int = 1) -> np.ndarray
     Returns:
         np.ndarray: shifted array.
     """
-    arr = np.swapaxes(arr, axis, -1)
-    all_idcs = np.ogrid[[slice(0, n) for n in arr.shape]]
-    # Convert to a positive shift
-    shifts[shifts < 0] += arr.shape[-1]
-    all_idcs[-1] = all_idcs[-1] - shifts[:, np.newaxis]
-    result = arr[tuple(all_idcs)]
+    arr = np.swapaxes(arr, axis, -1)  # Move the target axis to the last position
+    all_idcs = np.ogrid[[slice(0, n) for n in arr.shape]]  # Create grid indices
+    shifts[shifts < 0] += arr.shape[-1]  # Convert to a positive shift
+    new_indices = all_idcs[-1] - shifts[:, np.newaxis]
+    result = arr[tuple(all_idcs[:-1]) + (new_indices,)]
     arr = np.swapaxes(result, -1, axis)
     return arr
 
@@ -90,7 +89,7 @@ def get_align_tr(
     return sp, mask
 
 
-def get_rt(code_numbers:np.ndarray, code_samples:np.ndarray)->np.ndarray:
+def get_rt(code_numbers: np.ndarray, code_samples: np.ndarray) -> np.ndarray:
     """_summary_
 
     Args:
@@ -100,10 +99,10 @@ def get_rt(code_numbers:np.ndarray, code_samples:np.ndarray)->np.ndarray:
     Returns:
         np.ndarray: _description_
     """
-    rt=np.empty(code_numbers.shape[0])*np.nan
-    a,b=np.where(code_numbers==4)
-    code4=code_numbers==4
-    bar_release=code_samples[code4]
-    test_time=code_samples[np.roll(code4,-1)]
-    rt[a]=bar_release-test_time
+    rt = np.empty(code_numbers.shape[0]) * np.nan
+    a, b = np.where(code_numbers == 4)
+    code4 = code_numbers == 4
+    bar_release = code_samples[code4]
+    test_time = code_samples[np.roll(code4, -1)]
+    rt[a] = bar_release - test_time
     return rt

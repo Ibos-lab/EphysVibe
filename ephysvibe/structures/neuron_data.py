@@ -156,7 +156,7 @@ class NeuronData:
         event: str,
         time_before: int,
         error_type: int,
-        rf_stim_loc: str,
+        rf_stim_loc: str = "",
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Align spike data on a specific event and return the aligned data along with a trial mask.
 
@@ -165,7 +165,8 @@ class NeuronData:
             event (str): Event to align on.
             time_before (int): Time before the event to include in the alignment.
             error_type (int): Type of error trials to include (e.g., 0 for correct trials).
-            rf_stim_loc (str): Position code for selecting trials. Must be one of "in", "out", "ipsi", or "contra".
+            rf_stim_loc (str): Position code for selecting trials.
+                                - block 1: Must be one of "in", "out", "ipsi", or "contra".
 
         Raises:
             KeyError: If rf_stim_loc is not one of "in", "out", "ipsi", or "contra".
@@ -176,36 +177,41 @@ class NeuronData:
                 - Aligned spike data.
                 - Mask for selecting trials from the original data.
         """
-        # Check rf_stim_loc value
-        if rf_stim_loc == "in":
-            rf_stim_loc, rfstim_loc = 1, self.rf_loc
-        elif rf_stim_loc == "out":
-            rf_stim_loc, rfstim_loc = -1, self.rf_loc
-        elif rf_stim_loc == "contra":
-            rf_stim_loc, rfstim_loc = 1, self.pos_code
-        elif rf_stim_loc == "ipsi":
-            rf_stim_loc, rfstim_loc = -1, self.pos_code
-        else:
-            raise KeyError(
-                "Invalid rf_stim_loc value: %s. Must be one of 'in', 'out', 'ipsi', or 'contra'."
-                % rf_stim_loc
-            )
-        # Create mask to select trials based on position, error type, and block
-        mask = (
-            (rfstim_loc == rf_stim_loc)
-            & (self.trial_error == error_type)
-            & (self.block == select_block)
-        )
-        sp_samples_m = self.sp_samples[mask]
         # Determine the event code based on the block number
         if select_block == 1:
             code = task_constants.EVENTS_B1[event]
+            # Check rf_stim_loc value
+            if rf_stim_loc == "in":
+                rf_stim_loc, rfstim_loc = 1, self.rf_loc
+            elif rf_stim_loc == "out":
+                rf_stim_loc, rfstim_loc = -1, self.rf_loc
+            elif rf_stim_loc == "contra":
+                rf_stim_loc, rfstim_loc = 1, self.pos_code
+            elif rf_stim_loc == "ipsi":
+                rf_stim_loc, rfstim_loc = -1, self.pos_code
+            else:
+                raise KeyError(
+                    "Invalid rf_stim_loc value: %s. Must be one of 'in', 'out', 'ipsi', or 'contra'."
+                    % rf_stim_loc
+                )
+            # Create mask to select trials based on position, error type, and block
+            mask = (
+                (rfstim_loc == rf_stim_loc)
+                & (self.trial_error == error_type)
+                & (self.block == select_block)
+            )
+
         elif select_block == 2:
             code = task_constants.EVENTS_B2[event]
+
+            mask = (self.trial_error == error_type) & (self.block == select_block)
         else:
             raise ValueError(
                 "Invalid select_block value: %d. Must be 1 or 2." % select_block
             )
+
+        sp_samples_m = self.sp_samples[mask]
+
         # Find event occurrences in the code_numbers matrix
         code_mask = np.where(self.code_numbers[mask] == code, True, False)
         # Check if the event occurred in each trial

@@ -67,7 +67,7 @@ def trial_average_fr(neuron_trials):
 
 
 def define_kernel(w_size, w_std, fs):
-    kernel = signal.gaussian(M=w_size * fs, std=w_std * fs)
+    kernel = signal.windows.gaussian(M=w_size * fs, std=w_std * fs)
     kernel = kernel / sum(kernel)  # area of the kernel must be one
     return kernel
 
