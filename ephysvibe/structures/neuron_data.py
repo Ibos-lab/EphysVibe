@@ -436,7 +436,7 @@ class NeuronData:
         # Start plot
         fig, axs = plt.subplots(figsize=(8, 8), sharex=True, sharey=True)
         axs.set_axis_off()
-        for code in PAC.keys():
+        for code in sp_pos.keys():
             axis = PAC[code][1]
             sp = sp_pos[code]
             conv = conv_pos[code]
