@@ -4,11 +4,8 @@ from pathlib import Path
 import logging
 from typing import Tuple, Dict, List
 from ephysvibe.task import task_constants
-from ephysvibe.task.task_constants import EVENTS_B1_SHORT
-from ephysvibe.trials.spikes import firing_rate, sp_constants
-from ephysvibe.trials import align_trials, select_trials
-from ephysvibe.stats import smetrics
-from ephysvibe.spike_sorting import config
+from ephysvibe.trials import align_trials
+from scipy import stats
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -296,7 +293,7 @@ class NeuronData:
             )
             endt = it["time_before"] + it["time_after"]
             # Set name based on the event and rf/stimulus location
-            att_name = f"{EVENTS_B1_SHORT[it['event']]}_{it['loc']}"
+            att_name = f"{task_constants.EVENTS_B1_SHORT[it['event']]}_{it['loc']}"
             # Set attributes with appropriate data types
             setattr(self, f"sp_{att_name}", np.array(sp[:, :endt], dtype=np.int8))
             setattr(self, f"mask_{att_name}", np.array(mask, dtype=bool))
@@ -315,45 +312,6 @@ class NeuronData:
                         f"Warning: Attribute '{iatt}' does not exist and cannot be deleted."
                     )
         return self
-
-    #! to delete
-    # def get_sp_per_sec(self):
-    #     time_before = 100
-    #     res = {}
-    #     res["nid"] = self.get_neuron_id()
-    #     for in_out in ["in", "out"]:
-    #         pos_io = 1 if in_out == "in" else -1
-    #         sp, mask = self.align_on(
-    #             select_block=1,
-    #             select_pos=pos_io,
-    #             event="sample_on",
-    #             time_before=time_before,
-    #             error_type=0,
-    #         )
-    #         for nn_n in ["NN", "N"]:
-    #             if nn_n == "NN":
-    #                 sample_mask = self.sample_id[mask] != 0
-    #             else:
-    #                 sample_mask = self.sample_id[mask] == 0
-    #             # Average fr across time
-    #             sp_avg = firing_rate.moving_average(sp[:, :1500], win=100, step=1)
-    #             frsignal = np.mean(
-    #                 sp_avg[sample_mask, time_before : time_before + 450], axis=0
-    #             )
-    #             res_fr = smetrics.compute_fr(frsignal=frsignal)
-    #             res[in_out + "_mean_fr_sample_" + nn_n] = res_fr["mean_fr"]
-    #             res[in_out + "_lat_max_fr_sample_" + nn_n] = res_fr["lat_max_fr"]
-    #             res[in_out + "_mean_max_fr_sample_" + nn_n] = res_fr["mean_max_fr"]
-
-    #             frsignal = np.mean(
-    #                 sp_avg[sample_mask, time_before + 450 : time_before + 850], axis=0
-    #             )
-    #             res_fr = smetrics.compute_fr(frsignal=frsignal)
-    #             res[in_out + "_mean_fr_delay_" + nn_n] = res_fr["mean_fr"]
-    #             res[in_out + "_lat_max_fr_delay_" + nn_n] = res_fr["lat_max_fr"]
-    #             res[in_out + "_mean_max_fr_delay_" + nn_n] = res_fr["mean_max_fr"]
-
-    #     return res
 
     def plot_sp_b1(self, sp: Dict, conv: Dict):
         key1, key2 = list(sp.keys())
@@ -458,6 +416,73 @@ class NeuronData:
             x=0.05,
             y=0.99,
             fontsize=15,
+        )
+        return fig
+
+    def plot_sp_b2(self, sp_pos, conv_pos, max_n_tr, conv_max, visual_rf=True, inout=1):
+        start = -200
+        PAC = task_constants.CODES_AND_POS
+        # Get samples position in b1 and b2
+        b1_mask = self.block == 1
+        b2_mask = self.block == 2
+        in_mask = self.pos_code == 1
+        u_pos, u_count = np.unique(
+            self.position[np.logical_and(b1_mask, in_mask)], axis=0, return_counts=True
+        )
+        imax = np.argmax(u_count)
+        x_pos_b1, y_pos_b1 = u_pos[imax][0][0], u_pos[imax][0][1]
+        pos_b2 = np.unique(self.position[b2_mask][:, 0], axis=0)
+        x_pos_b2, y_pos_b2 = pos_b2[:, 0], pos_b2[:, 1]
+        # Start plot
+        fig, axs = plt.subplots(figsize=(8, 8), sharex=True, sharey=True)
+        axs.set_axis_off()
+        for code in PAC.keys():
+            axis = PAC[code][1]
+            sp = sp_pos[code]
+            conv = conv_pos[code]
+            ax = plt.subplot2grid((3, 3), (axis[0], axis[1]))
+            time = np.arange(0, len(conv)) + start
+            ax2 = ax.twinx()
+            # ----- plot conv----------
+            ax.plot(time, conv, color="navy")
+            # ----- plot spikes----------
+            rows, cols = np.where(sp >= 1)
+            cols = cols + start
+            rows = rows + rows * 2
+            ax2.scatter(cols, rows, marker="|", alpha=1, color="grey")
+            ax.set_title("Code %s" % (code), fontsize=8)
+            ax.set_ylim(0, conv_max + max_n_tr * 3)
+            ax.set_yticks(np.arange(0, conv_max, 10))
+            ax2.set_ylim(-conv_max, max_n_tr)
+            ax2.set_yticks(np.arange(-conv_max, max_n_tr * 3, 10))
+            if visual_rf:
+                p = stats.ttest_rel(
+                    np.mean(sp[:, :200], axis=1), np.mean(sp[:, 200:400], axis=1)
+                )
+                p = p[1] < 0.05
+                if p:
+                    ax.set_facecolor("bisque")
+            plt.setp(ax2.get_yticklabels(), visible=False)
+            ax.vlines(
+                [0, 100, 1100],
+                0,
+                conv_max + max_n_tr * 3,
+                color="k",
+                linestyles="dashed",
+            )
+            if code == "122":
+                ax.set_ylabel(ylabel="Average firing rate", fontsize=10, loc="bottom")
+                ax.set_xlabel(xlabel="Time (s)", fontsize=10)
+        ax = plt.subplot2grid((3, 3), (1, 1))
+        ax.scatter(x_pos_b2, y_pos_b2)
+        ax.scatter(inout * x_pos_b1, inout * y_pos_b1)
+        fig.tight_layout(pad=0.4, h_pad=0.2, w_pad=0.2)
+        fig.suptitle(
+            "%s: %s %s %d "
+            % (self.date_time, self.area, self.cluster_group, self.cluster_number),
+            x=0.5,
+            y=1.05,
+            fontsize=12,
         )
         return fig
 

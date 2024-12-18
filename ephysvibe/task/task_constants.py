@@ -1,14 +1,3 @@
-# SAMPLES_COND = {
-#     # samples IN
-#     "o1_c1_in": np.arange(1, 8),
-#     "o1_c5_in": np.arange(8, 15),
-#     "o5_c1_in": np.arange(15, 22),
-#     "o5_c5_in": np.arange(22, 29),
-#     "o1_c1_out": np.arange(1, 8) + 28,
-#     "o1_c5_out": np.arange(8, 15) + 28,
-#     "o5_c1_out": np.arange(15, 22) + 28,
-#     "o5_c5_out": np.arange(22, 29) + 28,
-# }
 EVENTS_B1 = {
     "start_trial": 9,
     "bar_hold": 7,
@@ -71,4 +60,16 @@ EVENTS_B2 = {
     "eye_in_target": 10,
     "correct_response": 40,
     "end_trial": 18,
+}
+
+CODES_AND_POS = {
+    # code: [[MonkeyLogic axis (variable)], [plot axis], [angle]]
+    "127": [[10, 0], [1, 2], [0]],
+    "126": [[7, 7], [0, 2], [45]],
+    "125": [[0, 10], [0, 1], [90]],
+    "124": [[-7, 7], [0, 0], [135]],
+    "123": [[-10, 0], [1, 0], [180]],
+    "122": [[-7, -7], [2, 0], [225]],
+    "121": [[0, -10], [2, 1], [270]],
+    "120": [[7, -7], [2, 2], [315]],
 }
