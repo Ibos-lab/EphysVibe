@@ -456,10 +456,15 @@ class NeuronData:
             ax2.set_ylim(-conv_max, max_n_tr)
             ax2.set_yticks(np.arange(-conv_max, max_n_tr * 3, 10))
             if visual_rf:
-                p = stats.ttest_rel(
-                    np.mean(sp[:, :200], axis=1), np.mean(sp[:, 200:400], axis=1)
-                )
-                p = p[1] < 0.05
+                bl_sp = np.mean(sp[:, :200], axis=1)
+                tg_sp = np.mean(sp[:, 200:400], axis=1)
+                n_tr = len(bl_sp)
+                fr = np.sum(tg_sp != 0)
+                if n_tr < 5 or fr < 5:
+                    p = False
+                else:
+                    p = stats.ttest_rel(bl_sp, tg_sp)
+                    p = p[1] < 0.05
                 if p:
                     ax.set_facecolor("bisque")
             plt.setp(ax2.get_yticklabels(), visible=False)
