@@ -5,7 +5,7 @@ import os
 from typing import List
 import numpy as np
 from ...spike_sorting import utils_oe
-from .. import pipe_config
+from . import preproc_config
 from ...structures.bhv_data import BhvData
 from ...structures.eye_data import EyeData
 from ...task import task_constants
@@ -57,9 +57,9 @@ def main(
     # --------------------------
     trials_max_duration = max(trials_end - trials_start)
     trials_max_duration = int(trials_max_duration + before_trial + iti + next_trial)
-    total_ch = pipe_config.TOTAL_CH
-    start_ch = pipe_config.area_start_nch["eyes"][0]
-    n_eyes = pipe_config.area_start_nch["eyes"][1]
+    total_ch = preproc_config.TOTAL_CH
+    start_ch = preproc_config.area_start_nch["eyes"][0]
+    n_eyes = preproc_config.area_start_nch["eyes"][1]
     n_trials = trials_start.shape[0]
     logging.info("load_eyes")
     shape_0 = len(c_samples)

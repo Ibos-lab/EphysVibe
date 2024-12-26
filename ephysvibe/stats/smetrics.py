@@ -3,7 +3,7 @@ from scipy import stats
 from ..stats import processing
 from ..trials import align_trials
 from sklearn import metrics
-from ..trials.spikes import firing_rate
+from ..trials import firing_rate
 from typing import Tuple
 
 

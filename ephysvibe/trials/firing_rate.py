@@ -7,8 +7,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from collections import defaultdict
 from typing import List, Dict, Tuple
-from ...spike_sorting import config
-from ...task import task_constants
+from ..spike_sorting import config
+from ..task import task_constants
 
 
 # def moving_average(data: np.ndarray, win: int, step: int = 1) -> np.ndarray:

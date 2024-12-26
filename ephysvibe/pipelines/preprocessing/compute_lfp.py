@@ -8,7 +8,7 @@ from ...spike_sorting import utils_oe, config
 import glob
 from ...structures.bhv_data import BhvData
 from ...structures.lfp_data import LfpData
-from .. import pipe_config
+from . import preproc_config
 from collections import defaultdict
 import gc
 
@@ -71,14 +71,14 @@ def main(
     date_time = s_path[-7]
     # check n_areas and n_channels
     if areas == None:
-        areas_ch = pipe_config.AREAS.copy()
+        areas_ch = preproc_config.AREAS.copy()
     else:
         if n_ch == None or start_ch == None:
             raise KeyError("n_ch or start_ch = None")
         areas_ch: Dict[str, list] = defaultdict(list)
         for n, n_area in enumerate(areas):
             areas_ch[n_area] = [start_ch[n], n_ch[n]]
-    total_ch = pipe_config.TOTAL_CH
+    total_ch = preproc_config.TOTAL_CH
     # load bhv data
     file_name = date_time + "_" + subject + "_e" + n_exp + "_r" + n_record + "_bhv.h5"
     bhv_path = os.path.normpath(bhv_path) + "/" + file_name

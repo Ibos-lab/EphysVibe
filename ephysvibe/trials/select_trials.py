@@ -41,3 +41,26 @@ def get_sp_by_sample(
         else:
             sp_samples[str(s_id)] = np.array([np.nan])
     return sp_samples
+
+
+def select_trials_by_percentile(x: np.ndarray, mask: np.ndarray = None):
+    ntr = x.shape[0]
+    if mask is None:
+        mask = np.full(ntr, True)
+
+    mntr = x[mask].shape[0]
+
+    if mntr < 2:
+        return np.full(ntr, True)
+    mean_trs = np.mean(x, axis=1)
+
+    q25, q75 = np.percentile(mean_trs[mask], [25, 75])
+    iqr = q75 - q25
+    upper_limit = q75 + 1.5 * iqr
+    lower_limit = q25 - 1.5 * iqr
+
+    q1mask = mean_trs > lower_limit
+    q2mask = mean_trs < upper_limit
+
+    qmask = np.logical_and(q1mask, q2mask)
+    return qmask

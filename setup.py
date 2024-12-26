@@ -101,7 +101,7 @@ if __name__ == "__main__":
             "Tracker": "https://github.com/camilosada/EphysVibe/issues/",
         },
         platforms="any",
-        python_requires=">=3.8",
+        python_requires=">=3.10",
         install_requires=install_requires,
         packages=package_tree("ephysvibe"),
     )
