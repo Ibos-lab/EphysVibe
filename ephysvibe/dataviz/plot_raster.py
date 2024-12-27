@@ -290,7 +290,19 @@ def plot_sp_b1(neu, sp: Dict, conv: Dict):
     return fig
 
 
-def plot_sp_b2(neu, sp_pos, conv_pos, max_n_tr, conv_max, visual_rf=True, inout=1):
+def plot_sp_b2(
+    neu,
+    sp_pos,
+    conv_pos,
+    max_n_tr,
+    conv_max,
+    visual_rf=True,
+    inout=1,
+    bl_st=0,
+    bl_end=200,
+    tg_st=200,
+    tg_end=400,
+):
     start = -200
     PAC = task_constants.CODES_AND_POS
     # Get samples position in b1 and b2
@@ -327,8 +339,8 @@ def plot_sp_b2(neu, sp_pos, conv_pos, max_n_tr, conv_max, visual_rf=True, inout=
         ax2.set_ylim(-conv_max, max_n_tr)
         ax2.set_yticks(np.arange(-conv_max, max_n_tr * 3, 10))
         if visual_rf:
-            bl_sp = np.mean(sp[:, :200], axis=1)
-            tg_sp = np.mean(sp[:, 200:400], axis=1)
+            bl_sp = np.mean(sp[:, bl_st:bl_end], axis=1)
+            tg_sp = np.mean(sp[:, tg_st:tg_end], axis=1)
             n_tr = len(bl_sp)
             fr = np.sum(tg_sp != 0)
             if n_tr < 5 or fr < 5:
