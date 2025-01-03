@@ -291,7 +291,13 @@ class NeuronData:
             )
             endt = it["time_before"] + it["time_after"]
             # Set name based on the event and rf/stimulus location
-            att_name = f"{task_constants.EVENTS_B1_SHORT[it['event']]}_{it['loc']}"
+            if it["select_block"] == 1:
+                att_name = f"{task_constants.EVENTS_B1_SHORT[it['event']]}_{it['loc']}"
+            elif it["select_block"] == 2:
+                att_name = f"{task_constants.EVENTS_B2_SHORT[it['event']]}_{it['loc']}"
+            else:
+                print("block error")
+                return
             # Set attributes with appropriate data types
             setattr(self, f"sp_{att_name}", np.array(sp[:, :endt], dtype=np.int8))
             setattr(self, f"mask_{att_name}", np.array(mask, dtype=bool))
