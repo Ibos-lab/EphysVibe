@@ -61,6 +61,16 @@ EVENTS_B2 = {
     "correct_response": 40,
     "end_trial": 18,
 }
+EVENTS_B2_SHORT = {
+    "start_trial": "trst",
+    "target_on": "ton",
+    "target_off": "toff",
+    "fix_spot_off": "fspotoff",
+    "eye_in_target": "eint",
+    "correct_response": "correct",
+    "end_trial": "trend",
+}
+
 
 CODES_AND_POS = {
     # code: [[MonkeyLogic axis (variable)], [plot axis], [angle]]
