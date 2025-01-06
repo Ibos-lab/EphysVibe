@@ -7,7 +7,7 @@ from ..trials import firing_rate
 from typing import Tuple
 
 
-def compute_roc_auc(group1, group2):
+def compute_roc_auc(group1, group2, sacale=True):
     roc_score = []
     p = []
     for n_win in np.arange(group1.shape[1]):
@@ -33,7 +33,8 @@ def compute_roc_auc(group1, group2):
             score = metrics.auc(fpr[fpr.argsort()], tpr[fpr.argsort()])
         roc_score.append(score)
     roc_score = np.array(roc_score)
-    roc_score = processing.scale_signal(np.round(roc_score, 2), out_range=[-1, 1])
+    if sacale:
+        roc_score = processing.scale_signal(np.round(roc_score, 2), out_range=[-1, 1])
     return roc_score, np.array(p)
 
 
@@ -57,14 +58,14 @@ def find_latency(
 
 
 def get_selectivity(
-    sp_1, sp_2, win, scores=False
+    sp_1, sp_2, win, scores=False, sacale=True
 ) -> Tuple[float, np.ndarray, np.ndarray]:
     nanarray = np.array([np.nan])
     if np.logical_or(sp_1.ndim < 2, sp_2.ndim < 2):
         return np.nan, nanarray, nanarray
     if np.logical_or(sp_1.shape[0] < 2, sp_2.shape[0] < 2):
         return np.nan, nanarray, nanarray
-    roc_score, p_value = compute_roc_auc(sp_1, sp_2)
+    roc_score, p_value = compute_roc_auc(sp_1, sp_2, sacale=sacale)
     lat, _ = find_latency(p_value, win=win, step=1)
     if np.isnan(lat):
         roc_score = roc_score if scores else nanarray
